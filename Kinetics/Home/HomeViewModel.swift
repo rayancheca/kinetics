@@ -62,6 +62,11 @@ final class HomeViewModel {
         // .empty stats rather than a hard failure.
         try? await service.requestAuthorization()
         dashboardStats = await service.fetchDashboardStats()
+        WidgetDataStore.shared.updateTodayStats(
+            steps: dashboardStats.steps,
+            calories: Int(dashboardStats.activeCalories),
+            workoutMinutes: Int(dashboardStats.sleepSeconds / 60)
+        )
     }
 
     // MARK: - Auth

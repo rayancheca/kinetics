@@ -84,6 +84,20 @@ struct GymHomeView: View {
             .task {
                 await viewModel.load(userId: uid)
             }
+            .navigationDestination(for: String.self) { destination in
+                switch destination {
+                case "routines":
+                    RoutineListView()
+                case "progress":
+                    GymProgressView(userId: uid)
+                case "prs":
+                    PersonalRecordsView(userId: uid)
+                case "body":
+                    BodyMeasurementView(userId: uid)
+                default:
+                    EmptyView()
+                }
+            }
             .sheet(isPresented: $viewModel.showExerciseLibrary) {
                 ExerciseLibraryView()
             }
@@ -164,6 +178,26 @@ struct GymHomeView: View {
                     color: Color.kineticsGreen
                 ) {
                     viewModel.showExerciseLibrary = true
+                }
+            }
+
+            HStack(spacing: 12) {
+                QuickStartCard(
+                    title: "Routines",
+                    subtitle: "Saved plans",
+                    icon: "rectangle.stack.fill",
+                    color: Color.kineticsPurple
+                ) {
+                    navigationPath.append("routines")
+                }
+
+                QuickStartCard(
+                    title: "Progress",
+                    subtitle: "Charts & PRs",
+                    icon: "chart.line.uptrend.xyaxis",
+                    color: Color.kineticsAmber
+                ) {
+                    navigationPath.append("progress")
                 }
             }
         }

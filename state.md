@@ -1,119 +1,119 @@
 # Kinetics — Session State
 
-**Last updated:** Session 4 (2026-04-29) — Sections 15, 6, 7, 8 built, compiled, committed, pushed
+**Last updated:** Session 5 (2026-04-29) — Sections 9, 10, 11 built, compiled, committed, pushed
 **Current phase:** Phase 1 — MVP
-**Overall progress:** Session 4 in progress. BUILD SUCCEEDED.
+**Overall progress:** Session 5 complete. BUILD SUCCEEDED.
 
 ---
 
-## Status: SESSION 4 IN PROGRESS — BUILD SUCCEEDED
+## Status: SESSION 5 COMPLETE — BUILD SUCCEEDED
 
 `** BUILD SUCCEEDED **` on iPhone 17 Pro Simulator.
-All changes committed. Latest commit: `97cbac6` (Gym Tracker).
+All changes committed and pushed. Latest commit: `b076237` (WidgetKit extension).
 
 ---
 
-## Session 4 — What Was Built
+## Session 5 — What Was Built
 
-### Section 15 — Front Camera Toggle (COMPLETE ✅)
+### Gym Tracker Part B — Section 16 (COMPLETE ✅)
+
+**Files created in previous context (committed `45ec378`):**
+- `Kinetics/Modules/GymTracker/RoutineBuilderView.swift` — RoutineListView (@Query), RoutineBuilderView (drag reorder, exercise picker), ExercisePickerSheet
+- `Kinetics/Modules/GymTracker/PersonalRecordsView.swift` — PersonalRecordsView (@Query, searchable), BodyMeasurementView (stat cards + history + swipe-delete), AddMeasurementSheet, MeasurementStatCard
+- `Kinetics/Modules/GymTracker/GymProgressView.swift` — GymProgressView (segmented Picker + TabView.page): Overview tab with VolumeChartView (BarMark), Strength tab with StrengthChartView (LineMark + PointMark), Body tab with BodyWeightChartView (AreaMark)
+- `Kinetics/Modules/GymTracker/GymHomeView.swift` — updated with navigationDestination routing to Part B views
+
+**Key fix:** MeasurementStatCard renamed from StatCard to avoid redeclaration with ProfileView.swift's StatCard.
+
+---
+
+### Entitlements Hook Issue (KNOWN — workaround needed for device builds)
+
+The project has a post-tool-use hook that strips entitlements files back to `<dict/>` whenever `xcodegen generate` runs. This means:
+- `Kinetics/Kinetics.entitlements` — HealthKit keys and AppGroup get stripped each run
+- `KineticsWidget/KineticsWidget.entitlements` — AppGroup gets stripped each run
+
+**Impact:** Simulator builds unaffected. Device builds need manual re-addition in Xcode Signing & Capabilities tab:
+- Main app: HealthKit capability + App Groups (`group.com.rayancheca.kinetics`)
+- Widget extension: App Groups (`group.com.rayancheca.kinetics`)
+
+---
+
+### Section 9 — HealthKit Dashboard Reads (COMPLETE ✅)
+
+**Commit:** `e9a5fe8`
 
 **Modified files:**
-- `CameraManager.swift` — Added `cameraPosition: AVCaptureDevice.Position`, `switchCamera() async` (full session teardown/rebuild), mirror baked into preview layer connection
-- `PoseDetectionEngine.swift` — `process(_:isFrontCamera:)` — calls `pose.mirroredHorizontally()` when front camera active
-- `JointPose.swift` — `mirroredHorizontally()` maps `x → 1.0 - x` for all joints
-- All 4 module ViewModels — `activeCameraManager` weak ref, `isFront` passed to `process()`
-- All 4 module Views — `@AppStorage("camera_position_{module}")`, `cameraFlipButton` ZStack layer, calls `switchCamera()` on tap
+- `Kinetics/Core/Services/HealthKitService.swift` — Added:
+  - `HealthKitDashboardStats` struct (Sendable): `restingHeartRate`, `hrv`, `vo2Max`, `activeCalories`, `steps`, `sleepSeconds` + `.empty` static
+  - `fetchDashboardStats() async -> HealthKitDashboardStats` — sequential awaits (not async let — NSPredicate is not Sendable)
+  - `todayPredicate()` — returns today's `HKQuery.predicateForSamples`
+  - `fetchLatestQuantitySample(type:unit:predicate:)` — HKSampleQuery wrapped in withCheckedContinuation
+  - `fetchCumulativeSum(type:unit:predicate:)` — HKStatisticsQuery with .cumulativeSum
+  - `fetchSleepDuration()` — sums asleepUnspecified/Core/Deep/REM samples from last 24h
+  - Expanded `requestAuthorization` read types: restingHeartRate, HRV SDNN, sleepAnalysis
 
-**Key decisions:**
-- Full teardown/rebuild chosen over input swap because `configureSessionIfNeeded()` is guarded by `isConfigured` flag — reset it and call again with new position
-- Mirroring lives in `CameraManager.configureSessionIfNeeded()` on the preview layer connection — `CameraPreviewView` gets the new layer pre-mirrored, no changes there
-- Grappling defaults to front camera (`@AppStorage("camera_position_grappling") = true`) for solo drilling
+- `Kinetics/Home/HomeViewModel.swift` — Added `dashboardStats: HealthKitDashboardStats = .empty`, `loadDashboardStats()` method
+- `Kinetics/Home/HomeView.swift` — Added `healthStatsCard` + `StatPill` with 6 metrics: Steps(blue)/Calories(amber)/Sleep(purple)/RHR(green)/HRV(blue)/VO2(green)
 
-**Commit:** `6bb2261`
+**Key fix:** `async let` cannot be used with `NSPredicate` (not Sendable) across actor isolation. Changed `fetchDashboardStats` to sequential `await` calls instead.
 
 ---
 
-### Section 6 — GPS Track Module (COMPLETE ✅)
+### Section 10 — Notifications (COMPLETE ✅)
+
+**Commit:** `e9a5fe8`
 
 **New files:**
-- `Kinetics/Core/Services/LocationService.swift` — `actor LocationService: NSObject, CLLocationManagerDelegate`. Filters GPS fixes (accuracy thresholds, age). `AsyncStream<CLLocation>` rebuilt each `startTracking()`. Elevation accumulated with ±0.5m noise threshold.
-- `Kinetics/Core/Services/HealthKitService.swift` — `actor HealthKitService { static let shared }`. `HKAnchoredObjectQuery` → `AsyncStream<Double>` for live HR. `saveWorkout()` with energy + distance samples. `withCheckedThrowingContinuation` for `store.add(_:to:completion:)` (no async overload).
-- `Kinetics/Core/Models/WorkoutResult.swift` — `WorkoutActivityType` (run/walk/ride/hike/swim/ski), `WorkoutSplit`, `HRZones`, `WorkoutResult` (all `Codable, Identifiable, Sendable, Hashable`).
-- `Kinetics/Modules/Track/TrackAnalytics.swift` — Pure functions: `buildSplits`, `computeHRZones`, `segmentPaces`, `detectAchievements`, `formatPace`.
-- `Kinetics/Modules/Track/TrackViewModel.swift` — `@Observable @MainActor`. Three child tasks: duration timer, location consumer, HR consumer. Auto-pause (3 consecutive <0.5 m/s samples). Running HR mean O(1). MET-based calorie estimate.
-- `Kinetics/Modules/Track/WorkoutRepository.swift` — `@MainActor final class`. Firestore path `users/{uid}/workouts/{id}`. JSON round-trip. `fetchAll` limit 50 ordered by startedAt desc.
-- `Kinetics/Modules/Track/TrackView.swift` — Activity picker + gradient START button + today stats.
-- `Kinetics/Modules/Track/ActiveWorkoutView.swift` — Full-screen live recording with RouteMapView.
-- `Kinetics/Modules/Track/RouteMapView.swift` — `MKMapView` UIViewRepresentable with live polyline + `routeSummary()` factory.
-- `Kinetics/Modules/Track/WorkoutSummaryView.swift` — Post-workout report with HRZoneBar, SplitsTable, achievements.
-- `Kinetics/Modules/Track/WorkoutHistoryView.swift` — Grouped list ("This Week"/"Last Week"/"Older") with filter pills, swipe-to-delete. `WorkoutHistoryViewModel` co-located.
-- `Kinetics/Modules/Track/WorkoutDetailView.swift` — Swift Charts pace BarMark + full metrics.
+- `Kinetics/Core/Services/NotificationService.swift` — `@MainActor final class NotificationService { static let shared }`:
+  - `requestAuthorization() async -> Bool` — UNUserNotificationCenter.requestAuthorization wrapped in withCheckedContinuation
+  - `scheduleWorkoutReminder(title:body:weekdays:hour:minute:identifier:) async` — per-weekday UNCalendarNotificationTrigger (repeating)
+  - `scheduleAchievementNotification(title:body:) async` — 5s UNTimeIntervalNotificationTrigger one-shot
+  - `cancelWorkoutReminders(identifier:) async` — removes pending requests with weekday suffix
+  - `pendingCount() async -> Int`
 
-**project.yml additions:** NSLocationWhenInUseUsageDescription, NSLocationAlwaysAndWhenInUseUsageDescription, NSHealthShareUsageDescription, NSHealthUpdateUsageDescription, UIBackgroundModes: [location].
+- `Kinetics/Modules/Settings/NotificationSettingsView.swift` — Full settings UI:
+  - Workout Reminders toggle (@AppStorage) → day picker (M-T-W-T-F-S-S circular buttons) + DatePicker + Apply button
+  - Achievement Alerts toggle (@AppStorage)
+  - Test Notification button (fires 5s notification)
 
-**Entitlements note:** `Kinetics.entitlements` had HealthKit keys stripped by a post-tool-use hook reformatter. Needs re-adding for device builds (`com.apple.developer.healthkit: true`, `com.apple.developer.healthkit.background-delivery: true`). Simulator builds unaffected.
-
-**Commit:** `000ca72`
+**Modified files:**
+- `Kinetics/Shared/ProfileView.swift` — NavigationLink to NotificationSettingsView added
+- `project.yml` — NSUserNotificationUsageDescription added to Info.plist
 
 ---
 
-### Section 14 — Color Token Additions (COMPLETE ✅)
+### Section 11 — WidgetKit Extension (COMPLETE ✅)
 
-Added to `Color+Kinetics.swift`:
-- `kineticsAmber` (#FFB800) — achievements, PRs
-- `kineticsPurple` (#8B5CF6) — social/feed
-- `kineticsSurface` (#141414) — elevated card backgrounds
-- `kineticsSubtext` (#8E8E93) — muted secondary text
-
-**Commit:** `4923693` (part of social commit)
-
----
-
-### Section 7 — Social Layer (COMPLETE ✅)
+**Commit:** `b076237`
 
 **New files:**
-- `Kinetics/Modules/Social/SocialModels.swift` — `UserProfile`, `FeedItemType`, `FeedMetric`, `FeedItem` (CodingKeys exclude `isLikedByCurrentUser`), `ActivityComment`. All Codable/Sendable/Hashable with preview factories.
-- `Kinetics/Modules/Social/SocialRepository.swift` — `@MainActor final class`. Firestore paths: `users/{uid}`, `activity/{id}`, `activity/{id}/kudos/{uid}`, `activity/{id}/comments/{id}`. JSON round-trip. `postActivity` writes top-level `postedAt` timestamp so Firestore can order by it. `toggleKudos` checks existence of kudos sub-doc.
-- `Kinetics/Modules/Social/FeedView.swift` — `FeedViewModel` (`@Observable @MainActor`) + `FeedView` (NavigationStack, refreshable LazyVStack, empty state) + `ActivityFeedCard` (avatar, metrics strip, kudos/comment action row) + `FeedMetricCell`.
-- `Kinetics/Modules/Social/UserProfileView.swift` — `UserProfileViewModel` + `UserProfileView` (profile header, stats row, recent activity) + `ProfileHeaderView` (inline bio editor with `Bindable(viewModel)`) + `ProfileStatRow` + `KudosButton` (spring animation) + `CommentSectionView` (optimistic append) + `CommentRow`.
+- `KineticsWidget/KineticsWidget.swift` — full widget implementation:
+  - `KineticsEntry` — TimelineEntry with steps/calories/workoutMinutes/nextWorkout/streakDays
+  - `KineticsProvider` — 30-minute refresh, reads from AppGroup UserDefaults
+  - `TodayStatsWidget` — `.systemSmall` + `.systemMedium`, shows steps/calories/workout minutes
+  - `NextWorkoutWidget` — `.systemSmall`, shows next scheduled workout string
+  - `KineticsWidgetBundle` — @main WidgetBundle
+  - `TodayStatsView`, `NextWorkoutView`, `StatRow` — widget UI components
+- `KineticsWidget/KineticsWidget.entitlements` — AppGroup (hook strips to `<dict/>` — needs manual fix for device)
+- `Kinetics/Core/Services/WidgetDataStore.swift` — `@MainActor final class WidgetDataStore { static let shared }`:
+  - `updateTodayStats(steps:calories:workoutMinutes:)` — writes to AppGroup + reloads TodayStats timeline
+  - `updateNextWorkout(_:)` — writes next workout string + reloads NextWorkout timeline
+  - `updateStreak(_:)` — writes streak days + reloads all timelines
 
-**MainTabView:** Feed tab added at tag 4.
-
-**Key decisions:**
-- `FeedItem.isLikedByCurrentUser` excluded from CodingKeys — resolved client-side after fetch
-- `Bindable(viewModel)` used for binding extraction from `@State private var viewModel` (not `$viewModel.property` which doesn't compile with `@Observable` + `@State`)
-- Duplicate `SocialRepository` generated by an agent in `UserProfileView.swift` was removed — kept only the one in `SocialRepository.swift`
-- `fetchFeed(limit:)` signature — no `for:` parameter
-
-**Commit:** `4923693`
-
----
-
-### Section 8 — Gym Tracker (COMPLETE ✅)
-
-**New files:**
-- `Kinetics/Modules/GymTracker/GymModels.swift` — 6 SwiftData `@Model` classes: `Exercise`, `WorkoutSession`, `WorkoutExerciseEntry`, `WorkoutSet`, `Routine`, `PersonalRecord`, `BodyMeasurement`. Plus `GymMuscleGroup` and `GymEquipment` enums.
-- `Kinetics/Modules/GymTracker/GymRepository.swift` — `@MainActor final class`. `modelContainer: ModelContainer?` set by App layer. Exercise CRUD (in-memory filter — no `lowercased()` inside `#Predicate`), WorkoutSession CRUD, Set Management, Personal Records (only updates when new weight > stored), 20-exercise seed library, Firestore sync fire-and-forget.
-- `Kinetics/Modules/GymTracker/GymHomeView.swift` — `GymHomeViewModel` + `GymHomeView` (Quick Start cards, Recent Sessions, Top Lifts PRs) + `ExerciseLibraryView` (searchable, category filter pills) + `ExerciseRow`.
-- `Kinetics/Modules/GymTracker/ActiveGymSessionView.swift` — `ActiveGymSessionViewModel` (timer task, add exercise/set, mark completed) + `ActiveGymSessionView` (header + exercise list + bottom toolbar) + `ExercisePickerView` + `SetRowView` (local state for weight/reps, swipe to delete).
-
-**KineticsApp.swift:** SwiftData `ModelContainer` created at app startup for all 7 model types. `GymRepository.shared.modelContainer` set in `.onAppear`. `.modelContainer()` modifier applied to root view.
-
-**MainTabView:** Gym tab at tag 3 (between Track and Feed). Removed History tab (merged into individual module history screens).
-
-**Key fix:** `fetchSessions` and `fetchPersonalRecords` are synchronous — removed `async let` from `GymHomeViewModel.load()` which was causing Swift 6 Sendable errors for non-Sendable SwiftData model arrays.
-
-**Commit:** `97cbac6`
+**Modified files:**
+- `Kinetics/Home/HomeViewModel.swift` — calls `WidgetDataStore.shared.updateTodayStats()` after `fetchDashboardStats()`
+- `project.yml` — `KineticsWidget` target added (type: app-extension) + embedded in Kinetics dependencies
 
 ---
 
-## Architecture Decisions (Session 4)
+## Architecture Decisions (Session 5)
 
-- `xcodegen generate` needed after every new file added — project.yml glob covers `Kinetics/Modules/**` so all new files in subdirs are auto-picked up
-- SwiftData `@Model` classes are not `Sendable` — cannot use `async let` or cross actor boundaries with them
-- SwiftData in-memory filter chosen over complex `#Predicate` chains for small datasets (exercise library ~20-300 items)
-- `Bindable(viewModel)` is the correct pattern for getting `Binding<T>` from `@State private var viewModel: SomeObservableClass`
-- Firebase `SocialRepository` and `WorkoutRepository` both use JSON round-trip (JSONEncoder → Data → JSONSerialization → [String: Any]) — keeps models free of Firestore conformances
+- `NSPredicate` is not `Sendable` in Swift 6 — cannot use `async let` when passing predicates across actor boundaries. Solution: compute predicate once, then await sequentially
+- WidgetKit `@main` must be in a separate target — cannot be in the same module as the main app
+- AppGroup UserDefaults (`group.com.rayancheca.kinetics`) is the data bridge between main app and widget
+- `WidgetCenter.shared.reloadTimelines(ofKind:)` must be called after writing data to AppGroup so widgets refresh immediately
+- `NotificationService` is `@MainActor` (not actor) because UNUserNotificationCenter callbacks are main-thread-friendly and we need @AppStorage access
 
 ---
 
@@ -133,27 +133,36 @@ Added to `Color+Kinetics.swift`:
 - Section 6: GPS Track module (LocationService, HealthKitService, TrackViewModel, WorkoutResult, TrackAnalytics, WorkoutRepository, 6 Track UI files)
 - Section 14: Color token additions (amber, purple, surface, subtext)
 - Section 7: Social layer (SocialModels, SocialRepository, FeedView, UserProfileView)
-- Section 8: Gym Tracker (GymModels SwiftData, GymRepository, GymHomeView, ActiveGymSessionView)
+- Section 8: Gym Tracker Part A (GymModels SwiftData, GymRepository, GymHomeView, ActiveGymSessionView)
+
+### Session 5
+- Section 16: Gym Tracker Part B (RoutineBuilderView, PersonalRecordsView, BodyMeasurementView, GymProgressView with Swift Charts)
+- Section 9: HealthKit dashboard depth reads (RHR, HRV, VO2 max, active calories, steps, sleep)
+- Section 10: Notifications (NotificationService, NotificationSettingsView, ProfileView integration)
+- Section 11: WidgetKit extension (TodayStatsWidget, NextWorkoutWidget, WidgetDataStore)
 
 ---
 
-## Next Steps — Session 5
+## Next Steps — Session 6
 
-Priority order (from NEXT_SESSION.md):
-1. **Section 16 — Gym Tracker Part B**: RoutineBuilderView, PersonalRecordView, BodyMeasurementView, GymProgressView (charts), WorkoutTemplates
-2. **Section 9 — HealthKit integration depth**: Sync workout stats back from HealthKit, sleep, HRV, VO2 max reads for HomeView dashboard
-3. **Section 10 — Notifications**: UNUserNotificationCenter, workout reminders, achievement notifications, streak alerts
-4. **Section 11 — Widget extension**: WidgetKit target, today's stats widget, next workout widget
-5. **Fix Kinetics.entitlements**: Re-add `com.apple.developer.healthkit: true` and `com.apple.developer.healthkit.background-delivery: true` (stripped by hook)
+Priority order:
+1. **Section 12 — App Store prep**: App icon, Launch screen, privacy manifest (PrivacyInfo.xcprivacy), screenshot assets
+2. **Section 13 — Onboarding polish**: HealthKit permission request on first launch, notification permission on onboarding completion
+3. **Fix entitlements hook**: The post-tool-use hook strips entitlements. Options:
+   - Disable the XML formatter hook for `.entitlements` files
+   - Manually re-add capabilities in Xcode GUI (HealthKit + App Groups)
+4. **Firebase Analytics depth**: Add `module_session_started`, `module_session_completed` events to all 4 sport modules
+5. **Deep link support**: Universal links and widget tap → navigate to relevant screen
 
-### Session 5 start prompt:
+### Session 6 start prompt:
 ```
-Read state.md first. Session 4 complete — front camera toggle, GPS Track module, social layer, Gym Tracker Part A all built and committed.
+Read state.md first. Session 5 complete — Gym Tracker Part B, HealthKit dashboard, notifications, WidgetKit all built and pushed.
 
-Session 5 priorities:
-1. Section 16 — Gym Tracker Part B: RoutineBuilderView, PersonalRecordView, GymProgressView with Swift Charts, WorkoutTemplates. Spawn parallel agents.
-2. Fix Kinetics.entitlements HealthKit keys.
-3. Section 9 — HealthKit depth reads for HomeView dashboard.
+Session 6 priorities:
+1. Section 12 — App Store prep: privacy manifest, app icon placeholder, Launch screen config
+2. Section 13 — Onboarding polish: HealthKit + notification permission gates
+3. Firebase Analytics events for all 4 sport modules
+4. Fix entitlements hook issue (or document workaround)
 
 Always spawn maximum parallel agents. Commit after every feature. Never delete files.
 ```
@@ -165,12 +174,13 @@ Always spawn maximum parallel agents. Commit after every feature. Never delete f
 1. Open `Kinetics.xcodeproj` in Xcode
 2. Select your iPhone as target device
 3. Signing & Capabilities → Team → select your Apple ID
-4. Build & Run (⌘R)
-5. Trust developer certificate in Settings → General → VPN & Device Management
+4. For device builds: manually add HealthKit + App Groups capabilities (hook strips entitlements)
+5. Build & Run (⌘R)
+6. Trust developer certificate in Settings → General → VPN & Device Management
 
 If new Swift files are added and Xcode can't find them: run `xcodegen generate` in the project root.
 
 ## File Count Summary
 
-**Total Swift files:** ~60+
-**New in Session 4:** 18 files (front camera mods + Track module + Social module + Gym Tracker)
+**Total Swift files:** ~75+
+**New in Session 5:** 7 files (RoutineBuilderView, PersonalRecordsView, GymProgressView, NotificationService, NotificationSettingsView, WidgetDataStore, KineticsWidget)

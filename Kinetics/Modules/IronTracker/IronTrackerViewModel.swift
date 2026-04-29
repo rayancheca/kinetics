@@ -43,6 +43,23 @@ final class IronTrackerViewModel {
     /// Non-nil when a Vision or camera error has occurred.
     var errorMessage: String?
 
+    /// The result of the most recently completed session; populated after `endSession` saves.
+    var lastCompletedSession: SessionResult?
+
+    /// Elapsed session time formatted as M:SS for display.
+    var formattedDuration: String {
+        let total = Int(sessionDuration)
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
+    /// A real-time coaching cue derived from the current frame metrics.
+    var coachingCue: String {
+        if metrics.isButtWink { return "Brace your core — prevent lumbar flexion at the bottom" }
+        if metrics.isKneeCave { return "Drive your knees out — align them over your toes" }
+        if metrics.isSymmetryAlert { return "Rebalance — one side is leading the lift" }
+        return "Good form — focus on bar speed"
+    }
+
     /// Set from the View's `GeometryReader` on every layout pass.
     ///
     /// Passed to `IronTrackerAnalytics.analyze` so `calculateSpeedMS` can convert
@@ -132,6 +149,7 @@ final class IronTrackerViewModel {
         )
 
         try? await SessionRepository.shared.save(result)
+        lastCompletedSession = result
     }
 
     /// Cancels the active processing and duration tasks and clears session state

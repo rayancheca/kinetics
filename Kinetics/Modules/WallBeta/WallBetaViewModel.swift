@@ -44,6 +44,23 @@ final class WallBetaViewModel {
     /// Non-nil when an unrecoverable camera or Vision error has occurred.
     private(set) var errorMessage: String?
 
+    /// The result of the most recently completed session; populated after `endSession` saves.
+    var lastCompletedSession: SessionResult?
+
+    /// Elapsed session time formatted as M:SS for display.
+    var formattedDuration: String {
+        let total = Int(sessionDuration)
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
+    /// A real-time coaching cue derived from the current frame metrics.
+    var coachingCue: String {
+        if metrics.isHipSag { return "Engage your core — prevent your hips from dropping away from the wall" }
+        if metrics.hipProximityScore < 40 { return "Push your hips closer to the wall to shift weight onto your feet" }
+        if metrics.hipProximityScore < 70 { return "Good proximity — try to keep your hips in and your arms straight" }
+        return "Excellent technique — hips close, weight on feet"
+    }
+
     // MARK: - Private — Frame-Level State
 
     /// Dedicated Vision engine for this module. Re-created on each session start so
@@ -161,6 +178,7 @@ final class WallBetaViewModel {
 
         do {
             try await SessionRepository.shared.save(result)
+            lastCompletedSession = result
         } catch {
             // Non-fatal — the session result may not persist but the app stays stable.
             errorMessage = "Session could not be saved: \(error.localizedDescription)"

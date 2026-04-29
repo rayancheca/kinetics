@@ -30,6 +30,23 @@ final class StrikingViewModel {
     /// Non-nil when a Vision or camera error has occurred.
     var errorMessage: String?
 
+    /// The result of the most recently completed session; populated after `endSession` saves.
+    var lastCompletedSession: SessionResult?
+
+    /// Elapsed session time formatted as M:SS for display.
+    var formattedDuration: String {
+        let total = Int(sessionDuration)
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
+    /// A real-time coaching cue derived from the current frame metrics.
+    var coachingCue: String {
+        if metrics.peakVelocityMPH < 10 { return "Engage your rear foot — push off the ground before rotating" }
+        if metrics.kinematicScore < 50 { return "Hips first! Rotate before your shoulder moves" }
+        if metrics.hipShoulderSeparation < 20 { return "Load up — twist further before releasing the strike" }
+        return "Great chain — feel that hip-to-shoulder sequence"
+    }
+
     // MARK: - Private
 
     private let poseEngine = PoseDetectionEngine()
@@ -111,6 +128,7 @@ final class StrikingViewModel {
         )
 
         try? await SessionRepository.shared.save(result)
+        lastCompletedSession = result
     }
 
     /// Cancels the active processing and duration tasks and clears session state

@@ -53,6 +53,27 @@ enum SportType: String, Codable, CaseIterable, Sendable {
     }
 }
 
+// MARK: - CoachingNote
+
+/// A single piece of AI-generated coaching feedback attached to a completed session.
+///
+/// `category` drives visual treatment in the UI (achievement vs. technique correction vs.
+/// consistency prompt). `metricKey` / `metricValue` allow the UI to highlight the specific
+/// data point that triggered this note.
+struct CoachingNote: Codable, Sendable, Identifiable {
+    var id: String = UUID().uuidString
+    /// Drives visual styling: "technique", "achievement", "strength", "consistency".
+    let category: String
+    /// SF Symbol name for the note's leading icon.
+    let icon: String
+    let headline: String
+    let detail: String
+    /// The `metrics` dictionary key that triggered this note, if any.
+    let metricKey: String?
+    /// The raw metric value that triggered this note, if any.
+    let metricValue: Double?
+}
+
 // MARK: - SessionResult
 
 /// A completed analysis session, persisted to Firestore and cached locally via SwiftData.
@@ -77,6 +98,15 @@ struct SessionResult: Codable, Identifiable, Sendable {
     var metrics: [String: Double]
     /// Firebase Auth UID of the owning user.
     var userId: String
+
+    // MARK: Coaching Fields (optional — default values keep old Firestore documents decodable)
+
+    /// AI-generated coaching notes produced by `CoachingEngine` after session analysis.
+    var coachingNotes: [CoachingNote] = []
+    /// 1-based ordinal indicating how many sessions the user has completed for this sport.
+    var sessionNumber: Int = 1
+    /// Personal-best values keyed by metric name, snapshot at the time this session was saved.
+    var personalBests: [String: Double] = [:]
 
     // MARK: - Formatted Properties
 

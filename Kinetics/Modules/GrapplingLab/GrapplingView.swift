@@ -21,6 +21,10 @@ struct GrapplingView: View {
     // MARK: Private State
 
     @State private var viewModel = GrapplingViewModel()
+    @AppStorage("seen_grappling_onboarding") private var hasSeenOnboarding = false
+    @State private var showOnboarding = false
+    @State private var showReport = false
+    @State private var isLivePulsing = false
 
     // MARK: Body
 
@@ -53,10 +57,38 @@ struct GrapplingView: View {
         .task {
             await viewModel.startProcessing(with: appState.cameraManager)
         }
+        .onAppear {
+            if !hasSeenOnboarding { showOnboarding = true }
+            isLivePulsing = true
+        }
+        .sheet(isPresented: $showOnboarding) {
+            GrapplingOnboardingView(onDismiss: {
+                hasSeenOnboarding = true
+                showOnboarding = false
+            })
+        }
+        .fullScreenCover(isPresented: $showReport) {
+            if let s = viewModel.lastCompletedSession {
+                NavigationStack {
+                    GrapplingSessionReportView(result: s, previousSessions: [])
+                }
+            }
+        }
         .overlay(alignment: .topLeading) {
             backButton
                 .padding(.top, 56)
                 .padding(.leading, 16)
+        }
+        .overlay(alignment: .topTrailing) {
+            Button {
+                showOnboarding = true
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(Color.white.opacity(0.75))
+            }
+            .padding(.top, 62)
+            .padding(.trailing, 16)
         }
         .alert(
             "Camera Error",
@@ -201,6 +233,7 @@ struct GrapplingView: View {
                 )
                 viewModel.stopProcessing()
                 appState.cameraManager.stopSession()
+                if viewModel.lastCompletedSession != nil { showReport = true }
                 dismiss()
             }
         } label: {
@@ -271,7 +304,7 @@ struct GrapplingView: View {
             .frame(width: 1, height: 36)
     }
 
-    /// Secondary rows: base stability and session timer.
+    /// Secondary rows: base stability, session timer, and coaching cue.
     private var secondaryMetricRows: some View {
         VStack(spacing: 6) {
             MetricRow(
@@ -279,11 +312,37 @@ struct GrapplingView: View {
                 value: viewModel.metrics.baseStabilityDisplay,
                 color: viewModel.metrics.isBaseStable ? Color.kineticsGreen : Color.kineticsRed
             )
-            MetricRow(
-                label: "Session",
-                value: formattedDuration,
-                color: Color.white.opacity(0.80)
-            )
+            if viewModel.isSessionActive {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 6, height: 6)
+                        .shadow(color: .red.opacity(0.8), radius: 4)
+                        .scaleEffect(isLivePulsing ? 1.3 : 1.0)
+                        .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isLivePulsing)
+                    Text(formattedDuration)
+                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Text("SESSION")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.50))
+                        .tracking(1.0)
+                }
+                .padding(.horizontal, 4)
+            } else {
+                MetricRow(
+                    label: "Session",
+                    value: formattedDuration,
+                    color: Color.white.opacity(0.80)
+                )
+            }
+            Text(viewModel.coachingCue)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white.opacity(0.65))
+                .multilineTextAlignment(.center)
+                .padding(.top, 2)
+                .animation(.easeInOut(duration: 0.4), value: viewModel.coachingCue)
         }
     }
 

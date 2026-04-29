@@ -22,6 +22,13 @@ struct StrikingView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = StrikingViewModel()
 
+    // MARK: - Onboarding / Report State
+
+    @AppStorage("seen_striking_onboarding") private var hasSeenOnboarding = false
+    @State private var showOnboarding = false
+    @State private var showReport = false
+    @State private var isLivePulsing = false
+
     // MARK: - Flash State
 
     @State private var showStrikeFlash = false
@@ -51,9 +58,26 @@ struct StrikingView: View {
         .task {
             await viewModel.startProcessing(with: appState.cameraManager)
         }
+        .onAppear {
+            if !hasSeenOnboarding { showOnboarding = true }
+            isLivePulsing = true
+        }
         .onDisappear {
             viewModel.stopProcessing()
             appState.cameraManager.stopSession()
+        }
+        .sheet(isPresented: $showOnboarding) {
+            StrikingOnboardingView(onDismiss: {
+                hasSeenOnboarding = true
+                showOnboarding = false
+            })
+        }
+        .fullScreenCover(isPresented: $showReport) {
+            if let s = viewModel.lastCompletedSession {
+                NavigationStack {
+                    StrikingSessionReportView(result: s, previousSessions: [])
+                }
+            }
         }
         .overlay {
             if viewModel.isSessionActive && viewModel.currentPose == nil {
@@ -145,19 +169,45 @@ struct StrikingView: View {
     }
 
     private var sessionTimerBadge: some View {
-        Text(formattedDuration)
-            .font(.system(.caption, design: .monospaced, weight: .medium))
-            .foregroundStyle(Color.white.opacity(0.75))
-            .padding(.horizontal, 11)
-            .padding(.vertical, 6)
-            .background {
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                    .overlay {
+        Group {
+            if viewModel.isSessionActive {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 6, height: 6)
+                        .shadow(color: .red.opacity(0.8), radius: 4)
+                        .scaleEffect(isLivePulsing ? 1.3 : 1.0)
+                        .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isLivePulsing)
+                    Text(formattedDuration)
+                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 11)
+                .padding(.vertical, 6)
+                .background {
+                    Capsule()
+                        .fill(.ultraThinMaterial)
+                        .overlay {
+                            Capsule()
+                                .fill(Color.black.opacity(0.35))
+                        }
+                }
+            } else {
+                Text(formattedDuration)
+                    .font(.system(.caption, design: .monospaced, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.75))
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 6)
+                    .background {
                         Capsule()
-                            .fill(Color.black.opacity(0.35))
+                            .fill(.ultraThinMaterial)
+                            .overlay {
+                                Capsule()
+                                    .fill(Color.black.opacity(0.35))
+                            }
                     }
             }
+        }
     }
 
     private var formattedDuration: String {
@@ -237,6 +287,14 @@ struct StrikingView: View {
                     )
                 }
                 .padding(.horizontal, 4)
+
+                // ── Coaching cue ───────────────────────────────────────────
+                Text(viewModel.coachingCue)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.65))
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 4)
+                    .animation(.easeInOut(duration: 0.4), value: viewModel.coachingCue)
             }
             .animation(.easeInOut(duration: 0.2), value: viewModel.metrics.isStrikeDetected)
         }
@@ -268,6 +326,7 @@ struct StrikingView: View {
                 Task {
                     let uid = appState.authManager.currentUser?.uid ?? "anonymous"
                     await viewModel.endSession(userId: uid)
+                    if viewModel.lastCompletedSession != nil { showReport = true }
                     dismiss()
                 }
             } label: {
@@ -278,6 +337,16 @@ struct StrikingView: View {
                         .font(.system(size: 15, weight: .medium))
                 }
                 .foregroundStyle(Color.kineticsRed)
+            }
+        }
+
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button {
+                showOnboarding = true
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(Color.white.opacity(0.75))
             }
         }
     }

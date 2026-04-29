@@ -7,7 +7,7 @@ struct KineticsApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomeView()
+            MainTabView()
                 .environment(appState)
                 .preferredColorScheme(.dark)
         }

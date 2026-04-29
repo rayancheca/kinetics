@@ -38,6 +38,23 @@ final class GrapplingViewModel {
     /// Non-nil when an unrecoverable error occurs (camera denied, Vision failure).
     private(set) var errorMessage: String?
 
+    /// The result of the most recently completed session; populated after `endSession` saves.
+    var lastCompletedSession: SessionResult?
+
+    /// Elapsed session time formatted as M:SS for display.
+    var formattedDuration: String {
+        let total = Int(sessionDuration)
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
+    /// A real-time coaching cue derived from the current frame metrics.
+    var coachingCue: String {
+        if metrics.isPosturalAlert { return "Centre of mass is outside your base — widen your stance" }
+        if metrics.kuzushiIndex < 40 { return "Establish grips before engaging — create kuzushi first" }
+        if metrics.spineAngleDegrees > 30 { return "Stay upright — a tall spine gives you more leverage options" }
+        return "Good structure — look for the opening"
+    }
+
     // MARK: - Private State
 
     /// Dedicated Vision engine instance for this module. Re-created on each session
@@ -122,6 +139,7 @@ final class GrapplingViewModel {
 
         do {
             try await SessionRepository.shared.save(result)
+            lastCompletedSession = result
         } catch {
             // Non-fatal — session data may not persist but the app should remain stable.
             errorMessage = "Session could not be saved: \(error.localizedDescription)"

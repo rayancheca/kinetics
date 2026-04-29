@@ -24,6 +24,10 @@ struct IronTrackerView: View {
     // MARK: State
 
     @State private var viewModel = IronTrackerViewModel()
+    @AppStorage("seen_iron_tracker_onboarding") private var hasSeenOnboarding = false
+    @State private var showOnboarding = false
+    @State private var showReport = false
+    @State private var isLivePulsing = false
 
     // MARK: Body
 
@@ -54,12 +58,30 @@ struct IronTrackerView: View {
         .task {
             await viewModel.startProcessing(with: appState.cameraManager)
         }
+        .onAppear {
+            if !hasSeenOnboarding { showOnboarding = true }
+            isLivePulsing = true
+        }
         .onDisappear {
             Task {
                 let uid = appState.authManager.currentUser?.uid ?? "anonymous"
                 viewModel.stopProcessing()
                 await viewModel.endSession(userId: uid)
                 appState.cameraManager.stopSession()
+                if viewModel.lastCompletedSession != nil { showReport = true }
+            }
+        }
+        .sheet(isPresented: $showOnboarding) {
+            IronTrackerOnboardingView(onDismiss: {
+                hasSeenOnboarding = true
+                showOnboarding = false
+            })
+        }
+        .fullScreenCover(isPresented: $showReport) {
+            if let s = viewModel.lastCompletedSession {
+                NavigationStack {
+                    IronTrackerSessionReportView(result: s, previousSessions: [])
+                }
             }
         }
         .overlay {
@@ -233,12 +255,34 @@ struct IronTrackerView: View {
                     Spacer()
                         .frame(width: 24)
 
-                    MetricRow(
-                        label: "Time",
-                        value: formattedDuration,
-                        color: .white
-                    )
+                    if viewModel.isSessionActive {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 6, height: 6)
+                                .shadow(color: .red.opacity(0.8), radius: 4)
+                                .scaleEffect(isLivePulsing ? 1.3 : 1.0)
+                                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isLivePulsing)
+                            Text(formattedDuration)
+                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(.white)
+                        }
+                    } else {
+                        MetricRow(
+                            label: "Time",
+                            value: formattedDuration,
+                            color: .white
+                        )
+                    }
                 }
+
+                // Coaching cue
+                Text(viewModel.coachingCue)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.65))
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 2)
+                    .animation(.easeInOut(duration: 0.4), value: viewModel.coachingCue)
             }
         }
     }
@@ -252,6 +296,15 @@ struct IronTrackerView: View {
                 text: viewModel.isSessionActive ? "Live" : "Ready",
                 isActive: viewModel.isSessionActive
             )
+        }
+        ToolbarItem(placement: .topBarLeading) {
+            Button {
+                showOnboarding = true
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(Color.white.opacity(0.75))
+            }
         }
     }
 

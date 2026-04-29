@@ -76,6 +76,16 @@ final class SessionRepository: Sendable {
         }
     }
 
+    // MARK: - Delete
+
+    /// Deletes a single session document from the user-scoped Firestore subcollection.
+    /// No-ops silently when Firebase is not configured.
+    func deleteSession(id: String, userId: String) async throws {
+        guard isFirebaseReady else { return }
+        let db = Firestore.firestore()
+        try await db.collection("users").document(userId).collection("sessions").document(id).delete()
+    }
+
     // MARK: - Analytics: Session Started
 
     /// Call this when the user begins a session, before recording starts.

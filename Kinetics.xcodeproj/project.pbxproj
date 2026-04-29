@@ -10,12 +10,16 @@
 		0FC3C27122B7C7C1C81A087B /* Color+Kinetics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */; };
 		1088DCBF512BA3FBC2F0C253 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CF8E2F952DD6ED295C43EA /* HomeView.swift */; };
 		112FAFFB42872D754E3C11FA /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */; };
+		1E21073D8ED01D1A90EAACFF /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D997E6E4FF21198B9123A2 /* ProfileView.swift */; };
 		2AD660E8DBBF5FFCB432177C /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9008B990FE65CFFFF7F53EAB /* AppState.swift */; };
 		31A6EE899D6BC52F5BA390BC /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD8F79988934C12079F95AB /* CameraPreviewView.swift */; };
+		31E7709CD8F8F3A1BDA2F934 /* IronTrackerOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D55ACDFDD83069A1295A1A56 /* IronTrackerOnboardingView.swift */; };
 		3300EFFCE9804BAF5F44B668 /* IronTrackerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */; };
 		36C562E05CC0A22264FECAF9 /* StrikingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DFCCE7474CEB92525C504A /* StrikingViewModel.swift */; };
 		3AAECFFD09059C41182B79E5 /* StrikingAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC755859D4AAA319C9102DB8 /* StrikingAnalytics.swift */; };
+		3C7A9650D2ADA2154F15CAB3 /* WallBetaSessionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AF3E9A65842F2A2BC6C4401 /* WallBetaSessionReportView.swift */; };
 		3E7C8B554DAF17E48A36CF23 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDDDA7CCAF6D2485D5D25F7 /* AuthManager.swift */; };
+		43999AD8C7DF4E87C1B0E859 /* GrapplingSessionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C47432F57057C58AB5AF1802 /* GrapplingSessionReportView.swift */; };
 		44685076B7F87358B2808006 /* WallBetaViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8CDBB4B81075781F23B9E68 /* WallBetaViewModel.swift */; };
 		448F9B65DC78550E389E5B4D /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 0F69E24E87E8F14089DDF2CC /* FirebaseAnalytics */; };
 		4800590EB918C41C35699399 /* WallBetaAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18D06C3B0FC7C077782C8964 /* WallBetaAnalytics.swift */; };
@@ -26,42 +30,55 @@
 		65AF90F6886E1FB4A948F130 /* PoseDetectionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE95815B031AA4940A863EE /* PoseDetectionEngine.swift */; };
 		6AD7786B7AEE29FEE451DC22 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = C4CED923C35612DDE1BFAD9F /* FirebaseAuth */; };
 		6DB9F094B9B3D5F739C3FC27 /* GrapplingAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB1F0F7FD8AD724C05CEEBE /* GrapplingAnalytics.swift */; };
+		71464CCA100C4F34CAC9633B /* OnboardingMetricRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91AF016B55595E5A3008382C /* OnboardingMetricRow.swift */; };
 		72CA7F4E153888A87089D1C2 /* PoseOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */; };
 		7377A50BF3E4F6147E41AD89 /* WallBetaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 344EC78E25549C9A891871A6 /* WallBetaView.swift */; };
+		7B4066A954E393ECF3628611 /* StrikingSessionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB9351DAC698CFD29E7C89D8 /* StrikingSessionReportView.swift */; };
+		80540CFE2336B7C01E02211C /* CoachingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63D18F45C130B389B898CD57 /* CoachingEngine.swift */; };
 		86FB595B448BF9FE7E537B63 /* TrajectoryPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931EAA20F1D0BE1F51C8ACAB /* TrajectoryPath.swift */; };
 		8B32DBDDAC4BECC125DD9427 /* MetricsCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */; };
+		8ED4D22F1E0D4AD1C9EFA28E /* WallBetaOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49B757EAB9FE8AA2EA6BFBF /* WallBetaOnboardingView.swift */; };
 		98C0AED100800BD8EA5FE78B /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4444A68F70A599ECA48403BE /* SessionRepository.swift */; };
 		A1F9B0AF1252345E962F76C8 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F7902015FAF42D59AEF1E6 /* CameraManager.swift */; };
 		A4E9C776BB171B6613E9ED20 /* SessionHistoryRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */; };
+		AD1940CAB68916B38A79570F /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9EC3A501E98D2D04B904ABB /* MainTabView.swift */; };
 		AE091BA3A0E856C1E7FBE128 /* BiomechanicsCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57776DF779A9EF196FF0099B /* BiomechanicsCalculator.swift */; };
 		BB26387B878693EE71C9C95A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */; };
 		CB6BECC8855AE1CEEABAA02E /* SessionResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63DE416D081F3C588AC652A3 /* SessionResult.swift */; };
 		CBD5745D36354446FB741AE0 /* StrikingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB80A5C42F07AC82B0487B /* StrikingView.swift */; };
 		D4D833C1CD725F485BF5827C /* GrapplingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */; };
 		DA2AA3C77D50FCE82C91B928 /* IronTrackerAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3572F2B97B5DEC018B4829E7 /* IronTrackerAnalytics.swift */; };
+		E17AF55DA7AC09125EE4669B /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */; };
+		E4DC3B328F23443705BCE86A /* GrapplingOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52A53BDDF7AD6CAA2F4E282 /* GrapplingOnboardingView.swift */; };
+		F2BF7D9E611D9C7C8554DB30 /* IronTrackerSessionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECE0D529563112634E110515 /* IronTrackerSessionReportView.swift */; };
+		F3C7D67C0CD2853294BC67D9 /* TrainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90F5D52A2B4BD6611D7FD00 /* TrainView.swift */; };
+		F49F31E064DD1C9596B014AC /* StrikingOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A05C80397FFC400824161B /* StrikingOnboardingView.swift */; };
 		F78FC26BC5B4F42C0099A839 /* KineticsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3648047108B6B4CA0E33C4CF /* KineticsApp.swift */; };
-		AA3E9EE31E27446785F977FD /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2407902082241CE8E361E62 /* GoogleService-Info.plist */; };
-		735E2C5A1E3341B8BB0637EF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4ECF1E630B7345138DC6AE91 /* Assets.xcassets */; };
+		FDBD12D7A1E09F769C5884E1 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC032562411DDDC1ED7D376 /* HistoryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		04CF8E2F952DD6ED295C43EA /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		05FB80A5C42F07AC82B0487B /* StrikingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingView.swift; sourceTree = "<group>"; };
 		0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Kinetics.swift"; sourceTree = "<group>"; };
+		0DC032562411DDDC1ED7D376 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerViewModel.swift; sourceTree = "<group>"; };
+		17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
 		18D06C3B0FC7C077782C8964 /* WallBetaAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaAnalytics.swift; sourceTree = "<group>"; };
 		1BD8F79988934C12079F95AB /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		344EC78E25549C9A891871A6 /* WallBetaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaView.swift; sourceTree = "<group>"; };
 		3572F2B97B5DEC018B4829E7 /* IronTrackerAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerAnalytics.swift; sourceTree = "<group>"; };
 		3648047108B6B4CA0E33C4CF /* KineticsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KineticsApp.swift; sourceTree = "<group>"; };
 		3D3479AF90A2F3494B2D3F50 /* TrajectoryTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrajectoryTracker.swift; sourceTree = "<group>"; };
+		43D997E6E4FF21198B9123A2 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		43F7902015FAF42D59AEF1E6 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		4444A68F70A599ECA48403BE /* SessionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRepository.swift; sourceTree = "<group>"; };
 		54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		57776DF779A9EF196FF0099B /* BiomechanicsCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiomechanicsCalculator.swift; sourceTree = "<group>"; };
 		5A4FB71C2696D6317902F821 /* IronTrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerView.swift; sourceTree = "<group>"; };
 		60CFC25313B76AA9012A0A96 /* JointPose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JointPose.swift; sourceTree = "<group>"; };
+		63D18F45C130B389B898CD57 /* CoachingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachingEngine.swift; sourceTree = "<group>"; };
 		63DE416D081F3C588AC652A3 /* SessionResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionResult.swift; sourceTree = "<group>"; };
 		6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryRow.swift; sourceTree = "<group>"; };
 		8AE95815B031AA4940A863EE /* PoseDetectionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseDetectionEngine.swift; sourceTree = "<group>"; };
@@ -69,15 +86,24 @@
 		8CB1F0F7FD8AD724C05CEEBE /* GrapplingAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingAnalytics.swift; sourceTree = "<group>"; };
 		8CDDDA7CCAF6D2485D5D25F7 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		9008B990FE65CFFFF7F53EAB /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		91AF016B55595E5A3008382C /* OnboardingMetricRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingMetricRow.swift; sourceTree = "<group>"; };
 		931EAA20F1D0BE1F51C8ACAB /* TrajectoryPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrajectoryPath.swift; sourceTree = "<group>"; };
+		9AF3E9A65842F2A2BC6C4401 /* WallBetaSessionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaSessionReportView.swift; sourceTree = "<group>"; };
+		A49B757EAB9FE8AA2EA6BFBF /* WallBetaOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaOnboardingView.swift; sourceTree = "<group>"; };
 		AC755859D4AAA319C9102DB8 /* StrikingAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingAnalytics.swift; sourceTree = "<group>"; };
+		BB9351DAC698CFD29E7C89D8 /* StrikingSessionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingSessionReportView.swift; sourceTree = "<group>"; };
 		C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingView.swift; sourceTree = "<group>"; };
+		C47432F57057C58AB5AF1802 /* GrapplingSessionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingSessionReportView.swift; sourceTree = "<group>"; };
+		C90F5D52A2B4BD6611D7FD00 /* TrainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainView.swift; sourceTree = "<group>"; };
+		D55ACDFDD83069A1295A1A56 /* IronTrackerOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerOnboardingView.swift; sourceTree = "<group>"; };
+		E52A53BDDF7AD6CAA2F4E282 /* GrapplingOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingOnboardingView.swift; sourceTree = "<group>"; };
+		E5A05C80397FFC400824161B /* StrikingOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingOnboardingView.swift; sourceTree = "<group>"; };
 		E8CDBB4B81075781F23B9E68 /* WallBetaViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaViewModel.swift; sourceTree = "<group>"; };
+		ECE0D529563112634E110515 /* IronTrackerSessionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerSessionReportView.swift; sourceTree = "<group>"; };
 		F07DA203D96B1ADD4E88F7F1 /* GrapplingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingViewModel.swift; sourceTree = "<group>"; };
 		F4DFCCE7474CEB92525C504A /* StrikingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingViewModel.swift; sourceTree = "<group>"; };
+		F9EC3A501E98D2D04B904ABB /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseOverlayView.swift; sourceTree = "<group>"; };
-		A2407902082241CE8E361E62 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		4ECF1E630B7345138DC6AE91 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +124,8 @@
 			isa = PBXGroup;
 			children = (
 				8CB1F0F7FD8AD724C05CEEBE /* GrapplingAnalytics.swift */,
+				E52A53BDDF7AD6CAA2F4E282 /* GrapplingOnboardingView.swift */,
+				C47432F57057C58AB5AF1802 /* GrapplingSessionReportView.swift */,
 				C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */,
 				F07DA203D96B1ADD4E88F7F1 /* GrapplingViewModel.swift */,
 			);
@@ -127,6 +155,7 @@
 		1DBBE7E53ECFD6CF81AC88E6 /* Modules */ = {
 			isa = PBXGroup;
 			children = (
+				C90F5D52A2B4BD6611D7FD00 /* TrainView.swift */,
 				0D3316917AB164AB306F0212 /* GrapplingLab */,
 				DF7713EBD259B82C29A9F65A /* IronTracker */,
 				7B7BBC68A7C5DE469BFC2107 /* StrikingClinic */,
@@ -162,18 +191,8 @@
 				FE8C116C97DB23818D059A1C /* Home */,
 				1DBBE7E53ECFD6CF81AC88E6 /* Modules */,
 				BA34FFB5D046EAD7A03EBC9B /* Shared */,
-				B1C9F4A2D8E34F1799A06B53 /* Resources */,
 			);
 			path = Kinetics;
-			sourceTree = "<group>";
-		};
-		B1C9F4A2D8E34F1799A06B53 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				A2407902082241CE8E361E62 /* GoogleService-Info.plist */,
-				4ECF1E630B7345138DC6AE91 /* Assets.xcassets */,
-			);
-			path = Resources;
 			sourceTree = "<group>";
 		};
 		3864CE24244FBF9109D2160F /* App */ = {
@@ -181,6 +200,7 @@
 			children = (
 				9008B990FE65CFFFF7F53EAB /* AppState.swift */,
 				3648047108B6B4CA0E33C4CF /* KineticsApp.swift */,
+				F9EC3A501E98D2D04B904ABB /* MainTabView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -198,6 +218,7 @@
 			children = (
 				1BD8F79988934C12079F95AB /* CameraPreviewView.swift */,
 				8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */,
+				91AF016B55595E5A3008382C /* OnboardingMetricRow.swift */,
 				F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */,
 				6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */,
 			);
@@ -208,6 +229,8 @@
 			isa = PBXGroup;
 			children = (
 				AC755859D4AAA319C9102DB8 /* StrikingAnalytics.swift */,
+				E5A05C80397FFC400824161B /* StrikingOnboardingView.swift */,
+				BB9351DAC698CFD29E7C89D8 /* StrikingSessionReportView.swift */,
 				05FB80A5C42F07AC82B0487B /* StrikingView.swift */,
 				F4DFCCE7474CEB92525C504A /* StrikingViewModel.swift */,
 			);
@@ -218,6 +241,7 @@
 			isa = PBXGroup;
 			children = (
 				57776DF779A9EF196FF0099B /* BiomechanicsCalculator.swift */,
+				63D18F45C130B389B898CD57 /* CoachingEngine.swift */,
 			);
 			path = Analytics;
 			sourceTree = "<group>";
@@ -226,6 +250,8 @@
 			isa = PBXGroup;
 			children = (
 				18D06C3B0FC7C077782C8964 /* WallBetaAnalytics.swift */,
+				A49B757EAB9FE8AA2EA6BFBF /* WallBetaOnboardingView.swift */,
+				9AF3E9A65842F2A2BC6C4401 /* WallBetaSessionReportView.swift */,
 				344EC78E25549C9A891871A6 /* WallBetaView.swift */,
 				E8CDBB4B81075781F23B9E68 /* WallBetaViewModel.swift */,
 			);
@@ -243,6 +269,9 @@
 		BA34FFB5D046EAD7A03EBC9B /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				0DC032562411DDDC1ED7D376 /* HistoryView.swift */,
+				43D997E6E4FF21198B9123A2 /* ProfileView.swift */,
+				17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */,
 				6EB19D2F534A8A282AD8F151 /* Components */,
 				A4043171FE92E36E6D8F3036 /* Extensions */,
 			);
@@ -262,6 +291,8 @@
 			isa = PBXGroup;
 			children = (
 				3572F2B97B5DEC018B4829E7 /* IronTrackerAnalytics.swift */,
+				D55ACDFDD83069A1295A1A56 /* IronTrackerOnboardingView.swift */,
+				ECE0D529563112634E110515 /* IronTrackerSessionReportView.swift */,
 				5A4FB71C2696D6317902F821 /* IronTrackerView.swift */,
 				17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */,
 			);
@@ -284,7 +315,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = BFFD0799B8B9186B37682FD2 /* Build configuration list for PBXNativeTarget "Kinetics" */;
 			buildPhases = (
-				C7D4F9A1E3B54F2A8B1C6D08 /* Resources */,
 				FC13FF98C07B93D6D17F9E25 /* Sources */,
 				38910400C9BF7C3AF1620A86 /* Frameworks */,
 			);
@@ -349,47 +379,50 @@
 				AE091BA3A0E856C1E7FBE128 /* BiomechanicsCalculator.swift in Sources */,
 				A1F9B0AF1252345E962F76C8 /* CameraManager.swift in Sources */,
 				31A6EE899D6BC52F5BA390BC /* CameraPreviewView.swift in Sources */,
+				80540CFE2336B7C01E02211C /* CoachingEngine.swift in Sources */,
 				0FC3C27122B7C7C1C81A087B /* Color+Kinetics.swift in Sources */,
 				6DB9F094B9B3D5F739C3FC27 /* GrapplingAnalytics.swift in Sources */,
+				E4DC3B328F23443705BCE86A /* GrapplingOnboardingView.swift in Sources */,
+				43999AD8C7DF4E87C1B0E859 /* GrapplingSessionReportView.swift in Sources */,
 				D4D833C1CD725F485BF5827C /* GrapplingView.swift in Sources */,
 				511809C053541BB8B230D4ED /* GrapplingViewModel.swift in Sources */,
+				FDBD12D7A1E09F769C5884E1 /* HistoryView.swift in Sources */,
 				1088DCBF512BA3FBC2F0C253 /* HomeView.swift in Sources */,
 				112FAFFB42872D754E3C11FA /* HomeViewModel.swift in Sources */,
 				DA2AA3C77D50FCE82C91B928 /* IronTrackerAnalytics.swift in Sources */,
+				31E7709CD8F8F3A1BDA2F934 /* IronTrackerOnboardingView.swift in Sources */,
+				F2BF7D9E611D9C7C8554DB30 /* IronTrackerSessionReportView.swift in Sources */,
 				53A2FBFDFE9EC40662AEDA69 /* IronTrackerView.swift in Sources */,
 				3300EFFCE9804BAF5F44B668 /* IronTrackerViewModel.swift in Sources */,
 				58D7D9A2550728717E6BD0AA /* JointPose.swift in Sources */,
 				F78FC26BC5B4F42C0099A839 /* KineticsApp.swift in Sources */,
+				AD1940CAB68916B38A79570F /* MainTabView.swift in Sources */,
 				8B32DBDDAC4BECC125DD9427 /* MetricsCardView.swift in Sources */,
+				71464CCA100C4F34CAC9633B /* OnboardingMetricRow.swift in Sources */,
 				65AF90F6886E1FB4A948F130 /* PoseDetectionEngine.swift in Sources */,
 				72CA7F4E153888A87089D1C2 /* PoseOverlayView.swift in Sources */,
+				1E21073D8ED01D1A90EAACFF /* ProfileView.swift in Sources */,
+				E17AF55DA7AC09125EE4669B /* SessionDetailView.swift in Sources */,
 				A4E9C776BB171B6613E9ED20 /* SessionHistoryRow.swift in Sources */,
 				98C0AED100800BD8EA5FE78B /* SessionRepository.swift in Sources */,
 				CB6BECC8855AE1CEEABAA02E /* SessionResult.swift in Sources */,
 				3AAECFFD09059C41182B79E5 /* StrikingAnalytics.swift in Sources */,
+				F49F31E064DD1C9596B014AC /* StrikingOnboardingView.swift in Sources */,
+				7B4066A954E393ECF3628611 /* StrikingSessionReportView.swift in Sources */,
 				CBD5745D36354446FB741AE0 /* StrikingView.swift in Sources */,
 				36C562E05CC0A22264FECAF9 /* StrikingViewModel.swift in Sources */,
+				F3C7D67C0CD2853294BC67D9 /* TrainView.swift in Sources */,
 				86FB595B448BF9FE7E537B63 /* TrajectoryPath.swift in Sources */,
 				5A7D41C9A6C3862567130171 /* TrajectoryTracker.swift in Sources */,
 				4800590EB918C41C35699399 /* WallBetaAnalytics.swift in Sources */,
+				8ED4D22F1E0D4AD1C9EFA28E /* WallBetaOnboardingView.swift in Sources */,
+				3C7A9650D2ADA2154F15CAB3 /* WallBetaSessionReportView.swift in Sources */,
 				7377A50BF3E4F6147E41AD89 /* WallBetaView.swift in Sources */,
 				44685076B7F87358B2808006 /* WallBetaViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXResourcesBuildPhase section */
-		C7D4F9A1E3B54F2A8B1C6D08 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				AA3E9EE31E27446785F977FD /* GoogleService-Info.plist in Resources */,
-				735E2C5A1E3341B8BB0637EF /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXResourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		20688BC78AF6071C7434B32C /* Debug */ = {

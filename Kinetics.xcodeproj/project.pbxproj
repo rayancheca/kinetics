@@ -40,6 +40,8 @@
 		D4D833C1CD725F485BF5827C /* GrapplingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */; };
 		DA2AA3C77D50FCE82C91B928 /* IronTrackerAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3572F2B97B5DEC018B4829E7 /* IronTrackerAnalytics.swift */; };
 		F78FC26BC5B4F42C0099A839 /* KineticsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3648047108B6B4CA0E33C4CF /* KineticsApp.swift */; };
+		AA3E9EE31E27446785F977FD /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2407902082241CE8E361E62 /* GoogleService-Info.plist */; };
+		735E2C5A1E3341B8BB0637EF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4ECF1E630B7345138DC6AE91 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -74,6 +76,8 @@
 		F07DA203D96B1ADD4E88F7F1 /* GrapplingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingViewModel.swift; sourceTree = "<group>"; };
 		F4DFCCE7474CEB92525C504A /* StrikingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingViewModel.swift; sourceTree = "<group>"; };
 		F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseOverlayView.swift; sourceTree = "<group>"; };
+		A2407902082241CE8E361E62 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		4ECF1E630B7345138DC6AE91 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -158,8 +162,18 @@
 				FE8C116C97DB23818D059A1C /* Home */,
 				1DBBE7E53ECFD6CF81AC88E6 /* Modules */,
 				BA34FFB5D046EAD7A03EBC9B /* Shared */,
+				B1C9F4A2D8E34F1799A06B53 /* Resources */,
 			);
 			path = Kinetics;
+			sourceTree = "<group>";
+		};
+		B1C9F4A2D8E34F1799A06B53 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A2407902082241CE8E361E62 /* GoogleService-Info.plist */,
+				4ECF1E630B7345138DC6AE91 /* Assets.xcassets */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		3864CE24244FBF9109D2160F /* App */ = {
@@ -270,6 +284,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = BFFD0799B8B9186B37682FD2 /* Build configuration list for PBXNativeTarget "Kinetics" */;
 			buildPhases = (
+				C7D4F9A1E3B54F2A8B1C6D08 /* Resources */,
 				FC13FF98C07B93D6D17F9E25 /* Sources */,
 				38910400C9BF7C3AF1620A86 /* Frameworks */,
 			);
@@ -363,6 +378,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C7D4F9A1E3B54F2A8B1C6D08 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA3E9EE31E27446785F977FD /* GoogleService-Info.plist in Resources */,
+				735E2C5A1E3341B8BB0637EF /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		20688BC78AF6071C7434B32C /* Debug */ = {

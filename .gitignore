@@ -1,0 +1,30 @@
+## Xcode
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/
+
+## Build products
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+## Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+
+## CocoaPods
+Pods/
+*.xcworkspace
+
+## Carthage
+Carthage/Build/
+
+## OS artifacts
+.DS_Store
+*.swp
+
+## Firebase — never commit the real plist
+# (keep the placeholder checked in; replace with your real one locally)

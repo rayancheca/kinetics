@@ -1,0 +1,588 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0FC3C27122B7C7C1C81A087B /* Color+Kinetics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */; };
+		1088DCBF512BA3FBC2F0C253 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CF8E2F952DD6ED295C43EA /* HomeView.swift */; };
+		112FAFFB42872D754E3C11FA /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */; };
+		2AD660E8DBBF5FFCB432177C /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9008B990FE65CFFFF7F53EAB /* AppState.swift */; };
+		31A6EE899D6BC52F5BA390BC /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD8F79988934C12079F95AB /* CameraPreviewView.swift */; };
+		3300EFFCE9804BAF5F44B668 /* IronTrackerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */; };
+		36C562E05CC0A22264FECAF9 /* StrikingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DFCCE7474CEB92525C504A /* StrikingViewModel.swift */; };
+		3AAECFFD09059C41182B79E5 /* StrikingAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC755859D4AAA319C9102DB8 /* StrikingAnalytics.swift */; };
+		3E7C8B554DAF17E48A36CF23 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDDDA7CCAF6D2485D5D25F7 /* AuthManager.swift */; };
+		44685076B7F87358B2808006 /* WallBetaViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8CDBB4B81075781F23B9E68 /* WallBetaViewModel.swift */; };
+		448F9B65DC78550E389E5B4D /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 0F69E24E87E8F14089DDF2CC /* FirebaseAnalytics */; };
+		4800590EB918C41C35699399 /* WallBetaAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18D06C3B0FC7C077782C8964 /* WallBetaAnalytics.swift */; };
+		511809C053541BB8B230D4ED /* GrapplingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F07DA203D96B1ADD4E88F7F1 /* GrapplingViewModel.swift */; };
+		53A2FBFDFE9EC40662AEDA69 /* IronTrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A4FB71C2696D6317902F821 /* IronTrackerView.swift */; };
+		58D7D9A2550728717E6BD0AA /* JointPose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CFC25313B76AA9012A0A96 /* JointPose.swift */; };
+		5A7D41C9A6C3862567130171 /* TrajectoryTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D3479AF90A2F3494B2D3F50 /* TrajectoryTracker.swift */; };
+		65AF90F6886E1FB4A948F130 /* PoseDetectionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE95815B031AA4940A863EE /* PoseDetectionEngine.swift */; };
+		6AD7786B7AEE29FEE451DC22 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = C4CED923C35612DDE1BFAD9F /* FirebaseAuth */; };
+		6DB9F094B9B3D5F739C3FC27 /* GrapplingAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB1F0F7FD8AD724C05CEEBE /* GrapplingAnalytics.swift */; };
+		72CA7F4E153888A87089D1C2 /* PoseOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */; };
+		7377A50BF3E4F6147E41AD89 /* WallBetaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 344EC78E25549C9A891871A6 /* WallBetaView.swift */; };
+		86FB595B448BF9FE7E537B63 /* TrajectoryPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931EAA20F1D0BE1F51C8ACAB /* TrajectoryPath.swift */; };
+		8B32DBDDAC4BECC125DD9427 /* MetricsCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */; };
+		98C0AED100800BD8EA5FE78B /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4444A68F70A599ECA48403BE /* SessionRepository.swift */; };
+		A1F9B0AF1252345E962F76C8 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F7902015FAF42D59AEF1E6 /* CameraManager.swift */; };
+		A4E9C776BB171B6613E9ED20 /* SessionHistoryRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */; };
+		AE091BA3A0E856C1E7FBE128 /* BiomechanicsCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57776DF779A9EF196FF0099B /* BiomechanicsCalculator.swift */; };
+		BB26387B878693EE71C9C95A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */; };
+		CB6BECC8855AE1CEEABAA02E /* SessionResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63DE416D081F3C588AC652A3 /* SessionResult.swift */; };
+		CBD5745D36354446FB741AE0 /* StrikingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB80A5C42F07AC82B0487B /* StrikingView.swift */; };
+		D4D833C1CD725F485BF5827C /* GrapplingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */; };
+		DA2AA3C77D50FCE82C91B928 /* IronTrackerAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3572F2B97B5DEC018B4829E7 /* IronTrackerAnalytics.swift */; };
+		F78FC26BC5B4F42C0099A839 /* KineticsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3648047108B6B4CA0E33C4CF /* KineticsApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		04CF8E2F952DD6ED295C43EA /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		05FB80A5C42F07AC82B0487B /* StrikingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingView.swift; sourceTree = "<group>"; };
+		0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Kinetics.swift"; sourceTree = "<group>"; };
+		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerViewModel.swift; sourceTree = "<group>"; };
+		18D06C3B0FC7C077782C8964 /* WallBetaAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaAnalytics.swift; sourceTree = "<group>"; };
+		1BD8F79988934C12079F95AB /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
+		344EC78E25549C9A891871A6 /* WallBetaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaView.swift; sourceTree = "<group>"; };
+		3572F2B97B5DEC018B4829E7 /* IronTrackerAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerAnalytics.swift; sourceTree = "<group>"; };
+		3648047108B6B4CA0E33C4CF /* KineticsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KineticsApp.swift; sourceTree = "<group>"; };
+		3D3479AF90A2F3494B2D3F50 /* TrajectoryTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrajectoryTracker.swift; sourceTree = "<group>"; };
+		43F7902015FAF42D59AEF1E6 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		4444A68F70A599ECA48403BE /* SessionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRepository.swift; sourceTree = "<group>"; };
+		54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
+		57776DF779A9EF196FF0099B /* BiomechanicsCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiomechanicsCalculator.swift; sourceTree = "<group>"; };
+		5A4FB71C2696D6317902F821 /* IronTrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerView.swift; sourceTree = "<group>"; };
+		60CFC25313B76AA9012A0A96 /* JointPose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JointPose.swift; sourceTree = "<group>"; };
+		63DE416D081F3C588AC652A3 /* SessionResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionResult.swift; sourceTree = "<group>"; };
+		6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryRow.swift; sourceTree = "<group>"; };
+		8AE95815B031AA4940A863EE /* PoseDetectionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseDetectionEngine.swift; sourceTree = "<group>"; };
+		8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsCardView.swift; sourceTree = "<group>"; };
+		8CB1F0F7FD8AD724C05CEEBE /* GrapplingAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingAnalytics.swift; sourceTree = "<group>"; };
+		8CDDDA7CCAF6D2485D5D25F7 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		9008B990FE65CFFFF7F53EAB /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		931EAA20F1D0BE1F51C8ACAB /* TrajectoryPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrajectoryPath.swift; sourceTree = "<group>"; };
+		AC755859D4AAA319C9102DB8 /* StrikingAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingAnalytics.swift; sourceTree = "<group>"; };
+		C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingView.swift; sourceTree = "<group>"; };
+		E8CDBB4B81075781F23B9E68 /* WallBetaViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaViewModel.swift; sourceTree = "<group>"; };
+		F07DA203D96B1ADD4E88F7F1 /* GrapplingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingViewModel.swift; sourceTree = "<group>"; };
+		F4DFCCE7474CEB92525C504A /* StrikingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingViewModel.swift; sourceTree = "<group>"; };
+		F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseOverlayView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		38910400C9BF7C3AF1620A86 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				448F9B65DC78550E389E5B4D /* FirebaseAnalytics in Frameworks */,
+				6AD7786B7AEE29FEE451DC22 /* FirebaseAuth in Frameworks */,
+				BB26387B878693EE71C9C95A /* FirebaseFirestore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0D3316917AB164AB306F0212 /* GrapplingLab */ = {
+			isa = PBXGroup;
+			children = (
+				8CB1F0F7FD8AD724C05CEEBE /* GrapplingAnalytics.swift */,
+				C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */,
+				F07DA203D96B1ADD4E88F7F1 /* GrapplingViewModel.swift */,
+			);
+			path = GrapplingLab;
+			sourceTree = "<group>";
+		};
+		10196E4DF93EB69423F06ADB /* Vision */ = {
+			isa = PBXGroup;
+			children = (
+				43F7902015FAF42D59AEF1E6 /* CameraManager.swift */,
+				8AE95815B031AA4940A863EE /* PoseDetectionEngine.swift */,
+				3D3479AF90A2F3494B2D3F50 /* TrajectoryTracker.swift */,
+			);
+			path = Vision;
+			sourceTree = "<group>";
+		};
+		1B3FA0A18D36FC662C99E694 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				8DAE9AD318C4E723455D52C0 /* Analytics */,
+				236C650DDD8488AFBB2051F3 /* Models */,
+				10196E4DF93EB69423F06ADB /* Vision */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		1DBBE7E53ECFD6CF81AC88E6 /* Modules */ = {
+			isa = PBXGroup;
+			children = (
+				0D3316917AB164AB306F0212 /* GrapplingLab */,
+				DF7713EBD259B82C29A9F65A /* IronTracker */,
+				7B7BBC68A7C5DE469BFC2107 /* StrikingClinic */,
+				953F928A7FAD0A9B77C055FE /* WallBeta */,
+			);
+			path = Modules;
+			sourceTree = "<group>";
+		};
+		236C650DDD8488AFBB2051F3 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				60CFC25313B76AA9012A0A96 /* JointPose.swift */,
+				63DE416D081F3C588AC652A3 /* SessionResult.swift */,
+				931EAA20F1D0BE1F51C8ACAB /* TrajectoryPath.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		2BBB894D975C6D838780D84E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				16DAA6C287CC5CDA16C313C2 /* Kinetics.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		333079546BCA96ECCA92EC04 /* Kinetics */ = {
+			isa = PBXGroup;
+			children = (
+				3864CE24244FBF9109D2160F /* App */,
+				1B3FA0A18D36FC662C99E694 /* Core */,
+				D49473F70C3A0FC347D9C256 /* Firebase */,
+				FE8C116C97DB23818D059A1C /* Home */,
+				1DBBE7E53ECFD6CF81AC88E6 /* Modules */,
+				BA34FFB5D046EAD7A03EBC9B /* Shared */,
+			);
+			path = Kinetics;
+			sourceTree = "<group>";
+		};
+		3864CE24244FBF9109D2160F /* App */ = {
+			isa = PBXGroup;
+			children = (
+				9008B990FE65CFFFF7F53EAB /* AppState.swift */,
+				3648047108B6B4CA0E33C4CF /* KineticsApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		3D2AADD39CDE337249E47629 = {
+			isa = PBXGroup;
+			children = (
+				333079546BCA96ECCA92EC04 /* Kinetics */,
+				2BBB894D975C6D838780D84E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		6EB19D2F534A8A282AD8F151 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				1BD8F79988934C12079F95AB /* CameraPreviewView.swift */,
+				8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */,
+				F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */,
+				6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		7B7BBC68A7C5DE469BFC2107 /* StrikingClinic */ = {
+			isa = PBXGroup;
+			children = (
+				AC755859D4AAA319C9102DB8 /* StrikingAnalytics.swift */,
+				05FB80A5C42F07AC82B0487B /* StrikingView.swift */,
+				F4DFCCE7474CEB92525C504A /* StrikingViewModel.swift */,
+			);
+			path = StrikingClinic;
+			sourceTree = "<group>";
+		};
+		8DAE9AD318C4E723455D52C0 /* Analytics */ = {
+			isa = PBXGroup;
+			children = (
+				57776DF779A9EF196FF0099B /* BiomechanicsCalculator.swift */,
+			);
+			path = Analytics;
+			sourceTree = "<group>";
+		};
+		953F928A7FAD0A9B77C055FE /* WallBeta */ = {
+			isa = PBXGroup;
+			children = (
+				18D06C3B0FC7C077782C8964 /* WallBetaAnalytics.swift */,
+				344EC78E25549C9A891871A6 /* WallBetaView.swift */,
+				E8CDBB4B81075781F23B9E68 /* WallBetaViewModel.swift */,
+			);
+			path = WallBeta;
+			sourceTree = "<group>";
+		};
+		A4043171FE92E36E6D8F3036 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		BA34FFB5D046EAD7A03EBC9B /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				6EB19D2F534A8A282AD8F151 /* Components */,
+				A4043171FE92E36E6D8F3036 /* Extensions */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		D49473F70C3A0FC347D9C256 /* Firebase */ = {
+			isa = PBXGroup;
+			children = (
+				8CDDDA7CCAF6D2485D5D25F7 /* AuthManager.swift */,
+				4444A68F70A599ECA48403BE /* SessionRepository.swift */,
+			);
+			path = Firebase;
+			sourceTree = "<group>";
+		};
+		DF7713EBD259B82C29A9F65A /* IronTracker */ = {
+			isa = PBXGroup;
+			children = (
+				3572F2B97B5DEC018B4829E7 /* IronTrackerAnalytics.swift */,
+				5A4FB71C2696D6317902F821 /* IronTrackerView.swift */,
+				17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */,
+			);
+			path = IronTracker;
+			sourceTree = "<group>";
+		};
+		FE8C116C97DB23818D059A1C /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				04CF8E2F952DD6ED295C43EA /* HomeView.swift */,
+				54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9BB8A80AA6448CB87A29DDBD /* Kinetics */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BFFD0799B8B9186B37682FD2 /* Build configuration list for PBXNativeTarget "Kinetics" */;
+			buildPhases = (
+				FC13FF98C07B93D6D17F9E25 /* Sources */,
+				38910400C9BF7C3AF1620A86 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Kinetics;
+			packageProductDependencies = (
+				0F69E24E87E8F14089DDF2CC /* FirebaseAnalytics */,
+				C4CED923C35612DDE1BFAD9F /* FirebaseAuth */,
+				BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */,
+			);
+			productName = Kinetics;
+			productReference = 16DAA6C287CC5CDA16C313C2 /* Kinetics.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4FED42FC9F77BB90EF44869C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					9BB8A80AA6448CB87A29DDBD = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 6D2CBB74755F93901DEC6E55 /* Build configuration list for PBXProject "Kinetics" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 3D2AADD39CDE337249E47629;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 2BBB894D975C6D838780D84E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9BB8A80AA6448CB87A29DDBD /* Kinetics */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		FC13FF98C07B93D6D17F9E25 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2AD660E8DBBF5FFCB432177C /* AppState.swift in Sources */,
+				3E7C8B554DAF17E48A36CF23 /* AuthManager.swift in Sources */,
+				AE091BA3A0E856C1E7FBE128 /* BiomechanicsCalculator.swift in Sources */,
+				A1F9B0AF1252345E962F76C8 /* CameraManager.swift in Sources */,
+				31A6EE899D6BC52F5BA390BC /* CameraPreviewView.swift in Sources */,
+				0FC3C27122B7C7C1C81A087B /* Color+Kinetics.swift in Sources */,
+				6DB9F094B9B3D5F739C3FC27 /* GrapplingAnalytics.swift in Sources */,
+				D4D833C1CD725F485BF5827C /* GrapplingView.swift in Sources */,
+				511809C053541BB8B230D4ED /* GrapplingViewModel.swift in Sources */,
+				1088DCBF512BA3FBC2F0C253 /* HomeView.swift in Sources */,
+				112FAFFB42872D754E3C11FA /* HomeViewModel.swift in Sources */,
+				DA2AA3C77D50FCE82C91B928 /* IronTrackerAnalytics.swift in Sources */,
+				53A2FBFDFE9EC40662AEDA69 /* IronTrackerView.swift in Sources */,
+				3300EFFCE9804BAF5F44B668 /* IronTrackerViewModel.swift in Sources */,
+				58D7D9A2550728717E6BD0AA /* JointPose.swift in Sources */,
+				F78FC26BC5B4F42C0099A839 /* KineticsApp.swift in Sources */,
+				8B32DBDDAC4BECC125DD9427 /* MetricsCardView.swift in Sources */,
+				65AF90F6886E1FB4A948F130 /* PoseDetectionEngine.swift in Sources */,
+				72CA7F4E153888A87089D1C2 /* PoseOverlayView.swift in Sources */,
+				A4E9C776BB171B6613E9ED20 /* SessionHistoryRow.swift in Sources */,
+				98C0AED100800BD8EA5FE78B /* SessionRepository.swift in Sources */,
+				CB6BECC8855AE1CEEABAA02E /* SessionResult.swift in Sources */,
+				3AAECFFD09059C41182B79E5 /* StrikingAnalytics.swift in Sources */,
+				CBD5745D36354446FB741AE0 /* StrikingView.swift in Sources */,
+				36C562E05CC0A22264FECAF9 /* StrikingViewModel.swift in Sources */,
+				86FB595B448BF9FE7E537B63 /* TrajectoryPath.swift in Sources */,
+				5A7D41C9A6C3862567130171 /* TrajectoryTracker.swift in Sources */,
+				4800590EB918C41C35699399 /* WallBetaAnalytics.swift in Sources */,
+				7377A50BF3E4F6147E41AD89 /* WallBetaView.swift in Sources */,
+				44685076B7F87358B2808006 /* WallBetaViewModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		20688BC78AF6071C7434B32C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		3C36160D7728EA274AEB7463 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Kinetics/Kinetics.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Kinetics/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rayancheca.kinetics;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5D6DD509B7867A25C48FF94D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		6BADA20F7EE236F952192C5C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Kinetics/Kinetics.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Kinetics/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rayancheca.kinetics;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6D2CBB74755F93901DEC6E55 /* Build configuration list for PBXProject "Kinetics" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20688BC78AF6071C7434B32C /* Debug */,
+				5D6DD509B7867A25C48FF94D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BFFD0799B8B9186B37682FD2 /* Build configuration list for PBXNativeTarget "Kinetics" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3C36160D7728EA274AEB7463 /* Debug */,
+				6BADA20F7EE236F952192C5C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0F69E24E87E8F14089DDF2CC /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		C4CED923C35612DDE1BFAD9F /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 4FED42FC9F77BB90EF44869C /* Project object */;
+}

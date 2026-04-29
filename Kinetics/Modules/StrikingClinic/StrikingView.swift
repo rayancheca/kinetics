@@ -25,6 +25,7 @@ struct StrikingView: View {
     // MARK: - Onboarding / Report State
 
     @AppStorage("seen_striking_onboarding") private var hasSeenOnboarding = false
+    @AppStorage("camera_position_striking") private var preferFrontCamera = false
     @State private var showOnboarding = false
     @State private var showReport = false
     @State private var isLivePulsing = false
@@ -48,6 +49,9 @@ struct StrikingView: View {
 
             // Layer 3: Module label + session timer HUD at the top.
             hudLayer
+
+            // Layer 4: Floating camera flip button — interactive overlay.
+            cameraFlipButton
         }
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
@@ -314,6 +318,33 @@ struct StrikingView: View {
         case 75...: return .kineticsGreen
         case 50...: return .kineticsBlue
         default:    return .kineticsRed
+        }
+    }
+
+    // MARK: - Camera Flip Button
+
+    private var cameraFlipButton: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button {
+                    Task {
+                        await appState.cameraManager.switchCamera()
+                        preferFrontCamera = appState.cameraManager.cameraPosition == .front
+                    }
+                } label: {
+                    Image(systemName: "camera.rotate.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(12)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.4), radius: 6)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 104) // Below the module label row (56 safe area + 48 label height).
+            Spacer()
         }
     }
 

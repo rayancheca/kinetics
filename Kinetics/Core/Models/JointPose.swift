@@ -55,4 +55,20 @@ extension JointPose {
         // timeRange.end gives the presentation timestamp of the frame that produced this observation.
         self.timestamp = observation.timeRange.end.seconds
     }
+
+    /// Returns a new `JointPose` with all joint x-coordinates flipped (x → 1 − x).
+    ///
+    /// Use this when the preview layer is mirrored (front camera) but Vision's coordinate
+    /// output is not — without this correction the skeleton overlay appears left-right reversed
+    /// relative to what the user sees on screen.
+    func mirroredHorizontally() -> JointPose {
+        let flipped = joints.mapValues { point in
+            JointPoint(
+                position: CGPoint(x: 1.0 - point.position.x, y: point.position.y),
+                confidence: point.confidence
+            )
+        }
+        return JointPose(joints: flipped, timestamp: timestamp)
+    }
 }
+

@@ -69,6 +69,7 @@ final class IronTrackerViewModel {
     // MARK: - Private
 
     private let poseEngine = PoseDetectionEngine()
+    private weak var activeCameraManager: CameraManager?
     private var previousPose: JointPose?
     private var sessionStartTime: Date?
     private var durationTask: Task<Void, Never>?
@@ -88,6 +89,8 @@ final class IronTrackerViewModel {
     /// - Parameter cameraManager: The shared camera manager from `AppState`.
     func startProcessing(with cameraManager: CameraManager) async {
         guard !isSessionActive else { return }
+
+        self.activeCameraManager = cameraManager
 
         SessionRepository.shared.logSessionStarted(sport: .ironTracker)
 
@@ -168,7 +171,8 @@ final class IronTrackerViewModel {
     /// on the actor's executor (off main thread), then resumes back on main.
     private func processFrame(_ buffer: CMSampleBuffer) async {
         do {
-            guard let pose = try await poseEngine.process(buffer) else { return }
+            let isFront = activeCameraManager?.cameraPosition == .front
+            guard let pose = try await poseEngine.process(buffer, isFrontCamera: isFront) else { return }
 
             metrics = IronTrackerAnalytics.analyze(
                 pose: pose,

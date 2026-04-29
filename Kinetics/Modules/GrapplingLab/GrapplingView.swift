@@ -22,6 +22,7 @@ struct GrapplingView: View {
 
     @State private var viewModel = GrapplingViewModel()
     @AppStorage("seen_grappling_onboarding") private var hasSeenOnboarding = false
+    @AppStorage("camera_position_grappling") private var preferFrontCamera = true
     @State private var showOnboarding = false
     @State private var showReport = false
     @State private var isLivePulsing = false
@@ -32,6 +33,8 @@ struct GrapplingView: View {
         ZStack(alignment: .top) {
             cameraLayer
             overlayLayer
+
+            cameraFlipButton
 
             VStack(spacing: 0) {
                 moduleLabel
@@ -119,6 +122,32 @@ struct GrapplingView: View {
     }
 
     // MARK: - Subviews
+
+    /// Camera flip button anchored to the top-right corner, below the status bar.
+    private var cameraFlipButton: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button {
+                    Task {
+                        await appState.cameraManager.switchCamera()
+                        preferFrontCamera = appState.cameraManager.cameraPosition == .front
+                    }
+                } label: {
+                    Image(systemName: "camera.rotate.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(12)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.4), radius: 6)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 104)
+            Spacer()
+        }
+    }
 
     /// Full-screen live camera feed.
     private var cameraLayer: some View {

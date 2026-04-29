@@ -25,6 +25,7 @@ struct IronTrackerView: View {
 
     @State private var viewModel = IronTrackerViewModel()
     @AppStorage("seen_iron_tracker_onboarding") private var hasSeenOnboarding = false
+    @AppStorage("camera_position_iron") private var preferFrontCamera = false
     @State private var showOnboarding = false
     @State private var showReport = false
     @State private var isLivePulsing = false
@@ -127,6 +128,9 @@ struct IronTrackerView: View {
 
             // Layer 5: Metrics panel
             metricsPanel
+
+            // Layer 6: Camera flip button
+            cameraFlipButton
         }
         .alert("Camera Error", isPresented: .constant(viewModel.errorMessage != nil)) {
             Button("OK") { viewModel.errorMessage = nil }
@@ -284,6 +288,33 @@ struct IronTrackerView: View {
                     .padding(.top, 2)
                     .animation(.easeInOut(duration: 0.4), value: viewModel.coachingCue)
             }
+        }
+    }
+
+    // MARK: - Camera Flip Button
+
+    private var cameraFlipButton: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button {
+                    Task {
+                        await appState.cameraManager.switchCamera()
+                        preferFrontCamera = appState.cameraManager.cameraPosition == .front
+                    }
+                } label: {
+                    Image(systemName: "camera.rotate.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(12)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.4), radius: 6)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 104)
+            Spacer()
         }
     }
 

@@ -48,12 +48,16 @@ actor PoseDetectionEngine {
 
     /// Processes one video frame and returns a `JointPose` if a body was detected.
     ///
-    /// - Parameter buffer: A `CMSampleBuffer` from `CameraManager.frameStream`.
+    /// - Parameters:
+    ///   - buffer: A `CMSampleBuffer` from `CameraManager.frameStream`.
+    ///   - isFrontCamera: When `true`, the joint x-coordinates are mirrored (1 - x) to
+    ///     correct for the fact that Vision's output is not flipped even though the preview
+    ///     layer is. Pass `cameraManager.cameraPosition == .front` from the ViewModel.
     /// - Returns: A `JointPose` with all detected joint positions, or `nil` when no person
     ///   is visible in the frame.
     /// - Throws: `PoseError.processingFailed` when Vision's request handler encounters an
     ///   unrecoverable error (e.g. invalid pixel format). Empty frames never throw.
-    func process(_ buffer: CMSampleBuffer) throws -> JointPose? {
+    func process(_ buffer: CMSampleBuffer, isFrontCamera: Bool = false) throws -> JointPose? {
         do {
             // `orientation: .up` matches the 90° rotation applied in CameraManager.
             try sequenceHandler.perform([poseRequest], on: buffer, orientation: .up)
@@ -67,8 +71,15 @@ actor PoseDetectionEngine {
         }
 
         // JointPose(from:) extracts all recognized points from the observation.
-        // It can throw if the observation's recognized-point groups are invalid (rare).
-        return try JointPose(from: observation)
+        var pose = try JointPose(from: observation)
+
+        // When using the front camera, Vision coordinates are NOT mirrored even though
+        // the preview layer is. Flip x so skeleton overlays line up with what the user sees.
+        if isFrontCamera {
+            pose = pose.mirroredHorizontally()
+        }
+
+        return pose
     }
 
     /// Resets internal sequence state.

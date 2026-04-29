@@ -61,6 +61,10 @@ final class GrapplingViewModel {
     /// start so temporal state never leaks across sessions.
     private var poseEngine = PoseDetectionEngine()
 
+    /// Weak reference to the active `CameraManager`, used to read `cameraPosition`
+    /// when mirroring pose coordinates for the front camera.
+    private weak var activeCameraManager: CameraManager?
+
     /// The preceding frame's pose, used to compute inter-frame velocities.
     private var previousPose: JointPose?
 
@@ -80,6 +84,8 @@ final class GrapplingViewModel {
     /// - Parameter cameraManager: The shared `CameraManager` from `AppState`.
     func startProcessing(with cameraManager: CameraManager) async {
         guard !isSessionActive else { return }
+
+        self.activeCameraManager = cameraManager
 
         // Log analytics event before starting — matches other module patterns.
         SessionRepository.shared.logSessionStarted(sport: .grappling)
@@ -166,7 +172,8 @@ final class GrapplingViewModel {
     /// is pure and fast, so it runs synchronously on the calling context after the await.
     private func processFrame(_ buffer: CMSampleBuffer) async {
         do {
-            guard let pose = try await poseEngine.process(buffer) else {
+            let isFront = activeCameraManager?.cameraPosition == .front
+            guard let pose = try await poseEngine.process(buffer, isFrontCamera: isFront) else {
                 // No person in frame — keep displaying the last known metrics.
                 return
             }

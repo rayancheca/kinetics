@@ -67,6 +67,10 @@ final class WallBetaViewModel {
     /// temporal smoothing state never leaks across sessions.
     private var poseEngine = PoseDetectionEngine()
 
+    /// Weak reference to the active camera manager — used to read `cameraPosition`
+    /// per-frame so pose mirroring stays in sync with the live camera selection.
+    private weak var activeCameraManager: CameraManager?
+
     /// The preceding frame's pose, used to compute inter-frame velocities.
     private var previousPose: JointPose?
 
@@ -105,6 +109,8 @@ final class WallBetaViewModel {
     /// - Parameter cameraManager: The shared `CameraManager` from `AppState`.
     func startProcessing(with cameraManager: CameraManager) async {
         guard !isSessionActive else { return }
+
+        self.activeCameraManager = cameraManager
 
         // Reset all session-scoped state before starting.
         metrics        = WallBetaMetrics()
@@ -205,7 +211,8 @@ final class WallBetaViewModel {
     /// returning to `@MainActor` on resumption — no manual `DispatchQueue.main` needed.
     private func processFrame(_ buffer: CMSampleBuffer) async {
         do {
-            guard let pose = try await poseEngine.process(buffer) else {
+            let isFront = activeCameraManager?.cameraPosition == .front
+            guard let pose = try await poseEngine.process(buffer, isFrontCamera: isFront) else {
                 // No person detected in this frame — carry forward the last known metrics.
                 return
             }

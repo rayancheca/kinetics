@@ -23,6 +23,7 @@ struct WallBetaView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = WallBetaViewModel()
     @AppStorage("seen_wall_beta_onboarding") private var hasSeenOnboarding = false
+    @AppStorage("camera_position_wall") private var preferFrontCamera = false
     @State private var showOnboarding = false
     @State private var showReport = false
     @State private var isLivePulsing = false
@@ -50,6 +51,9 @@ struct WallBetaView: View {
 
             // ── Layer 4: Top HUD ──────────────────────────────────────────────────
             hudLayer
+
+            // ── Layer 5: Camera flip button ───────────────────────────────────────
+            cameraFlipButton
         }
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
@@ -460,6 +464,33 @@ struct WallBetaView: View {
         case .static_hold:  return .kineticsGreen
         case .transitioning: return Color.white.opacity(0.75)
         case .dyno:         return .kineticsGreen
+        }
+    }
+
+    // MARK: - Camera Flip Button
+
+    private var cameraFlipButton: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button {
+                    Task {
+                        await appState.cameraManager.switchCamera()
+                        preferFrontCamera = appState.cameraManager.cameraPosition == .front
+                    }
+                } label: {
+                    Image(systemName: "camera.rotate.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(12)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.4), radius: 6)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 104)
+            Spacer()
         }
     }
 

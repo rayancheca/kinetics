@@ -1,15 +1,15 @@
 # Kinetics — Session State
 
-**Last updated:** Session 5 (2026-04-29) — Sections 9, 10, 11 built, compiled, committed, pushed
+**Last updated:** Session 6 (2026-04-29) — Section 12 App Store prep built, compiled, committed, pushed
 **Current phase:** Phase 1 — MVP
-**Overall progress:** Session 5 complete. BUILD SUCCEEDED.
+**Overall progress:** Session 6 in progress. BUILD SUCCEEDED.
 
 ---
 
-## Status: SESSION 5 COMPLETE — BUILD SUCCEEDED
+## Status: SESSION 6 — Section 12 COMPLETE
 
 `** BUILD SUCCEEDED **` on iPhone 17 Pro Simulator.
-All changes committed and pushed. Latest commit: `b076237` (WidgetKit extension).
+All changes committed and pushed. Latest commit: `bb503d4` (Section 12 App Store prep).
 
 ---
 
@@ -117,6 +117,23 @@ The project has a post-tool-use hook that strips entitlements files back to `<di
 
 ---
 
+## Session 6 — What Was Built
+
+### Section 12 — App Store Prep (COMPLETE ✅)
+
+**Commit:** `bb503d4`
+
+**New files:**
+- `Kinetics/Resources/PrivacyInfo.xcprivacy` — Apple-required privacy manifest: `NSPrivacyTracking = false`, no tracking domains, declares Health + Location data (app functionality, not linked, not tracking), UserDefaults access reason CA92.1, FileTimestamp access reason C617.1
+- `Kinetics/Resources/Assets.xcassets/LaunchBackground.colorset/Contents.json` — universal sRGB color `#0D0D0D` (matches app dark background)
+- `Kinetics/Resources/Assets.xcassets/LaunchLogo.imageset/Contents.json` — 1x/2x/3x placeholder (no image files; drop real logo PNG here when available)
+
+**Modified files:**
+- `project.yml` — `UILaunchScreen` updated from `{}` to `UIColorName: LaunchBackground` + `UIImageName: LaunchLogo`; `PrivacyInfo.xcprivacy` added to Kinetics target resources
+- `AppIcon.appiconset/Contents.json` — already had correct universal 1024x1024 config, no changes needed
+
+---
+
 ## What Was Completed Across All Sessions
 
 ### Session 1
@@ -143,29 +160,16 @@ The project has a post-tool-use hook that strips entitlements files back to `<di
 
 ---
 
-## Next Steps — Session 6
+## Next Steps — Session 6 (remaining)
 
 Priority order:
-1. **Section 12 — App Store prep**: App icon, Launch screen, privacy manifest (PrivacyInfo.xcprivacy), screenshot assets
-2. **Section 13 — Onboarding polish**: HealthKit permission request on first launch, notification permission on onboarding completion
-3. **Fix entitlements hook**: The post-tool-use hook strips entitlements. Options:
+1. **Section 13 — Onboarding polish**: HealthKit permission request on first launch, notification permission on onboarding completion
+2. **Fix entitlements hook**: The post-tool-use hook strips entitlements. Options:
    - Disable the XML formatter hook for `.entitlements` files
    - Manually re-add capabilities in Xcode GUI (HealthKit + App Groups)
-4. **Firebase Analytics depth**: Add `module_session_started`, `module_session_completed` events to all 4 sport modules
-5. **Deep link support**: Universal links and widget tap → navigate to relevant screen
-
-### Session 6 start prompt:
-```
-Read state.md first. Session 5 complete — Gym Tracker Part B, HealthKit dashboard, notifications, WidgetKit all built and pushed.
-
-Session 6 priorities:
-1. Section 12 — App Store prep: privacy manifest, app icon placeholder, Launch screen config
-2. Section 13 — Onboarding polish: HealthKit + notification permission gates
-3. Firebase Analytics events for all 4 sport modules
-4. Fix entitlements hook issue (or document workaround)
-
-Always spawn maximum parallel agents. Commit after every feature. Never delete files.
-```
+3. **Firebase Analytics depth**: Add `module_session_started`, `module_session_completed` events to all 4 sport modules
+4. **Deep link support**: Universal links and widget tap → navigate to relevant screen
+5. **Drop real app icon**: Add 1024x1024 PNG to `AppIcon.appiconset/` and 1x/2x/3x PNGs to `LaunchLogo.imageset/`
 
 ---
 

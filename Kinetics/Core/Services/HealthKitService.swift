@@ -41,6 +41,36 @@ enum HealthKitError: LocalizedError, Sendable {
     }
 }
 
+// MARK: - HealthKitDashboardStats
+
+/// Passive read snapshot used by the HomeView dashboard card.
+/// All fields default to zero when the corresponding HealthKit sample is
+/// unavailable, so callers never need to handle nil.
+struct HealthKitDashboardStats: Sendable {
+    /// Latest resting heart rate in bpm (today's most recent sample).
+    let restingHeartRate: Double
+    /// Latest HRV SDNN in milliseconds (today's most recent sample).
+    let hrv: Double
+    /// Latest VO2 max in mL/kg/min (most recent sample ever).
+    let vo2Max: Double
+    /// Total active energy burned today in kilocalories.
+    let activeCalories: Double
+    /// Total step count today.
+    let steps: Int
+    /// Total sleep duration last night in seconds (core + deep + REM + unspecified).
+    let sleepSeconds: Double
+
+    /// Convenience empty value for default initialisation.
+    static let empty = HealthKitDashboardStats(
+        restingHeartRate: 0,
+        hrv: 0,
+        vo2Max: 0,
+        activeCalories: 0,
+        steps: 0,
+        sleepSeconds: 0
+    )
+}
+
 // MARK: - HealthKitService
 
 /// Actor isolating HKHealthStore interactions to prevent data races.
@@ -96,7 +126,11 @@ actor HealthKitService {
         heartRateType,
         stepCountType,
         activeEnergyType,
-        HKQuantityType(.vo2Max)
+        HKQuantityType(.vo2Max),
+        HKQuantityType(.restingHeartRate),
+        HKQuantityType(.heartRateVariabilitySDNN),
+        // Sleep analysis is a category type, not a quantity type.
+        HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
     ]
 
     private static let writeTypes: Set<HKSampleType> = [
@@ -288,6 +322,56 @@ actor HealthKitService {
 
     // MARK: - Historical Reads
 
+    // MARK: Dashboard Snapshot
+
+    /// Fetches all six dashboard stats concurrently and returns a single snapshot.
+    ///
+    /// Returns `HealthKitDashboardStats.empty` when HealthKit is unavailable or
+    /// the user has not granted the required read permissions — never throws.
+    func fetchDashboardStats() async -> HealthKitDashboardStats {
+        guard isAvailable, isAuthorized else { return .empty }
+
+        let today = todayPredicate()
+
+        let rhr = await fetchLatestQuantitySample(
+            type: HKQuantityType(.restingHeartRate),
+            unit: HKUnit.count().unitDivided(by: .minute()),
+            predicate: today
+        )
+        let hrv = await fetchLatestQuantitySample(
+            type: HKQuantityType(.heartRateVariabilitySDNN),
+            unit: .secondUnit(with: .milli),
+            predicate: today
+        )
+        let vo2 = await fetchLatestQuantitySample(
+            type: HKQuantityType(.vo2Max),
+            unit: HKUnit(from: "ml/kg*min"),
+            predicate: nil
+        )
+        let calories = await fetchCumulativeSum(
+            type: HealthKitService.activeEnergyType,
+            unit: .kilocalorie(),
+            predicate: today
+        )
+        let steps = await fetchCumulativeSum(
+            type: HealthKitService.stepCountType,
+            unit: .count(),
+            predicate: today
+        )
+        let sleep = await fetchSleepDuration()
+
+        return HealthKitDashboardStats(
+            restingHeartRate: rhr,
+            hrv: hrv,
+            vo2Max: vo2,
+            activeCalories: calories,
+            steps: Int(steps),
+            sleepSeconds: sleep
+        )
+    }
+
+    // MARK: - Step Count (Legacy)
+
     /// Returns the total step count for today from HealthKit.
     ///
     /// Returns `0` when HealthKit is unavailable or the user has not granted step
@@ -318,6 +402,118 @@ actor HealthKitService {
                 }
                 let steps = Int(quantity.doubleValue(for: .count()))
                 continuation.resume(returning: steps)
+            }
+            store.execute(query)
+        }
+    }
+
+    // MARK: - Dashboard Query Helpers
+
+    /// Returns a predicate spanning from midnight today until now.
+    private func todayPredicate() -> NSPredicate {
+        let startOfDay = Calendar.current.startOfDay(for: Date())
+        return HKQuery.predicateForSamples(
+            withStart: startOfDay,
+            end: Date(),
+            options: .strictStartDate
+        )
+    }
+
+    /// Fetches the most recent quantity sample matching `predicate` (or all time
+    /// when `predicate` is `nil`) and returns its value in `unit`. Returns `0` on
+    /// any failure — never throws.
+    private func fetchLatestQuantitySample(
+        type: HKQuantityType,
+        unit: HKUnit,
+        predicate: NSPredicate?
+    ) async -> Double {
+        await withCheckedContinuation { continuation in
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+            let query = HKSampleQuery(
+                sampleType: type,
+                predicate: predicate,
+                limit: 1,
+                sortDescriptors: [sort]
+            ) { _, samples, error in
+                guard error == nil,
+                      let sample = samples?.first as? HKQuantitySample
+                else {
+                    continuation.resume(returning: 0)
+                    return
+                }
+                continuation.resume(returning: sample.quantity.doubleValue(for: unit))
+            }
+            store.execute(query)
+        }
+    }
+
+    /// Sums all samples for `type` matching `predicate` and returns the total in
+    /// `unit`. Returns `0` on any failure — never throws.
+    private func fetchCumulativeSum(
+        type: HKQuantityType,
+        unit: HKUnit,
+        predicate: NSPredicate
+    ) async -> Double {
+        await withCheckedContinuation { continuation in
+            let query = HKStatisticsQuery(
+                quantityType: type,
+                quantitySamplePredicate: predicate,
+                options: .cumulativeSum
+            ) { _, statistics, error in
+                guard error == nil,
+                      let statistics,
+                      let quantity = statistics.sumQuantity()
+                else {
+                    continuation.resume(returning: 0)
+                    return
+                }
+                continuation.resume(returning: quantity.doubleValue(for: unit))
+            }
+            store.execute(query)
+        }
+    }
+
+    /// Sums all HealthKit sleep-analysis samples from the last 24 hours that
+    /// represent actual sleep (core, deep, REM, or unspecified asleep). Returns
+    /// the total duration in seconds. Returns `0` on any failure — never throws.
+    private func fetchSleepDuration() async -> Double {
+        guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
+            return 0
+        }
+
+        let start = Date().addingTimeInterval(-86400)   // last 24 h
+        let predicate = HKQuery.predicateForSamples(
+            withStart: start,
+            end: Date(),
+            options: .strictStartDate
+        )
+
+        return await withCheckedContinuation { continuation in
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+            let query = HKSampleQuery(
+                sampleType: sleepType,
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [sort]
+            ) { _, samples, error in
+                guard error == nil, let samples else {
+                    continuation.resume(returning: 0)
+                    return
+                }
+
+                let asleepValues: Set<Int> = [
+                    HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
+                    HKCategoryValueSleepAnalysis.asleepCore.rawValue,
+                    HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
+                    HKCategoryValueSleepAnalysis.asleepREM.rawValue
+                ]
+
+                let total = samples
+                    .compactMap { $0 as? HKCategorySample }
+                    .filter { asleepValues.contains($0.value) }
+                    .reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
+
+                continuation.resume(returning: total)
             }
             store.execute(query)
         }

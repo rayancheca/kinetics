@@ -38,9 +38,13 @@ struct HomeView: View {
                     moduleGrid
                         .padding(.horizontal, 16)
 
+                    healthStatsCard
+                        .padding(.top, 20)
+                        .padding(.horizontal, 16)
+
                     if appState.authManager.isSignedIn {
                         recentSessionsSection
-                            .padding(.top, 32)
+                            .padding(.top, 28)
                             .padding(.horizontal, 16)
                     }
 
@@ -77,6 +81,7 @@ struct HomeView: View {
                 if let userId = appState.authManager.currentUser?.uid {
                     await viewModel.loadHistory(for: userId)
                 }
+                await viewModel.loadDashboardStats()
             }
         }
     }
@@ -165,6 +170,87 @@ struct HomeView: View {
                 .buttonStyle(ScaleButtonStyle())
             }
         }
+    }
+
+    // MARK: - Health Stats Card
+
+    private var healthStatsCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("TODAY'S STATS")
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(2.5)
+                .foregroundStyle(.white.opacity(0.38))
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    StatPill(
+                        icon: "figure.walk",
+                        color: .kineticsBlue,
+                        value: viewModel.dashboardStats.steps > 0
+                            ? Self.formattedSteps(viewModel.dashboardStats.steps)
+                            : "--",
+                        unit: viewModel.dashboardStats.steps > 0 ? "steps" : ""
+                    )
+                    StatPill(
+                        icon: "flame.fill",
+                        color: .kineticsAmber,
+                        value: viewModel.dashboardStats.activeCalories > 0
+                            ? String(Int(viewModel.dashboardStats.activeCalories))
+                            : "--",
+                        unit: viewModel.dashboardStats.activeCalories > 0 ? "kcal" : ""
+                    )
+                    StatPill(
+                        icon: "moon.zzz.fill",
+                        color: .kineticsPurple,
+                        value: viewModel.dashboardStats.sleepSeconds > 0
+                            ? Self.formattedSleep(viewModel.dashboardStats.sleepSeconds)
+                            : "--",
+                        unit: ""
+                    )
+                    StatPill(
+                        icon: "heart.fill",
+                        color: .kineticsGreen,
+                        value: viewModel.dashboardStats.restingHeartRate > 0
+                            ? String(Int(viewModel.dashboardStats.restingHeartRate))
+                            : "--",
+                        unit: viewModel.dashboardStats.restingHeartRate > 0 ? "bpm" : ""
+                    )
+                    StatPill(
+                        icon: "waveform.path.ecg",
+                        color: .kineticsBlue,
+                        value: viewModel.dashboardStats.hrv > 0
+                            ? String(Int(viewModel.dashboardStats.hrv))
+                            : "--",
+                        unit: viewModel.dashboardStats.hrv > 0 ? "ms" : ""
+                    )
+                    StatPill(
+                        icon: "lungs.fill",
+                        color: .kineticsGreen,
+                        value: viewModel.dashboardStats.vo2Max > 0
+                            ? String(Int(viewModel.dashboardStats.vo2Max))
+                            : "--",
+                        unit: viewModel.dashboardStats.vo2Max > 0 ? "mL/kg/min" : ""
+                    )
+                }
+                .padding(.horizontal, 2)
+            }
+        }
+    }
+
+    // MARK: - Formatting Helpers
+
+    private static func formattedSteps(_ steps: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter.string(from: NSNumber(value: steps)) ?? String(steps)
+    }
+
+    private static func formattedSleep(_ seconds: Double) -> String {
+        let hours = Int(seconds) / 3600
+        let minutes = (Int(seconds) % 3600) / 60
+        if hours == 0 { return "\(minutes)m" }
+        if minutes == 0 { return "\(hours)h" }
+        return "\(hours)h \(minutes)m"
     }
 
     // MARK: - Recent Sessions
@@ -266,6 +352,49 @@ struct HomeView: View {
         case .wallBeta:
             WallBetaView()
         }
+    }
+}
+
+// MARK: - StatPill
+
+/// A compact horizontal pill showing a colored icon, a numeric value, and a unit label.
+/// Used in the health stats card on the Home screen.
+private struct StatPill: View {
+
+    let icon: String
+    let color: Color
+    /// Formatted value string — pass "--" when data is unavailable.
+    let value: String
+    /// Unit label (e.g. "bpm", "kcal"). Pass empty string when `value` is "--".
+    let unit: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(color)
+                .frame(width: 20)
+
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+
+                if !unit.isEmpty {
+                    Text(unit)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.45))
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.kineticsDark)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(color.opacity(0.18), lineWidth: 0.75)
+        )
     }
 }
 

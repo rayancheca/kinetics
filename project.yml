@@ -49,6 +49,7 @@ targets:
         NSLocationAlwaysAndWhenInUseUsageDescription: "Kinetics tracks your route in the background so your full workout is recorded even when the screen is off."
         NSHealthShareUsageDescription: "Kinetics reads your heart rate and step count to enhance workout tracking."
         NSHealthUpdateUsageDescription: "Kinetics writes your workouts to Apple Health so they appear in your Health app activity history."
+        NSUserNotificationUsageDescription: "Kinetics sends workout reminders and achievement alerts to keep you on track."
         UIApplicationSupportsIndirectInputEvents: YES
         UILaunchScreen: {}
         UIBackgroundModes:

@@ -173,6 +173,26 @@ struct ProfileView: View {
 
                 Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
 
+                NavigationLink(destination: NotificationSettingsView()) {
+                    HStack {
+                        Image(systemName: "bell.badge.fill")
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color.kineticsBlue)
+                            .frame(width: 28)
+                        Text("Notifications")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.2))
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                }
+
+                Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
+
                 unitsPicker
 
                 Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)

@@ -32,6 +32,8 @@
 	<string>Kinetics tracks your route, pace, and distance during outdoor workouts.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Kinetics may use the microphone for future audio coaching features.</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Kinetics sends workout reminders and achievement alerts to keep you on track.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

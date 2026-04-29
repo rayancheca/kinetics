@@ -21,6 +21,10 @@ final class HomeViewModel {
     /// placeholder in the recent sessions list.
     var isLoadingHistory = false
 
+    /// Passive HealthKit dashboard snapshot for the stats card.
+    /// Defaults to `.empty` until the first successful read.
+    var dashboardStats: HealthKitDashboardStats = .empty
+
     // MARK: - History
 
     /// Fetches the five most recent sessions for `userId` from Firestore.
@@ -44,6 +48,20 @@ final class HomeViewModel {
     /// exposing the underlying `loadHistory(for:)` signature at every call site.
     func refreshSessionHistory(for userId: String) async {
         await loadHistory(for: userId)
+    }
+
+    // MARK: - HealthKit Dashboard
+
+    /// Reads the passive dashboard stats from HealthKit and updates `dashboardStats`.
+    ///
+    /// Requests authorization on first call. Silently no-ops when HealthKit is
+    /// unavailable (e.g. simulator) — the dashboard stats card shows "--" values.
+    func loadDashboardStats() async {
+        let service = HealthKitService.shared
+        // Authorization is idempotent; ignore the error — unavailability produces
+        // .empty stats rather than a hard failure.
+        try? await service.requestAuthorization()
+        dashboardStats = await service.fetchDashboardStats()
     }
 
     // MARK: - Auth

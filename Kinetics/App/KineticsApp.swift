@@ -5,6 +5,7 @@ import SwiftUI
 struct KineticsApp: App {
 
     @State private var appState = AppState()
+    @AppStorage("permissions_requested") private var permissionsRequested = false
 
     private static let modelContainer: ModelContainer = {
         let schema = Schema([
@@ -33,6 +34,12 @@ struct KineticsApp: App {
                 .modelContainer(Self.modelContainer)
                 .onAppear {
                     GymRepository.shared.modelContainer = Self.modelContainer
+                }
+                .fullScreenCover(isPresented: Binding(
+                    get: { !permissionsRequested },
+                    set: { _ in }
+                )) {
+                    PermissionsGateView()
                 }
         }
     }

@@ -1,4 +1,5 @@
 @preconcurrency import AVFoundation
+import FirebaseAnalytics
 import Foundation
 import Observation
 
@@ -89,6 +90,10 @@ final class GrapplingViewModel {
 
         // Log analytics event before starting — matches other module patterns.
         SessionRepository.shared.logSessionStarted(sport: .grappling)
+        Analytics.logEvent("module_session_started", parameters: [
+            "module": "grappling",
+            "timestamp": Date().timeIntervalSince1970
+        ])
 
         await cameraManager.startSession()
 
@@ -143,6 +148,11 @@ final class GrapplingViewModel {
         await poseEngine.reset()
         sessionStartDate = nil
 
+        Analytics.logEvent("module_session_completed", parameters: [
+            "module": "grappling",
+            "duration_seconds": finalDuration,
+            "timestamp": Date().timeIntervalSince1970
+        ])
         do {
             try await SessionRepository.shared.save(result)
             lastCompletedSession = result

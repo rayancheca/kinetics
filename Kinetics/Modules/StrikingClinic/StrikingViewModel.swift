@@ -1,4 +1,5 @@
 @preconcurrency import AVFoundation
+import FirebaseAnalytics
 import Foundation
 import Observation
 import Vision
@@ -71,6 +72,10 @@ final class StrikingViewModel {
         self.activeCameraManager = cameraManager
 
         SessionRepository.shared.logSessionStarted(sport: .striking)
+        Analytics.logEvent("module_session_started", parameters: [
+            "module": "striking",
+            "timestamp": Date().timeIntervalSince1970
+        ])
 
         await cameraManager.startSession()
 
@@ -129,6 +134,11 @@ final class StrikingViewModel {
             userId: userId
         )
 
+        Analytics.logEvent("module_session_completed", parameters: [
+            "module": "striking",
+            "duration_seconds": sessionDuration,
+            "timestamp": Date().timeIntervalSince1970
+        ])
         try? await SessionRepository.shared.save(result)
         lastCompletedSession = result
     }

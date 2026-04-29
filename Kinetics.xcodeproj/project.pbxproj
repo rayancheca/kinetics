@@ -63,6 +63,7 @@
 		A70F65FBDE4CF6DAE811721F /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B1FF2C59121834922C934E /* LocationService.swift */; };
 		A7EB212670DDD460DB8E7437 /* WorkoutHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FEEAE8C16C0B711D260D1FF /* WorkoutHistoryView.swift */; };
 		AD1940CAB68916B38A79570F /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9EC3A501E98D2D04B904ABB /* MainTabView.swift */; };
+		ADDD4F6B55D3F9E1E5611FED /* PermissionsGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514D783F0279F09D15F268E7 /* PermissionsGateView.swift */; };
 		AE091BA3A0E856C1E7FBE128 /* BiomechanicsCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57776DF779A9EF196FF0099B /* BiomechanicsCalculator.swift */; };
 		B4D682567F3839AAD7D501A8 /* GymProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B1735A24DA64B0245D7374 /* GymProgressView.swift */; };
 		B605CD90ADBE4244CF2E5A99 /* TrackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7934535B95DCFCD9079D79 /* TrackView.swift */; };
@@ -135,6 +136,7 @@
 		4444A68F70A599ECA48403BE /* SessionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRepository.swift; sourceTree = "<group>"; };
 		497B16EEA223AE88C450FBA8 /* PersonalRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalRecordsView.swift; sourceTree = "<group>"; };
 		4F16ADFA50EB885D3690144D /* RouteMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteMapView.swift; sourceTree = "<group>"; };
+		514D783F0279F09D15F268E7 /* PermissionsGateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsGateView.swift; sourceTree = "<group>"; };
 		54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		57776DF779A9EF196FF0099B /* BiomechanicsCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiomechanicsCalculator.swift; sourceTree = "<group>"; };
 		5A4FB71C2696D6317902F821 /* IronTrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerView.swift; sourceTree = "<group>"; };
@@ -306,6 +308,7 @@
 				9008B990FE65CFFFF7F53EAB /* AppState.swift */,
 				3648047108B6B4CA0E33C4CF /* KineticsApp.swift */,
 				F9EC3A501E98D2D04B904ABB /* MainTabView.swift */,
+				514D783F0279F09D15F268E7 /* PermissionsGateView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -602,6 +605,7 @@
 				6253BD14B830015B5B3D73B3 /* NotificationService.swift in Sources */,
 				49ECC632295AAB4CC822CFBD /* NotificationSettingsView.swift in Sources */,
 				71464CCA100C4F34CAC9633B /* OnboardingMetricRow.swift in Sources */,
+				ADDD4F6B55D3F9E1E5611FED /* PermissionsGateView.swift in Sources */,
 				891DA28B0845DA3863B714B1 /* PersonalRecordsView.swift in Sources */,
 				65AF90F6886E1FB4A948F130 /* PoseDetectionEngine.swift in Sources */,
 				72CA7F4E153888A87089D1C2 /* PoseOverlayView.swift in Sources */,

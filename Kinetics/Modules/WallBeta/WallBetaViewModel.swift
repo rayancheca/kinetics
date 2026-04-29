@@ -1,4 +1,5 @@
 @preconcurrency import AVFoundation
+import FirebaseAnalytics
 import Foundation
 import Observation
 import Vision
@@ -122,6 +123,10 @@ final class WallBetaViewModel {
 
         // Log the analytics event before the camera rolls so funnel attribution is clean.
         SessionRepository.shared.logSessionStarted(sport: .wallBeta)
+        Analytics.logEvent("module_session_started", parameters: [
+            "module": "wall",
+            "timestamp": Date().timeIntervalSince1970
+        ])
 
         await cameraManager.startSession()
 
@@ -182,6 +187,11 @@ final class WallBetaViewModel {
         await poseEngine.reset()
         sessionStartDate = nil
 
+        Analytics.logEvent("module_session_completed", parameters: [
+            "module": "wall",
+            "duration_seconds": finalDuration,
+            "timestamp": Date().timeIntervalSince1970
+        ])
         do {
             try await SessionRepository.shared.save(result)
             lastCompletedSession = result

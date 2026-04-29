@@ -1,4 +1,5 @@
 @preconcurrency import AVFoundation
+import FirebaseAnalytics
 import Foundation
 import Observation
 import Vision
@@ -93,6 +94,10 @@ final class IronTrackerViewModel {
         self.activeCameraManager = cameraManager
 
         SessionRepository.shared.logSessionStarted(sport: .ironTracker)
+        Analytics.logEvent("module_session_started", parameters: [
+            "module": "iron",
+            "timestamp": Date().timeIntervalSince1970
+        ])
 
         await cameraManager.startSession()
 
@@ -151,6 +156,11 @@ final class IronTrackerViewModel {
             userId: userId
         )
 
+        Analytics.logEvent("module_session_completed", parameters: [
+            "module": "iron",
+            "duration_seconds": sessionDuration,
+            "timestamp": Date().timeIntervalSince1970
+        ])
         try? await SessionRepository.shared.save(result)
         lastCompletedSession = result
     }

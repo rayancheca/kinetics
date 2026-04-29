@@ -1018,4 +1018,113 @@ Every content card:
 
 ---
 
+---
+
+## SECTION 15 — FRONT CAMERA SUPPORT
+
+### Current state
+`CameraManager.swift` hard-codes `.back` camera position. The front camera works better for:
+- Striking Clinic: self-coaching in a mirror-free gym
+- Grappling Lab: solo drilling without a partner to hold the phone
+- Wall Beta: mount phone on a wall bracket facing the climber
+- All modules: users who don't have someone to hold the phone behind them
+
+### What to build
+
+**1. Add camera position toggle to `CameraManager.swift`**
+
+The key file: `Kinetics/Core/Vision/CameraManager.swift`
+
+Change the `captureDevice` lookup from hardcoded `.back` to a settable property:
+```swift
+// Add to CameraManager:
+var cameraPosition: AVCaptureDevice.Position = .back
+
+// In configureSessionIfNeeded(), replace:
+//   AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+// with:
+//   AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: cameraPosition)
+```
+
+Because `configureSessionIfNeeded()` is guarded by `isConfigured`, switching cameras requires a full session teardown and reconfigure. Add a `switchCamera()` method:
+```swift
+func switchCamera() async {
+    await stopSession()         // stop current session
+    isConfigured = false        // reset the guard flag
+    cameraPosition = (cameraPosition == .back) ? .front : .back
+    configureSessionIfNeeded()  // reconfigure with new position
+    startRunningSession()       // restart
+}
+```
+
+**2. Mirror the preview for front camera**
+
+When using front camera, the `CameraPreviewView` needs to be horizontally mirrored so the user sees themselves as in a mirror (not flipped). In `CameraPreviewView.swift`:
+```swift
+// In the AVCaptureVideoPreviewLayer setup, add:
+previewLayer.connection?.automaticallyAdjustsVideoMirroring = false
+previewLayer.connection?.isVideoMirrored = (cameraManager.cameraPosition == .front)
+```
+
+**3. Flip Vision coordinate system for front camera**
+
+`VNDetectHumanBodyPoseRequest` returns normalized coordinates in the camera's frame. When using the front camera, the x-axis is flipped relative to what the user sees on screen (because the preview is mirrored but the Vision output is not). 
+
+In `PoseDetectionEngine.swift`, after extracting joint positions, flip the x-coordinate when front camera is active:
+```swift
+// In processObservation(_:), after getting joint locations:
+if isFrontCamera {
+    // Flip x: newX = 1.0 - x
+    // Apply to every VNRecognizedPoint before wrapping in JointPose
+}
+```
+
+Pass `isFrontCamera: Bool` as a parameter to `poseEngine.process(buffer, isFrontCamera: cameraPosition == .front)`.
+
+**4. UI toggle button**
+
+Add a camera flip button to every module View — overlay it in the top-right corner of the camera feed (same location as the existing toolbar but as a floating overlay button so it's visible over the live camera):
+```swift
+// Floating toggle button — shown at top-trailing of the camera preview
+Button {
+    Task { await cameraManager.switchCamera() }
+} label: {
+    Image(systemName: "camera.rotate.fill")
+        .font(.system(size: 20, weight: .semibold))
+        .foregroundStyle(.white)
+        .padding(12)
+        .background(.ultraThinMaterial)
+        .clipShape(Circle())
+        .shadow(color: .black.opacity(0.4), radius: 6)
+}
+.padding(16)
+```
+
+**5. Per-module camera position defaults**
+
+Some modules naturally suit one camera over the other. Store the user's last-used position per module in `@AppStorage`:
+```swift
+@AppStorage("camera_position_striking") var preferFrontForStriking = false
+@AppStorage("camera_position_grappling") var preferFrontForGrappling = true  // default front: user is often solo
+@AppStorage("camera_position_iron") var preferFrontForIron = false           // side view for iron
+@AppStorage("camera_position_wall") var preferFrontForWall = false           // wall-facing camera
+```
+
+When a module opens, set `cameraManager.cameraPosition` to the stored preference before calling `startSession()`.
+
+### Files to modify
+- `Kinetics/Core/Vision/CameraManager.swift` — add `cameraPosition`, `switchCamera()`
+- `Kinetics/Core/Vision/PoseDetectionEngine.swift` — add front-camera x-flip
+- `Kinetics/Shared/Components/CameraPreviewView.swift` — mirror layer for front camera
+- All 4 module Views — add floating rotate button, load stored camera preference
+- All 4 module ViewModels — pass camera position to pose engine
+
+### Build order
+1. `CameraManager` changes first (foundation)
+2. `PoseDetectionEngine` coordinate flip
+3. `CameraPreviewView` mirror fix
+4. Module Views (4 files in parallel)
+
+---
+
 *This document is the single source of truth for Kinetics development. Update it when specs change. Never delete sections — append updates below the relevant section.*

@@ -37,6 +37,7 @@ targets:
     resources:
       - path: Kinetics/Resources/Assets.xcassets
       - path: Kinetics/Resources/GoogleService-Info.plist
+      - path: Kinetics/Resources/PrivacyInfo.xcprivacy
     info:
       path: Kinetics/Info.plist
       properties:
@@ -51,7 +52,9 @@ targets:
         NSHealthUpdateUsageDescription: "Kinetics writes your workouts to Apple Health so they appear in your Health app activity history."
         NSUserNotificationUsageDescription: "Kinetics sends workout reminders and achievement alerts to keep you on track."
         UIApplicationSupportsIndirectInputEvents: YES
-        UILaunchScreen: {}
+        UILaunchScreen:
+          UIColorName: "LaunchBackground"
+          UIImageName: "LaunchLogo"
         UIBackgroundModes:
           - location
         UISupportedInterfaceOrientations:

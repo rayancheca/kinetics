@@ -40,6 +40,12 @@ final class HomeViewModel {
         }
     }
 
+    /// Convenience wrapper so the view can trigger a reload by name without
+    /// exposing the underlying `loadHistory(for:)` signature at every call site.
+    func refreshSessionHistory(for userId: String) async {
+        await loadHistory(for: userId)
+    }
+
     // MARK: - Auth
 
     /// Silently signs the user in anonymously if no session is active.

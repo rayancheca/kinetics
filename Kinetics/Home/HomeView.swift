@@ -15,6 +15,7 @@ struct HomeView: View {
     @Environment(AppState.self) private var appState
     @State private var viewModel = HomeViewModel()
     @State private var showSignIn = false
+    @State private var confirmSignOut = false
 
     // MARK: - Grid Layout
 
@@ -37,7 +38,7 @@ struct HomeView: View {
                     moduleGrid
                         .padding(.horizontal, 16)
 
-                    if !viewModel.recentSessions.isEmpty || viewModel.isLoadingHistory {
+                    if appState.authManager.isSignedIn {
                         recentSessionsSection
                             .padding(.top, 32)
                             .padding(.horizontal, 16)
@@ -53,6 +54,23 @@ struct HomeView: View {
             .sheet(isPresented: $showSignIn) {
                 SignInSheet()
                     .environment(appState)
+            }
+            .onChange(of: showSignIn) { _, isShowing in
+                guard !isShowing, let uid = appState.authManager.currentUser?.uid else { return }
+                Task { await viewModel.loadHistory(for: uid) }
+            }
+            .confirmationDialog("Account", isPresented: $confirmSignOut, titleVisibility: .visible) {
+                Button("Sign Out", role: .destructive) {
+                    Task {
+                        try? appState.authManager.signOut()
+                        if let uid = appState.authManager.currentUser?.uid {
+                            await viewModel.refreshSessionHistory(for: uid)
+                        } else {
+                            viewModel.recentSessions = []
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
             }
             .task {
                 await viewModel.signInAnonymouslyIfNeeded(authManager: appState.authManager)
@@ -90,16 +108,25 @@ struct HomeView: View {
 
     private var authPill: some View {
         Button {
-            showSignIn = true
+            let user = appState.authManager.currentUser
+            if appState.authManager.isSignedIn && user?.isAnonymous == false {
+                confirmSignOut = true
+            } else {
+                showSignIn = true
+            }
         } label: {
             if appState.authManager.isSignedIn {
+                let isAnonymous = appState.authManager.currentUser?.isAnonymous == true
                 HStack(spacing: 6) {
                     Circle()
-                        .fill(Color.kineticsGreen)
+                        .fill(isAnonymous ? Color.yellow : Color.kineticsGreen)
                         .frame(width: 6, height: 6)
-                        .shadow(color: Color.kineticsGreen.opacity(0.8), radius: 4)
+                        .shadow(
+                            color: (isAnonymous ? Color.yellow : Color.kineticsGreen).opacity(0.8),
+                            radius: 4
+                        )
 
-                    Text("Online")
+                    Text(isAnonymous ? "Guest" : "Online")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white.opacity(0.55))
                 }
@@ -161,6 +188,8 @@ struct HomeView: View {
 
             if viewModel.isLoadingHistory && viewModel.recentSessions.isEmpty {
                 sessionHistorySkeleton
+            } else if !viewModel.isLoadingHistory && viewModel.recentSessions.isEmpty {
+                emptySessionsState
             } else {
                 sessionHistoryList
             }
@@ -189,6 +218,26 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(.white.opacity(0.06), lineWidth: 0.5)
         )
+    }
+
+    /// Empty state shown when the user is signed in but has no recorded sessions.
+    private var emptySessionsState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "figure.run.circle")
+                .font(.system(size: 32, weight: .thin))
+                .foregroundStyle(Color(red: 0, green: 0.76, blue: 1).opacity(0.5))
+            Text("No sessions yet")
+                .font(.system(.subheadline, weight: .medium))
+                .foregroundStyle(.white.opacity(0.35))
+            Text("Start a module above to record your first session.")
+                .font(.system(.caption))
+                .foregroundStyle(.white.opacity(0.25))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+        .background(Color(red: 0.075, green: 0.075, blue: 0.075))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     /// Placeholder shimmer rows shown while history is loading.

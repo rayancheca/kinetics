@@ -64,10 +64,23 @@ final class IronTrackerViewModel {
     /// Starts camera capture and begins processing frames into `metrics`.
     ///
     /// Safe to call once per session. Calling again while a session is active is a no-op.
+    /// Awaits `cameraManager.startSession()` directly so the `.task { }` view modifier
+    /// can drive this as a proper async function — consistent with `GrapplingViewModel`
+    /// and `WallBetaViewModel`.
     ///
     /// - Parameter cameraManager: The shared camera manager from `AppState`.
-    func startProcessing(with cameraManager: CameraManager) {
+    func startProcessing(with cameraManager: CameraManager) async {
         guard !isSessionActive else { return }
+
+        SessionRepository.shared.logSessionStarted(sport: .ironTracker)
+
+        await cameraManager.startSession()
+
+        guard cameraManager.cameraError == nil else {
+            errorMessage = cameraManager.cameraError?.localizedDescription
+                ?? "Camera could not be started."
+            return
+        }
 
         isSessionActive = true
         sessionStartTime = Date()
@@ -76,12 +89,10 @@ final class IronTrackerViewModel {
         previousPose = nil
         errorMessage = nil
 
-        SessionRepository.shared.logSessionStarted(sport: .ironTracker)
         startDurationTimer()
 
         processingTask = Task { [weak self] in
             guard let self else { return }
-            await cameraManager.startSession()
             for await buffer in cameraManager.frameStream {
                 guard !Task.isCancelled else { break }
                 await self.processFrame(buffer)
@@ -103,6 +114,8 @@ final class IronTrackerViewModel {
         durationTask?.cancel()
         durationTask = nil
 
+        await poseEngine.reset()
+
         guard sessionDuration > 2 else { return }
 
         let result = SessionResult(
@@ -119,6 +132,16 @@ final class IronTrackerViewModel {
         )
 
         try? await SessionRepository.shared.save(result)
+    }
+
+    /// Cancels the active processing and duration tasks and clears session state
+    /// without saving to Firestore. Call this when navigating back mid-session.
+    func stopProcessing() {
+        processingTask?.cancel()
+        durationTask?.cancel()
+        processingTask = nil
+        durationTask = nil
+        isSessionActive = false
     }
 
     // MARK: - Private: Frame Processing

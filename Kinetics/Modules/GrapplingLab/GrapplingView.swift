@@ -72,6 +72,18 @@ struct GrapplingView: View {
                 }
             }
         )
+        .overlay {
+            if viewModel.isSessionActive && viewModel.currentPose == nil {
+                NobodyDetectedOverlay()
+            }
+        }
+        .overlay {
+            if appState.cameraManager.permissionDenied {
+                CameraPermissionDeniedOverlay {
+                    appState.cameraManager.openSettings()
+                }
+            }
+        }
     }
 
     // MARK: - Subviews
@@ -187,6 +199,7 @@ struct GrapplingView: View {
                 await viewModel.endSession(
                     userId: appState.authManager.currentUser?.uid ?? ""
                 )
+                viewModel.stopProcessing()
                 appState.cameraManager.stopSession()
                 dismiss()
             }
@@ -300,6 +313,58 @@ struct GrapplingView: View {
         case ..<30: return Color.white.opacity(0.6)
         case 30..<60: return Color.kineticsOrange
         default: return Color.kineticsGreen
+        }
+    }
+}
+
+// MARK: - NobodyDetectedOverlay
+
+private struct NobodyDetectedOverlay: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "person.fill.viewfinder")
+                .font(.system(size: 28, weight: .light))
+                .foregroundStyle(.white.opacity(0.7))
+            Text("Point camera at yourself")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.white.opacity(0.7))
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial, in: Capsule())
+        .padding(.top, 120)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .allowsHitTesting(false)
+    }
+}
+
+// MARK: - CameraPermissionDeniedOverlay
+
+private struct CameraPermissionDeniedOverlay: View {
+    let onOpenSettings: () -> Void
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.92).ignoresSafeArea()
+            VStack(spacing: 20) {
+                Image(systemName: "camera.slash.fill")
+                    .font(.system(size: 52, weight: .thin))
+                    .foregroundStyle(Color(red: 0, green: 0.76, blue: 1))
+                Text("Camera Access Required")
+                    .font(.system(.title2, design: .rounded, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text("Kinetics needs camera access to analyze your movement in real time.")
+                    .font(.system(.subheadline))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                Button("Open Settings", action: onOpenSettings)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color(red: 0, green: 0, blue: 0.1))
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 14)
+                    .background(Color(red: 0, green: 0.76, blue: 1))
+                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            }
         }
     }
 }

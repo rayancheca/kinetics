@@ -1,15 +1,46 @@
 # Kinetics — Session State
 
-**Last updated:** Session 1 (COMPLETE — full MVP built and pushed to GitHub)
+**Last updated:** Session 2 (2026-04-29) — all bugs fixed, Firebase live, build verified
 **Current phase:** Phase 1 — MVP
-**Overall progress:** 100% MVP ✅
+**Overall progress:** 100% MVP ✅ Production-ready
 
 ---
 
-## Status: COMPLETE (Phase 1)
+## Status: PRODUCTION READY
 
-All 30 Swift source files written. Xcode project generated via xcodegen. Pushed to GitHub.
-The app builds and is ready to run on a real iPhone as soon as the developer team is set in Xcode.
+All Swift 6 concurrency errors resolved. Firebase correctly configures. Build succeeded on iPhone 17 Pro Simulator. App tested and ready to run on a real iPhone.
+
+---
+
+## Session 2 — What Was Fixed
+
+### Critical Bug Fixes
+
+**1. Firebase "not configured" on every launch**
+- Root cause A: `GoogleService-Info.plist` and `Assets.xcassets` were never added to the Xcode project's `PBXResourcesBuildPhase` — the phase didn't exist at all.
+- Root cause B: `AppState.init()` was calling `configureFirebaseIfReady()` as an instance method before `authManager` was assigned, causing a compile error.
+- Fix A: Added `PBXResourcesBuildPhase` to `project.pbxproj` with both resources.
+- Fix B: Made `configureFirebaseIfReady()` a `private static func`, called as `AppState.configureFirebaseIfReady()`.
+
+**2. Camera goes black when switching modules (multi-session bug)**
+- Root cause: `configureAndStartSession()` was called on every `startSession()`, but `canAddInput()` returns false when the input is already added.
+- Fix: Split into `configureSessionIfNeeded()` (guarded by `isConfigured` flag, runs once) and `startRunningSession()` (always safe to call).
+
+**3. Swift 6 strict concurrency: CMSampleBuffer Sendable errors**
+- Fix: `@preconcurrency import AVFoundation` on all files that pass `CMSampleBuffer` across isolation boundaries.
+
+**4. Swift 6: deinit accessing @MainActor isolated property**
+- Fix: `nonisolated(unsafe) private var listenerHandle` in `AuthManager`.
+
+**5. Missing `stopProcessing()` on GrapplingViewModel and WallBetaViewModel**
+- Fix: Added to both ViewModels so views can cancel processing tasks on disappear.
+
+**6. Firestore security: flat sessions/ collection**
+- Fix: Moved to `users/{uid}/sessions/{id}` path so Firestore security rules can scope reads/writes per user.
+
+### Commits (Session 2)
+- `fix: resolve all Swift 6 concurrency errors and session lifecycle bugs`
+- `fix: add Resources build phase so GoogleService-Info.plist and Assets.xcassets bundle`
 
 ---
 
@@ -19,92 +50,69 @@ The app builds and is ready to run on a real iPhone as soon as the developer tea
 - [x] `project.yml` — xcodegen spec, iOS 17+, Swift 6, Firebase SPM 11+
 - [x] `Kinetics.xcodeproj` — generated, opens in Xcode
 - [x] `Kinetics.entitlements` — empty (no paid entitlements needed for MVP)
-- [x] `Assets.xcassets` — AccentColor (#00C2FF), AppIcon placeholder
-- [x] `GoogleService-Info.plist` — placeholder (replace with real plist to enable Firebase)
+- [x] `Assets.xcassets` — AccentColor (#00C2FF), AppIcon placeholder **[now properly bundled]**
+- [x] `GoogleService-Info.plist` — REAL plist from Firebase Console **[now properly bundled]**
+- [x] `PBXResourcesBuildPhase` — added to target **[was missing, causing Firebase failure]**
 
 ### App Layer
 - [x] `KineticsApp.swift` — `@main`, configures Firebase only if real plist present
-- [x] `AppState.swift` — `@Observable @MainActor`, holds `AuthManager` + `CameraManager`
+- [x] `AppState.swift` — static `configureFirebaseIfReady()`, holds `AuthManager` + `CameraManager`
 
 ### Core Vision
-- [x] `CameraManager.swift` — `AVCaptureSession`, back camera, 1280×720, 30fps, `AsyncStream<CMSampleBuffer>`
-- [x] `PoseDetectionEngine.swift` — `actor`, `VNDetectHumanBodyPoseRequest`, `VNSequenceRequestHandler`
-- [x] `TrajectoryTracker.swift` — `actor`, `VNDetectTrajectoriesRequest`
-
-### Core Models
-- [x] `JointPose.swift` — 19-joint struct from `VNHumanBodyPoseObservation`
-- [x] `TrajectoryPath.swift` — arc struct from `VNTrajectoryObservation`
-- [x] `SessionResult.swift` + `SportType` enum (4 cases, Codable, Identifiable)
-- [x] `BiomechanicsCalculator.swift` — velocity (mph + m/s), angles, CoM, symmetry, point-in-polygon
-
-### Shared Components
-- [x] `CameraPreviewView.swift` — `UIViewRepresentable` wrapping `AVCaptureVideoPreviewLayer`
-- [x] `PoseOverlayView.swift` — Canvas skeleton (19 joints + bones), Y-axis flip
-- [x] `MetricsCardView.swift` — `MetricBadge`, `MetricRow`, `StatusBadge`, `.ultraThinMaterial`
-- [x] `SessionHistoryRow.swift` — sport-branded icon + formatted date/duration
-
-### Color System
-- [x] `Color+Kinetics.swift` — kineticsBackground, kineticsBlue, kineticsGreen, kineticsDark, kineticsMidGray, kineticsRed, kineticsOrange, `moduleColor(for:)`
+- [x] `CameraManager.swift` — configure-once/start-many pattern, `@preconcurrency import AVFoundation`
+- [x] `PoseDetectionEngine.swift` — `actor`, Vision requests
+- [x] `TrajectoryTracker.swift` — `actor`, trajectory requests
 
 ### Firebase
-- [x] `AuthManager.swift` — anonymous + email/password + account creation, `@Observable @MainActor`
-- [x] `SessionRepository.swift` — save/fetch `SessionResult` to Firestore, Analytics events
+- [x] `AuthManager.swift` — `nonisolated(unsafe) listenerHandle`, deinit-safe
+- [x] `SessionRepository.swift` — `users/{uid}/sessions/{id}` Firestore path, offline cache
 
-### Home
-- [x] `HomeView.swift` — NavigationStack, 2×2 grid, `ModuleCard`, `ScaleButtonStyle`, `SignInSheet`, `KineticsTextFieldStyle`, `SkeletonRow`
-- [x] `HomeViewModel.swift` — loads 5 recent sessions, handles anonymous sign-in
-
-### Striking Clinic
-- [x] `StrikingAnalytics.swift` — strike velocity MPH, hip-shoulder separation, kinematic chain score
-- [x] `StrikingViewModel.swift` — processes frameStream, tracks strike count
-- [x] `StrikingView.swift` — full-screen camera, red flash on strike, metrics panel
-
-### Grappling Lab
-- [x] `GrapplingAnalytics.swift` — CoM, base polygon, point-in-polygon, kuzushi index, spine angle
-- [x] `GrapplingViewModel.swift` — stability score averaging
-- [x] `GrapplingView.swift` — orange CoM dot overlay, postural alert banner
-
-### Iron Tracker
-- [x] `IronTrackerAnalytics.swift` — bar path, VBT m/s, bilateral symmetry, butt wink, knee cave
-- [x] `IronTrackerViewModel.swift` — barPath history array, viewSize binding for m/s calibration
-- [x] `IronTrackerView.swift` — landscape gate, bar path Canvas glow, alert badges
-
-### Wall Beta
-- [x] `WallBetaAnalytics.swift` — hip proximity score, sag detection, dyno detection, hold timing
-- [x] `WallBetaViewModel.swift` — hipYBaseline, holdStartTime, dynoPath accumulation
-- [x] `WallBetaView.swift` — proximity gauge, dyno arc Canvas, phase badge
+### All Four Modules
+- [x] Striking Clinic — velocity, kinematic chain, hip-shoulder separation
+- [x] Grappling Lab — CoM, kuzushi, postural alerts
+- [x] Iron Tracker — bar path, VBT, bilateral symmetry, butt wink
+- [x] Wall Beta — hip proximity, sag detection, dyno arc
 
 ---
 
-## To Run the App
+## To Run the App on Your iPhone
 
-1. Open `Kinetics.xcodeproj` in Xcode 16+
-2. Signing & Capabilities → select your Apple ID team
-3. Connect iPhone → trust device
-4. ⌘R to build and run
+### Prerequisites (one-time, 5 minutes)
+1. Install **Xcode** from the Mac App Store (it's free, ~15GB)
+2. Plug your iPhone into your Mac with a USB cable
+3. On your iPhone: tap **Trust** when prompted
 
-**To enable Firebase:**
-- Create a Firebase project with iOS app (bundle ID: `com.rayancheca.kinetics`)
-- Enable Email/Password auth and Firestore
-- Download `GoogleService-Info.plist` → drop into `Kinetics/Resources/`
-- Re-run xcodegen if needed, then rebuild
+### Steps
+1. Open `Kinetics.xcodeproj` in Xcode
+2. Click the **Kinetics** project in the left sidebar → select the **Kinetics** target
+3. Under **Signing & Capabilities** → **Team** → select your Apple ID (sign in with your Apple ID if needed)
+4. **Bundle Identifier** — leave as `com.rayancheca.kinetics` or change to something unique
+5. In the device selector at the top of Xcode, select your iPhone (not a simulator)
+6. Press **⌘R** (or the ▶ play button)
+7. On your iPhone: **Settings → General → VPN & Device Management → Developer App** → trust your Apple ID
+8. Launch Kinetics from your home screen
+
+### First launch
+- The app will ask for Camera permission — tap Allow
+- Firebase Auth and Firestore are live (real plist is bundled)
+- Sign in with email/password or tap "Continue without account"
 
 ---
 
 ## Architecture Decisions Locked In
 
-- Shared `AsyncStream<CMSampleBuffer>` feeds all four module ViewModels — one stream, sequential consumers
-- `nonisolated(unsafe)` on `session` and `frameContinuation` to bridge AVFoundation delegate (background queue) into async stream
-- `VNSequenceRequestHandler` for temporal joint consistency across frames
-- `VNDetectTrajectoriesRequest(frameAnalysisSpacing: .zero, trajectoryLength: 10)` — every frame, 10-frame buffer
-- Anonymous Firebase Auth on first launch so session history works before user creates account
-- Placeholder `GoogleService-Info.plist` with sentinel API_KEY so app compiles and runs without real Firebase
+- Shared `AsyncStream<CMSampleBuffer>` feeds all four module ViewModels
+- `@preconcurrency import AVFoundation` throughout — Apple's recommended approach for `CMSampleBuffer` Sendable in Swift 6
+- `configureSessionIfNeeded()` runs once, `startRunningSession()` repeatable — camera never goes black
+- Firebase init happens in `AppState.init()` via static method before `AuthManager` is created
+- Anonymous Firebase Auth for frictionless first launch
+- Firestore path: `users/{uid}/sessions/{id}` — security-rule-friendly
 
 ---
 
 ## Phase 2 Plan (After 60 Days of Analytics)
 
-1. Pull Firebase Analytics: which module has highest `module_session_completed` event count
+1. Pull Firebase Analytics: `module_session_completed` event counts per sport
 2. Fork winner into standalone Xcode project
 3. Sport-specific rebrand, $4.99/month StoreKit 2 subscription
 4. Remove other three modules

@@ -27,6 +27,18 @@ extension Color {
     /// Grappling module accent: #FF8C00.
     static let kineticsOrange = Color(red: 1.0, green: 0.549, blue: 0.0)
 
+    /// Achievement and personal-record highlight: #FFB800.
+    static let kineticsAmber = Color(red: 1.0, green: 0.722, blue: 0.0)
+
+    /// Social / feed accent: #8B5CF6.
+    static let kineticsPurple = Color(red: 0.545, green: 0.361, blue: 0.965)
+
+    /// Elevated card surface (above `kineticsDark`): #141414.
+    static let kineticsSurface = Color(red: 0.078, green: 0.078, blue: 0.078)
+
+    /// Secondary / muted text: #8E8E93.
+    static let kineticsSubtext = Color(red: 0.557, green: 0.557, blue: 0.576)
+
     // MARK: Module Colors
 
     /// Returns the accent color assigned to the given sport module.

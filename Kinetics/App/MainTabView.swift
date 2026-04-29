@@ -18,13 +18,17 @@ struct MainTabView: View {
                 .tabItem { Label("Track", systemImage: "map.fill") }
                 .tag(2)
 
+            FeedView()
+                .tabItem { Label("Feed", systemImage: "person.2.fill") }
+                .tag(3)
+
             HistoryView()
                 .tabItem { Label("History", systemImage: "clock.fill") }
-                .tag(3)
+                .tag(4)
 
             ProfileView()
                 .tabItem { Label("Profile", systemImage: "person.fill") }
-                .tag(4)
+                .tag(5)
         }
         .tint(Color.kineticsBlue)
         .toolbarBackground(.black, for: .tabBar)

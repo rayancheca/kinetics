@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0C296E87D17F3ABEF24D62CD /* SocialModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0EA76A613EE66A3CFB9842 /* SocialModels.swift */; };
 		0FC3C27122B7C7C1C81A087B /* Color+Kinetics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */; };
+		0FEB7175E23B33B615E506B0 /* UserProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64295A75846A5227141320D /* UserProfileView.swift */; };
 		1088DCBF512BA3FBC2F0C253 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CF8E2F952DD6ED295C43EA /* HomeView.swift */; };
 		112FAFFB42872D754E3C11FA /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */; };
 		175C3ADDB5DCFB9C6D9B1167 /* RouteMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F16ADFA50EB885D3690144D /* RouteMapView.swift */; };
@@ -45,6 +47,7 @@
 		89D4093D6D3DD064C1066EBF /* WorkoutResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF82ED7BF717471259F1A6EB /* WorkoutResult.swift */; };
 		8B32DBDDAC4BECC125DD9427 /* MetricsCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */; };
 		8ED4D22F1E0D4AD1C9EFA28E /* WallBetaOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49B757EAB9FE8AA2EA6BFBF /* WallBetaOnboardingView.swift */; };
+		9598F6CA6662EC1F128A3F2A /* SocialRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 099853C55F62679C9537A8A4 /* SocialRepository.swift */; };
 		98C0AED100800BD8EA5FE78B /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4444A68F70A599ECA48403BE /* SessionRepository.swift */; };
 		A1F9B0AF1252345E962F76C8 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F7902015FAF42D59AEF1E6 /* CameraManager.swift */; };
 		A4E9C776BB171B6613E9ED20 /* SessionHistoryRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */; };
@@ -62,6 +65,7 @@
 		E17AF55DA7AC09125EE4669B /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */; };
 		E4DC3B328F23443705BCE86A /* GrapplingOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52A53BDDF7AD6CAA2F4E282 /* GrapplingOnboardingView.swift */; };
 		ED04CA4FA88F26989DD1CDCF /* WorkoutRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7B95E1925765E8119CF3FF /* WorkoutRepository.swift */; };
+		F0625C27A79CC0D116990168 /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E248662A4970A12F5F6FAD9 /* FeedView.swift */; };
 		F2BF7D9E611D9C7C8554DB30 /* IronTrackerSessionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECE0D529563112634E110515 /* IronTrackerSessionReportView.swift */; };
 		F3C7D67C0CD2853294BC67D9 /* TrainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90F5D52A2B4BD6611D7FD00 /* TrainView.swift */; };
 		F49F31E064DD1C9596B014AC /* StrikingOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A05C80397FFC400824161B /* StrikingOnboardingView.swift */; };
@@ -72,6 +76,7 @@
 /* Begin PBXFileReference section */
 		04CF8E2F952DD6ED295C43EA /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		05FB80A5C42F07AC82B0487B /* StrikingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingView.swift; sourceTree = "<group>"; };
+		099853C55F62679C9537A8A4 /* SocialRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialRepository.swift; sourceTree = "<group>"; };
 		0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Kinetics.swift"; sourceTree = "<group>"; };
 		0DC032562411DDDC1ED7D376 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -97,7 +102,9 @@
 		60CFC25313B76AA9012A0A96 /* JointPose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JointPose.swift; sourceTree = "<group>"; };
 		63D18F45C130B389B898CD57 /* CoachingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachingEngine.swift; sourceTree = "<group>"; };
 		63DE416D081F3C588AC652A3 /* SessionResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionResult.swift; sourceTree = "<group>"; };
+		6E248662A4970A12F5F6FAD9 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
 		6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryRow.swift; sourceTree = "<group>"; };
+		7F0EA76A613EE66A3CFB9842 /* SocialModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialModels.swift; sourceTree = "<group>"; };
 		8AE95815B031AA4940A863EE /* PoseDetectionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseDetectionEngine.swift; sourceTree = "<group>"; };
 		8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsCardView.swift; sourceTree = "<group>"; };
 		8CB1F0F7FD8AD724C05CEEBE /* GrapplingAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingAnalytics.swift; sourceTree = "<group>"; };
@@ -118,6 +125,7 @@
 		D8643CBD1C2B047956616ACC /* TrackViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackViewModel.swift; sourceTree = "<group>"; };
 		E52A53BDDF7AD6CAA2F4E282 /* GrapplingOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingOnboardingView.swift; sourceTree = "<group>"; };
 		E5A05C80397FFC400824161B /* StrikingOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingOnboardingView.swift; sourceTree = "<group>"; };
+		E64295A75846A5227141320D /* UserProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileView.swift; sourceTree = "<group>"; };
 		E8CDBB4B81075781F23B9E68 /* WallBetaViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaViewModel.swift; sourceTree = "<group>"; };
 		ECE0D529563112634E110515 /* IronTrackerSessionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerSessionReportView.swift; sourceTree = "<group>"; };
 		EF82ED7BF717471259F1A6EB /* WorkoutResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutResult.swift; sourceTree = "<group>"; };
@@ -199,6 +207,7 @@
 				C90F5D52A2B4BD6611D7FD00 /* TrainView.swift */,
 				0D3316917AB164AB306F0212 /* GrapplingLab */,
 				DF7713EBD259B82C29A9F65A /* IronTracker */,
+				DE4D16577BA0BA14DBAFE8F4 /* Social */,
 				7B7BBC68A7C5DE469BFC2107 /* StrikingClinic */,
 				0EA50C404C9E3144E4C2D07A /* Track */,
 				953F928A7FAD0A9B77C055FE /* WallBeta */,
@@ -339,6 +348,17 @@
 			path = Firebase;
 			sourceTree = "<group>";
 		};
+		DE4D16577BA0BA14DBAFE8F4 /* Social */ = {
+			isa = PBXGroup;
+			children = (
+				6E248662A4970A12F5F6FAD9 /* FeedView.swift */,
+				7F0EA76A613EE66A3CFB9842 /* SocialModels.swift */,
+				099853C55F62679C9537A8A4 /* SocialRepository.swift */,
+				E64295A75846A5227141320D /* UserProfileView.swift */,
+			);
+			path = Social;
+			sourceTree = "<group>";
+		};
 		DF7713EBD259B82C29A9F65A /* IronTracker */ = {
 			isa = PBXGroup;
 			children = (
@@ -434,6 +454,7 @@
 				31A6EE899D6BC52F5BA390BC /* CameraPreviewView.swift in Sources */,
 				80540CFE2336B7C01E02211C /* CoachingEngine.swift in Sources */,
 				0FC3C27122B7C7C1C81A087B /* Color+Kinetics.swift in Sources */,
+				F0625C27A79CC0D116990168 /* FeedView.swift in Sources */,
 				6DB9F094B9B3D5F739C3FC27 /* GrapplingAnalytics.swift in Sources */,
 				E4DC3B328F23443705BCE86A /* GrapplingOnboardingView.swift in Sources */,
 				43999AD8C7DF4E87C1B0E859 /* GrapplingSessionReportView.swift in Sources */,
@@ -462,6 +483,8 @@
 				A4E9C776BB171B6613E9ED20 /* SessionHistoryRow.swift in Sources */,
 				98C0AED100800BD8EA5FE78B /* SessionRepository.swift in Sources */,
 				CB6BECC8855AE1CEEABAA02E /* SessionResult.swift in Sources */,
+				0C296E87D17F3ABEF24D62CD /* SocialModels.swift in Sources */,
+				9598F6CA6662EC1F128A3F2A /* SocialRepository.swift in Sources */,
 				3AAECFFD09059C41182B79E5 /* StrikingAnalytics.swift in Sources */,
 				F49F31E064DD1C9596B014AC /* StrikingOnboardingView.swift in Sources */,
 				7B4066A954E393ECF3628611 /* StrikingSessionReportView.swift in Sources */,
@@ -473,6 +496,7 @@
 				F3C7D67C0CD2853294BC67D9 /* TrainView.swift in Sources */,
 				86FB595B448BF9FE7E537B63 /* TrajectoryPath.swift in Sources */,
 				5A7D41C9A6C3862567130171 /* TrajectoryTracker.swift in Sources */,
+				0FEB7175E23B33B615E506B0 /* UserProfileView.swift in Sources */,
 				4800590EB918C41C35699399 /* WallBetaAnalytics.swift in Sources */,
 				8ED4D22F1E0D4AD1C9EFA28E /* WallBetaOnboardingView.swift in Sources */,
 				3C7A9650D2ADA2154F15CAB3 /* WallBetaSessionReportView.swift in Sources */,

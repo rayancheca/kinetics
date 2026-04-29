@@ -22,10 +22,22 @@
 	<string>1</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Kinetics uses your camera to analyze movement and provide real-time biomechanics coaching feedback.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Kinetics reads your heart rate and step count to enhance workout tracking.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Kinetics writes your workouts to Apple Health so they appear in your Health app activity history.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Kinetics tracks your route in the background so your full workout is recorded even when the screen is off.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Kinetics tracks your route, pace, and distance during outdoor workouts.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Kinetics may use the microphone for future audio coaching features.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiresFullScreen</key>

@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 
 // MARK: - HomeView
@@ -661,6 +662,38 @@ struct SignInSheet: View {
                             || password.isEmpty
                             || appState.authManager.isLoading
                     )
+                    .padding(.bottom, 12)
+
+                    // MARK: Divider
+                    HStack(spacing: 10) {
+                        Rectangle()
+                            .fill(.white.opacity(0.10))
+                            .frame(height: 0.5)
+                        Text("or")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.30))
+                        Rectangle()
+                            .fill(.white.opacity(0.10))
+                            .frame(height: 0.5)
+                    }
+                    .padding(.bottom, 12)
+
+                    // MARK: Sign in with Apple
+                    SignInWithAppleButton(.signIn) { request in
+                        request.requestedScopes = [.fullName, .email]
+                    } onCompletion: { _ in
+                        // Handled inside AuthManager.signInWithApple()
+                    }
+                    .signInWithAppleButtonStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .onTapGesture {
+                        Task {
+                            try? await appState.authManager.signInWithApple()
+                            if appState.authManager.isSignedIn { dismiss() }
+                        }
+                    }
                     .padding(.bottom, 12)
 
                     // MARK: Anonymous Continue

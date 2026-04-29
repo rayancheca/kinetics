@@ -1,7 +1,10 @@
+import AuthenticationServices
+import CryptoKit
 import FirebaseAuth
 import FirebaseCore
 import Foundation
 import Observation
+import UIKit
 
 // MARK: - AuthManager
 
@@ -26,6 +29,9 @@ final class AuthManager {
     // MARK: - Private
 
     nonisolated(unsafe) private var listenerHandle: AuthStateDidChangeListenerHandle?
+
+    /// Held between the Apple ID request and the ASAuthorizationController delegate callback.
+    nonisolated(unsafe) private var currentNonce: String?
 
     /// Returns `true` only when a real Firebase app has been configured.
     /// When the placeholder plist is active, `FirebaseApp.app()` returns `nil`.
@@ -115,6 +121,93 @@ final class AuthManager {
         }
     }
 
+    // MARK: - Sign In: Apple
+
+    /// Authenticates with Sign in with Apple and links the credential to Firebase Auth.
+    ///
+    /// Internally wraps the delegate-based `ASAuthorizationController` in a
+    /// checked-throwing continuation so callers can use `try await`.
+    func signInWithApple() async throws {
+        guard isFirebaseReady else {
+            authError = "Firebase is not configured."
+            return
+        }
+        isLoading = true
+        defer { isLoading = false }
+        authError = nil
+
+        let nonce = randomNonceString()
+        currentNonce = nonce
+
+        let appleIDProvider = ASAuthorizationAppleIDProvider()
+        let request = appleIDProvider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = sha256(nonce)
+
+        let authorization: ASAuthorization = try await withCheckedThrowingContinuation { continuation in
+            let coordinator = AppleSignInCoordinator(continuation: continuation)
+            let controller = ASAuthorizationController(authorizationRequests: [request])
+            controller.delegate = coordinator
+            controller.presentationContextProvider = coordinator
+            // Retain coordinator for the async lifetime of this call.
+            coordinator.retain()
+            controller.performRequests()
+        }
+
+        guard
+            let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+            let appleIDTokenData = appleIDCredential.identityToken,
+            let appleIDToken = String(data: appleIDTokenData, encoding: .utf8),
+            let nonce = currentNonce
+        else {
+            authError = "Unable to read Apple ID token."
+            throw AuthError.missingAppleIDToken
+        }
+
+        let credential = OAuthProvider.appleCredential(
+            withIDToken: appleIDToken,
+            rawNonce: nonce,
+            fullName: appleIDCredential.fullName
+        )
+
+        do {
+            let result = try await Auth.auth().signIn(with: credential)
+            currentUser = result.user
+        } catch {
+            authError = error.localizedDescription
+            throw error
+        }
+    }
+
+    // MARK: - Nonce Helpers
+
+    private func randomNonceString(length: Int = 32) -> String {
+        let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        var result = ""
+        var remainingLength = length
+        while remainingLength > 0 {
+            let randoms: [UInt8] = (0 ..< 16).map { _ in
+                var random: UInt8 = 0
+                _ = SecRandomCopyBytes(kSecRandomDefault, 1, &random)
+                return random
+            }
+            randoms.forEach { random in
+                if remainingLength == 0 { return }
+                if random < charset.count {
+                    result.append(charset[Int(random)])
+                    remainingLength -= 1
+                }
+            }
+        }
+        return result
+    }
+
+    private func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        return hashedData.compactMap { String(format: "%02x", $0) }.joined()
+    }
+
     // MARK: - Sign Out
 
     /// Signs out the current user. Clears `currentUser` synchronously.
@@ -122,5 +215,65 @@ final class AuthManager {
         guard isFirebaseReady else { return }
         try Auth.auth().signOut()
         currentUser = nil
+    }
+}
+
+// MARK: - AuthError
+
+enum AuthError: Error {
+    case missingAppleIDToken
+}
+
+// MARK: - AppleSignInCoordinator
+
+/// Bridges `ASAuthorizationController`'s delegate callbacks into a Swift
+/// checked-throwing continuation so `signInWithApple()` can be fully async.
+///
+/// The coordinator retains itself via `retain()` / `release()` to survive the
+/// async gap between `performRequests()` and the delegate callback — without
+/// leaking if the authorization window is dismissed early.
+private final class AppleSignInCoordinator: NSObject,
+    ASAuthorizationControllerDelegate,
+    ASAuthorizationControllerPresentationContextProviding
+{
+
+    private var continuation: CheckedContinuation<ASAuthorization, Error>?
+    // Self-retain token so ARC doesn't deallocate us during the async gap.
+    private var selfRetain: AppleSignInCoordinator?
+
+    init(continuation: CheckedContinuation<ASAuthorization, Error>) {
+        self.continuation = continuation
+    }
+
+    /// Call once before `performRequests()` to keep the coordinator alive.
+    func retain() { selfRetain = self }
+
+    // MARK: - ASAuthorizationControllerDelegate
+
+    func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithAuthorization authorization: ASAuthorization
+    ) {
+        continuation?.resume(returning: authorization)
+        continuation = nil
+        selfRetain = nil
+    }
+
+    func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithError error: Error
+    ) {
+        continuation?.resume(throwing: error)
+        continuation = nil
+        selfRetain = nil
+    }
+
+    // MARK: - ASAuthorizationControllerPresentationContextProviding
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow } ?? UIWindow()
     }
 }

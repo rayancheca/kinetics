@@ -1,3 +1,4 @@
+import FirebaseAnalytics
 import SwiftData
 import SwiftUI
 
@@ -34,6 +35,9 @@ struct KineticsApp: App {
                 .modelContainer(Self.modelContainer)
                 .onAppear {
                     GymRepository.shared.modelContainer = Self.modelContainer
+                    Analytics.logEvent("app_session_started", parameters: [
+                        "timestamp": Date().timeIntervalSince1970
+                    ])
                 }
                 .fullScreenCover(isPresented: Binding(
                     get: { !permissionsRequested },

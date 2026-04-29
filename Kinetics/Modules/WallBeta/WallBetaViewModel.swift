@@ -199,6 +199,25 @@ final class WallBetaViewModel {
             // Non-fatal — the session result may not persist but the app stays stable.
             errorMessage = "Session could not be saved: \(error.localizedDescription)"
         }
+
+        Task {
+            await SessionFeedPublisher.publish(
+                userId: userId,
+                displayName: "",
+                sport: "Wall Beta",
+                activityType: "wall",
+                itemType: .wallSession,
+                durationSeconds: finalDuration,
+                metrics: [
+                    FeedMetric(label: "HIP PROX",
+                               value: "\(Int(metrics.hipProximityScore))",
+                               unit: "%"),
+                    FeedMetric(label: "HOLD TIME",
+                               value: String(format: "%.0fs", metrics.holdTimeSeconds),
+                               unit: ""),
+                ]
+            )
+        }
     }
 
     // MARK: - Private — Frame Processing Loop

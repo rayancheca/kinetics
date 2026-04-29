@@ -141,6 +141,28 @@ final class StrikingViewModel {
         ])
         try? await SessionRepository.shared.save(result)
         lastCompletedSession = result
+
+        Task {
+            await SessionFeedPublisher.publish(
+                userId: userId,
+                displayName: "",
+                sport: "Striking Clinic",
+                activityType: "striking",
+                itemType: .strikeSession,
+                durationSeconds: sessionDuration,
+                metrics: [
+                    FeedMetric(label: "VELOCITY",
+                               value: String(format: "%.1f", metrics.peakVelocityMPH),
+                               unit: "mph"),
+                    FeedMetric(label: "STRIKES",
+                               value: "\(metrics.strikeCount)",
+                               unit: ""),
+                    FeedMetric(label: "CHAIN",
+                               value: "\(Int(metrics.kinematicScore))",
+                               unit: "/100"),
+                ]
+            )
+        }
     }
 
     /// Cancels the active processing and duration tasks and clears session state

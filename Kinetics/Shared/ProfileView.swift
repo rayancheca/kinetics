@@ -165,6 +165,26 @@ struct ProfileView: View {
                 .padding(.bottom, 10)
 
             VStack(spacing: 0) {
+                NavigationLink(destination: SubscriptionView()) {
+                    HStack {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color.kineticsAmber)
+                            .frame(width: 28)
+                        Text("Premium")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.2))
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                }
+
+                Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
+
                 SettingsRow(icon: "camera.fill", label: "Camera Permissions") {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         UIApplication.shared.open(url)

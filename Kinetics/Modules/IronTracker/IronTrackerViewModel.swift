@@ -163,6 +163,25 @@ final class IronTrackerViewModel {
         ])
         try? await SessionRepository.shared.save(result)
         lastCompletedSession = result
+
+        Task {
+            await SessionFeedPublisher.publish(
+                userId: userId,
+                displayName: "",
+                sport: "Iron Tracker",
+                activityType: "iron",
+                itemType: .gymSession,
+                durationSeconds: sessionDuration,
+                metrics: [
+                    FeedMetric(label: "BAR VEL",
+                               value: String(format: "%.2f", metrics.peakBarVelocityMS),
+                               unit: "m/s"),
+                    FeedMetric(label: "SYMMETRY",
+                               value: "\(Int(metrics.bilateralSymmetry))",
+                               unit: "%"),
+                ]
+            )
+        }
     }
 
     /// Cancels the active processing and duration tasks and clears session state

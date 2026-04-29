@@ -160,6 +160,25 @@ final class GrapplingViewModel {
             // Non-fatal — session data may not persist but the app should remain stable.
             errorMessage = "Session could not be saved: \(error.localizedDescription)"
         }
+
+        Task {
+            await SessionFeedPublisher.publish(
+                userId: userId,
+                displayName: "",
+                sport: "Grappling Lab",
+                activityType: "grappling",
+                itemType: .grapplingSession,
+                durationSeconds: finalDuration,
+                metrics: [
+                    FeedMetric(label: "SPINE",
+                               value: String(format: "%.0f°", metrics.spineAngleDegrees),
+                               unit: ""),
+                    FeedMetric(label: "KUZUSHI",
+                               value: "\(Int(metrics.kuzushiIndex))",
+                               unit: "/100"),
+                ]
+            )
+        }
     }
 
     // MARK: - Private: Frame Processing Loop

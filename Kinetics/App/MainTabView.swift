@@ -18,12 +18,12 @@ struct MainTabView: View {
                 .tabItem { Label("Track", systemImage: "map.fill") }
                 .tag(2)
 
-            FeedView()
-                .tabItem { Label("Feed", systemImage: "person.2.fill") }
+            GymHomeView()
+                .tabItem { Label("Gym", systemImage: "dumbbell.fill") }
                 .tag(3)
 
-            HistoryView()
-                .tabItem { Label("History", systemImage: "clock.fill") }
+            FeedView()
+                .tabItem { Label("Feed", systemImage: "person.2.fill") }
                 .tag(4)
 
             ProfileView()

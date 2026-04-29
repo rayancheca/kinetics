@@ -1127,4 +1127,552 @@ When a module opens, set `cameraManager.cameraPosition` to the stored preference
 
 ---
 
+## SECTION 16 — GYM TRACKER MODULE (DEDICATED MODULE — 3-4 SESSIONS)
+
+### What this module is
+
+A fully standalone gym workout tracking app contained within Kinetics as a 5th module (or its own tab). Think Strong + Hevy + Iron Tracker integrated — the best workout logger on the market, made unique by Kinetics' computer vision layer.
+
+**The positioning in one sentence:** Every other gym app tells you *what* you lifted. Kinetics Gym Tracker tells you *what* you lifted AND *how* you lifted it — bar speed, bar path, symmetry, form quality — all without buying any hardware.
+
+**Relationship to existing Iron Tracker module:**
+- Iron Tracker = live computer vision analysis during a specific lift (bar path, VBT, symmetry, butt wink)
+- Gym Tracker = full workout planning, logging, history, analytics, PRs, body tracking
+- Integration: when logging a barbell set in Gym Tracker, the user can optionally launch Iron Tracker for that set — form data flows back into the Gym Tracker session log
+
+### Competitive analysis summary (researched 2026-04-29)
+
+**Researched:** Strong, Hevy, Fitbod, JEFIT, Gymbook, Progression, RepCount, Bodybuilding.com, Apple Fitness+, Nike Training Club, Caliber
+
+**What every serious tracker has (table stakes — must build):**
+- Exercise library with muscle group tags
+- Set/rep/weight logging with pre-fill from last session
+- Rest timer (auto-start after set completion)
+- Routine/template builder
+- Personal Records tracked per rep range (not just 1RM) — RepCount does this best
+- 1RM estimation (Brzycki formula)
+- Volume tracking over time
+- Apple Health sync
+- Progress charts (1RM and volume per exercise over time)
+- Body weight tracking
+
+**Differentiators the best apps add:**
+- Plate calculator (enter target weight → exact plates per side) — Strong, Hevy
+- Warm-up set ladder calculator — Strong only
+- Muscle heat map (front/back body diagram showing worked muscles) — Strong, JEFIT
+- Per-exercise rest timer customization — Hevy
+- Body measurements tracking (chest, waist, arms, etc.) — Strong, Hevy, JEFIT
+- Muscle group frequency tracker (how many sets per week per group) — Hevy, JEFIT
+- Pre-built program library (PPL, 5/3/1, Starting Strength, etc.) — Hevy (25+), Caliber (60+)
+- Set notes, workout journal — Hevy, Caliber
+- Set types: Warmup / Working / Drop Set / Failure / Superset
+
+**Features that exist in NO mainstream app (Kinetics' moat):**
+- Bar path tracking via camera (only obscure app "Metric" — not mainstream)
+- Velocity-based training (VBT) — bar speed in m/s (niche apps only)
+- Bilateral symmetry detection via camera
+- Butt wink / lumbar angle detection
+- Form quality score integrated into the set log
+- Velocity loss as fatigue detection across sets (no app has this)
+- Normalized strength score (Caliber has a version — we can build better)
+- AI coaching notes after every workout (CoachingEngine already exists in our codebase)
+
+### Data models (SwiftData for local, Firestore for sync)
+
+```swift
+// Exercise library (static + user custom, stored in SwiftData)
+@Model final class Exercise {
+    var id: UUID
+    var name: String
+    var muscleGroups: [MuscleGroup]    // primary and secondary
+    var equipment: [EquipmentType]
+    var category: ExerciseCategory      // strength, cardio, bodyweight, timed
+    var instructions: String
+    var isCustom: Bool
+    // For barbell exercises: flag that enables Iron Tracker integration
+    var supportsCVAnalysis: Bool
+}
+
+enum MuscleGroup: String, Codable, CaseIterable {
+    case chest, back, shoulders, biceps, triceps, forearms
+    case quads, hamstrings, glutes, calves
+    case abs, obliques, lowerBack, traps, lats, rhomboids
+}
+
+enum EquipmentType: String, Codable, CaseIterable {
+    case barbell, dumbbell, cable, machine, bodyweight, kettlebell, bands, trap_bar, ez_bar, smith
+}
+
+enum ExerciseCategory: String, Codable {
+    case strength, cardio, bodyweight, timed, stretching
+}
+
+// A single logged set
+@Model final class WorkoutSet {
+    var weight: Double          // in kg internally, display in user preferred unit
+    var reps: Int
+    var setType: SetType        // warmup, working, dropset, failure
+    var rpe: Double?            // 6.0–10.0 optional
+    var isCompleted: Bool
+    var restSeconds: Int        // how long they actually rested
+    var notes: String?
+    var timestamp: Date
+    // Vision data if Iron Tracker was used for this set
+    var barPathDeviationCM: Double?
+    var vbtVelocityMS: Double?
+    var bilateralSymmetry: Double?
+    var formScore: Double?      // 0-100 composite from Iron Tracker
+}
+
+enum SetType: String, Codable {
+    case warmup, working, dropSet, failure, myoRep
+}
+
+// One exercise entry inside a workout (contains its sets)
+@Model final class WorkoutExerciseEntry {
+    var exercise: Exercise
+    var sets: [WorkoutSet]
+    var notes: String?
+    var orderIndex: Int
+}
+
+// A complete workout session
+@Model final class WorkoutSession {
+    var id: UUID
+    var name: String
+    var startedAt: Date
+    var endedAt: Date?
+    var entries: [WorkoutExerciseEntry]
+    var bodyweight: Double?     // logged at session start
+    var notes: String?
+    var rating: Int?            // 1-5 stars post-session
+    var userId: String
+    // Computed from entries
+    var totalVolumeKG: Double { ... }
+    var durationMinutes: Double { ... }
+}
+
+// A routine (template) — not a live session, a plan
+@Model final class Routine {
+    var id: UUID
+    var name: String
+    var templateEntries: [RoutineExerciseTemplate]
+    var lastPerformed: Date?
+    var totalPerformed: Int
+    var createdAt: Date
+}
+
+@Model final class RoutineExerciseTemplate {
+    var exercise: Exercise
+    var targetSets: Int
+    var targetReps: String      // "8-12" or "5" or "AMRAP"
+    var targetWeight: Double?   // last used, pre-fills next session
+    var restSeconds: Int        // default rest for this exercise
+    var orderIndex: Int
+}
+
+// Personal Records — one row per exercise per rep count
+@Model final class PersonalRecord {
+    var exercise: Exercise
+    var repCount: Int           // 1 through 10
+    var weight: Double
+    var estimatedOneRM: Double
+    var achievedAt: Date
+    var sessionId: UUID
+}
+
+// Body metrics tracked over time
+@Model final class BodyMeasurement {
+    var date: Date
+    var bodyweightKG: Double?
+    var bodyFatPercent: Double?
+    var measurements: [String: Double]  // "chest", "waist", "arms_l", "arms_r", etc.
+}
+```
+
+### File structure
+
+```
+Kinetics/Modules/GymTracker/
+├── GymTrackerView.swift              ← tab entry / dashboard
+├── GymTrackerViewModel.swift         ← session state, SwiftData queries
+├── GymTrackerTab.swift               ← inner tab bar: Today / History / Library / Body
+│
+├── Workout/
+│   ├── ActiveWorkoutView.swift       ← full-screen live logging session
+│   ├── ActiveWorkoutViewModel.swift  ← timer, set state, Iron Tracker bridge
+│   ├── SetRowView.swift              ← one set row (tap to complete)
+│   ├── RestTimerView.swift           ← countdown overlay / Dynamic Island
+│   └── WorkoutCompletionView.swift   ← post-session summary + coaching notes
+│
+├── Routine/
+│   ├── RoutineListView.swift         ← user's saved routines
+│   ├── RoutineDetailView.swift       ← edit a routine's exercises + targets
+│   ├── RoutineBuilderView.swift      ← create new routine
+│   └── ProgramLibraryView.swift     ← pre-built programs to clone
+│
+├── Library/
+│   ├── ExerciseLibraryView.swift    ← browse + search all exercises
+│   ├── ExerciseDetailView.swift     ← muscle diagram, instructions, history for this exercise
+│   ├── CreateExerciseView.swift     ← custom exercise creation
+│   └── ExerciseLibrary.swift        ← static seed data (300+ exercises)
+│
+├── Analytics/
+│   ├── MuscleHeatMapView.swift      ← front/back body SVG, color-coded by weekly volume
+│   ├── StrengthProgressView.swift   ← 1RM chart per exercise
+│   ├── VolumeCalendarView.swift     ← weekly/monthly volume heatmap
+│   ├── PRDashboardView.swift        ← all PRs across all exercises
+│   └── GymAnalyticsViewModel.swift
+│
+├── Body/
+│   ├── BodyMetricsView.swift        ← weight, body fat, measurements over time
+│   ├── MeasurementLogView.swift     ← log today's measurements
+│   └── BodyMetricsViewModel.swift
+│
+├── Tools/
+│   ├── PlateCalculatorView.swift    ← enter weight → get plates per side
+│   ├── OneRMCalculatorView.swift    ← estimate max from working set
+│   └── WarmUpCalculatorView.swift  ← auto-generate warm-up ladder
+│
+└── Data/
+    ├── GymRepository.swift          ← SwiftData CRUD + Firestore sync
+    └── ExerciseSeedData.swift       ← 300+ exercises with muscle groups
+```
+
+### Exercise library seed data
+
+Build the library with 300+ exercises minimum. Cover every muscle group completely. Use this structure:
+
+**Chest:** Barbell Bench Press, Incline Barbell Bench Press, Decline Barbell Bench Press, Dumbbell Bench Press, Incline Dumbbell Press, Decline Dumbbell Press, Dumbbell Flyes, Cable Crossover, Pec Deck, Push-Up, Archer Push-Up, Dips (chest focus), Machine Chest Press, Landmine Press
+**Back:** Conventional Deadlift, Romanian Deadlift, Barbell Row, Pendlay Row, Dumbbell Row, Cable Row, T-Bar Row, Lat Pulldown, Pull-Up, Chin-Up, Face Pull, Rear Delt Fly, Hyperextension, Good Morning, Trap Bar Deadlift, Meadows Row, Cable Pullover
+**Shoulders:** Overhead Press (barbell), Seated Dumbbell Press, Arnold Press, Lateral Raise, Front Raise, Cable Lateral Raise, Rear Delt Fly, Upright Row, Bradford Press, Push Press
+**Biceps:** Barbell Curl, Dumbbell Curl, Hammer Curl, Incline Dumbbell Curl, Cable Curl, Preacher Curl, Concentration Curl, Spider Curl, EZ Bar Curl, 21s
+**Triceps:** Close-Grip Bench Press, Tricep Dips, Skullcrushers, Overhead Tricep Extension, Cable Pushdown (rope), Cable Pushdown (bar), Diamond Push-Up, Kickbacks, JM Press
+**Legs:** Back Squat, Front Squat, Goblet Squat, Bulgarian Split Squat, Hack Squat, Leg Press, Leg Extension, Leg Curl, Nordic Curl, Good Morning, Hip Thrust, Glute Bridge, Calf Raise (standing), Calf Raise (seated), Sissy Squat, Lunges, Walking Lunges, Step-Ups, Box Jump
+**Core:** Plank, Side Plank, Ab Wheel Rollout, Hanging Leg Raise, Decline Sit-Up, Cable Crunch, Dragon Flag, Hollow Hold, L-Sit, Russian Twist, Pallof Press, Dead Bug, Bird Dog
+**Full Body / Olympic:** Power Clean, Power Snatch, Clean and Jerk, Thruster, Kettlebell Swing, Farmer's Walk, Turkish Get-Up, Battle Ropes
+
+All exercises must have:
+- primaryMuscles: [MuscleGroup]
+- secondaryMuscles: [MuscleGroup]
+- equipment: [EquipmentType]
+- category: .strength / .bodyweight / .cardio
+- supportsCVAnalysis: true for all barbell lifts (connects to Iron Tracker)
+
+### Live workout UI spec
+
+The active workout screen is the most critical UX surface. It must be fast — three taps from app open to first set logged.
+
+**Screen layout (full-screen, no tab bar during active session):**
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[BENCH PRESS  ×  END WORKOUT]
+ 00:43:22  ·  Total: 12,450 kg
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BENCH PRESS
+  ∅  Warm Up   20kg  × 10    ✓
+  1  Working   80kg  × 8     ✓
+  2  Working   80kg  × 8     ✓
+  3  Working   80kg  × 8   [ TAP ]  ← current set
+
+  REST TIMER  1:47  ████████░░░░
+
+  [+ ADD SET]   [🎥 IRON TRACKER]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SQUAT
+  1  Working   100kg × 5   [ TAP ]
+
+  [+ ADD SET]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[+ ADD EXERCISE]
+```
+
+**Set tapping UX:**
+- Tap the "[ TAP ]" set → opens inline weight/reps editor (large number picker, not keyboard)
+- Tap "Done" → set marked ✓, rest timer auto-starts
+- Long press a set → contextual menu: Edit / Set as Failure / Delete
+
+**Rest timer:**
+- Shows countdown in the section header of the exercise just completed
+- Fires a haptic when done
+- iOS 17+ Live Activity on Dynamic Island shows timer without opening app
+- Configurable per exercise (default: 90s, can set to 60, 90, 120, 180, 240s)
+
+**Iron Tracker bridge button:**
+- For `supportsCVAnalysis: true` exercises (barbell lifts), a "🎥 Iron Tracker" button appears
+- Tapping it pushes to a combined view: Iron Tracker camera + current set overlay
+- After stopping, form data (bar deviation, VBT, symmetry, form score) attaches to the set
+
+### Analytics spec
+
+**1. Muscle Heat Map (most impressive visual)**
+A front/back SVG body diagram where each muscle region is colored by weekly training volume:
+- Gray: not trained this week
+- Light blue: 1-4 sets this week
+- Medium blue: 5-9 sets
+- Electric blue: 10-14 sets (optimal)
+- Green: 15+ sets (high volume)
+
+Each colored region is tappable → shows exact exercises that hit it this week.
+
+Recommend minimum weekly sets per group (based on exercise science literature):
+- Chest: 10-20 sets/week
+- Back: 10-20 sets/week
+- Legs: 10-20 sets/week
+- Shoulders: 10-20 sets/week
+- Arms: 6-15 sets/week
+
+**2. Strength Progress Chart (per exercise)**
+Line chart: estimated 1RM on Y axis, date on X axis.
+Show all PRs as star markers on the line.
+Show multiple rep-range PRs on hover/tap (not just 1RM).
+
+**3. Volume Calendar (like GitHub contributions graph)**
+A 12-week calendar grid. Each day is a colored square:
+- Empty: rest day
+- Light: <60min or low volume
+- Medium: moderate session
+- Dark blue: high volume session
+Tap any day → summary of that session.
+
+**4. PR Dashboard**
+Table: all exercises sorted by "Most recently PR'd" by default.
+Each row: exercise name, current 1RM estimate, last PR date, PR improvement this month.
+Filter by muscle group.
+
+**5. Weekly Volume Summary (push notification)**
+Every Sunday at 8pm: "This week: 47 sets · 3 workouts · New PR on Squat. Top muscle: Back (18 sets). Under-trained: Calves (2 sets)."
+
+### Plate calculator spec
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PLATE CALCULATOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Bar weight:  [20 kg] ▾    ← bar selector: 20kg/15kg/10kg (women's)/custom
+Target:      [  102.5 kg  ]  ← big number picker
+
+Per side: 41.25 kg
+
+[25]  [10]  [5]  [2.5]  [1.25]  [0.25]
+  1     1    1     0       1       0
+
+= 41.25 kg per side ✓
+
+[Available plates]  — toggle which denominations you own
+```
+
+### Warm-up calculator spec
+
+Enter working weight → get:
+- Set 1: 30% × 8 reps (16kg)
+- Set 2: 50% × 5 reps (30kg)
+- Set 3: 70% × 3 reps (42.5kg)
+- Set 4: 90% × 1 rep (52.5kg)
+- Working set: 60kg × 5
+
+### Pre-built program library (clone to your routines)
+
+Include at minimum:
+1. **PPL (Push/Pull/Legs)** — 6 days/week, classic hypertrophy
+2. **Starting Strength** — 3 days/week, linear progression, beginner
+3. **5/3/1 (Wendler)** — 4 days/week, periodized strength
+4. **StrongLifts 5×5** — 3 days/week, beginner barbell
+5. **Upper/Lower Split** — 4 days/week, intermediate
+6. **GZCLP** — 3 days/week, tiered progressive overload
+7. **Arnold Split** — 6 days/week, high volume classic
+8. **Full Body 3x/week** — beginner, compound focus
+9. **Bro Split (5-day)** — one muscle group per day
+10. **Kinetics Power Program** — our own program integrating Iron Tracker for all barbell lifts
+
+Each program is a `Routine` collection (one per training day) with pre-filled exercises, target sets/reps, and notes.
+
+### Integration with existing Kinetics systems
+
+**Firebase:** Sync `WorkoutSession` documents to `users/{uid}/gymSessions/{id}` — separate collection from sport module sessions. Add `sessionType: "gym"` field to distinguish.
+
+**CoachingEngine:** After every gym session, call `CoachingEngine.generateGymNotes(for:)` — a new method that reads gym session data and generates coaching notes specific to strength training:
+- New PR detected → achievement note
+- Volume drop vs. last session → "Fatigue detected — consider deload"
+- Bilateral asymmetry detected via Iron Tracker → "Left side weaker on bench press"
+- Progressive overload opportunity → "You've hit your rep target 3 sessions in a row — increase bench by 2.5kg"
+
+**Firebase Analytics:** Log `gym_session_completed` event with `session_duration`, `exercise_count`, `set_count`, `pr_count` fields.
+
+### Build order for Claude (3 sessions minimum)
+
+**Gym Session A (data foundation):**
+1. `ExerciseSeedData.swift` — 300+ exercises (this alone is a full session — do it first, in parallel agents splitting by muscle group)
+2. `Exercise`, `WorkoutSet`, `WorkoutExerciseEntry`, `WorkoutSession`, `Routine`, `PersonalRecord`, `BodyMeasurement` SwiftData models
+3. `GymRepository.swift` — SwiftData CRUD, Firestore sync, PR detection logic
+4. `ExerciseLibraryView.swift` + `ExerciseDetailView.swift` — browse/search/filter exercises
+
+**Gym Session B (live workout — the core UX):**
+1. `ActiveWorkoutView.swift` — the full-screen workout logger (sets, reps, weight, rest timer)
+2. `SetRowView.swift` — the tappable set row with inline editor
+3. `RestTimerView.swift` — countdown + Live Activity + haptics
+4. `WorkoutCompletionView.swift` — post-session summary with PR celebrations + coaching notes
+5. `RoutineListView.swift` + `RoutineDetailView.swift` + `RoutineBuilderView.swift`
+6. `ProgramLibraryView.swift` — pre-built programs
+
+**Gym Session C (analytics + tools):**
+1. `MuscleHeatMapView.swift` — front/back body SVG with volume coloring
+2. `StrengthProgressView.swift` — 1RM charts per exercise
+3. `VolumeCalendarView.swift` — GitHub-style contribution calendar
+4. `PRDashboardView.swift` — all PRs across exercises
+5. `PlateCalculatorView.swift` + `OneRMCalculatorView.swift` + `WarmUpCalculatorView.swift`
+6. `BodyMetricsView.swift` + `MeasurementLogView.swift`
+7. `GymTrackerView.swift` — dashboard entry point tying everything together
+
+**Gym Session D (polish + Iron Tracker integration):**
+1. Wire Iron Tracker bridge button in `ActiveWorkoutView` for barbell exercises
+2. Form score + VBT data attached to logged sets
+3. `CoachingEngine` gym notes extension
+4. Dynamic Island live timer
+5. Plate calculator toggle for available denominations
+6. Warm-up ladder calculator
+7. Pre-built program library seed data
+
+### The prompt to give Claude for Gym Session A
+
+```
+Read state.md and NEXT_SESSION.md Section 16 before building anything.
+
+This session builds the Gym Tracker module foundation:
+1. ExerciseSeedData.swift — spawn 6 parallel agents, each owning a muscle group cluster:
+   Agent 1: Chest + Shoulders
+   Agent 2: Back (all variations)
+   Agent 3: Legs (quads, hamstrings, glutes, calves)
+   Agent 4: Arms (biceps, triceps, forearms)
+   Agent 5: Core + Full Body + Olympic
+   Agent 6: Cardio exercises (treadmill, rowing, cycling, etc.)
+   Each agent writes their exercises as a static [Exercise] array in a separate file.
+   Then merge them all in ExerciseSeedData.swift.
+
+2. SwiftData models: Exercise, WorkoutSet, WorkoutExerciseEntry, WorkoutSession, Routine, RoutineExerciseTemplate, PersonalRecord, BodyMeasurement — all in Kinetics/Modules/GymTracker/Data/
+
+3. GymRepository.swift — SwiftData CRUD + Firestore sync + PR detection
+
+4. ExerciseLibraryView.swift — searchable, filterable by muscle group and equipment. Each exercise row shows name, primary muscle badge, equipment tag.
+
+5. ExerciseDetailView.swift — muscle diagram (front/back SVG or SF Symbol body), instructions, history chart (last 10 sessions with this exercise).
+
+Run xcodegen generate after all files are created. Build must succeed before committing.
+```
+
+---
+
+## SECTION 17 — COMPLETE PROJECT TIMELINE AND SESSION PLAN
+
+### What's been built (Sessions 1-3)
+| Session | What | Status |
+|---------|------|--------|
+| Session 1 | Full app scaffold: 4 sport modules, Firebase, CameraManager, Vision engine | ✅ Done |
+| Session 2 | Bug fixes: Firebase plist, camera black screen, Swift 6 errors | ✅ Done |
+| Session 3 | CoachingEngine, onboarding, post-session reports, tab navigation, History/Profile views | ✅ Done |
+
+### What's planned (Sessions 4–15)
+
+| Session | Focus | Sections in this doc |
+|---------|-------|----------------------|
+| Session 4 | **Front camera toggle** — switchCamera(), preview mirroring, Vision x-flip, rotate button on all 4 Views | Section 15 |
+| Session 5 | **Strava GPS Part 1** — CoreLocation tracking, HealthKit, MapKit live route, ActiveWorkoutView for cardio | Section 6 |
+| Session 6 | **Strava GPS Part 2** — WorkoutSummaryView, post-workout report, route map, pace/HR/elevation charts | Section 6 |
+| Session 7 | **Social features** — follow graph, activity feed, kudos/reactions, comments, Firestore social schema | Section 7 |
+| Session 8 | **Gym Tracker A** — 300+ exercise seed data, SwiftData models, GymRepository, ExerciseLibraryView | Section 16 |
+| Session 9 | **Gym Tracker B** — Live workout logger (ActiveWorkoutView), rest timer, routine builder, program library | Section 16 |
+| Session 10 | **Gym Tracker C** — Muscle heat map, strength charts, volume calendar, PR dashboard, plate/1RM/warmup calculators, body metrics | Section 16 |
+| Session 11 | **Gym Tracker D** — Iron Tracker bridge, form score on sets, CoachingEngine gym extension, Dynamic Island timer, polish | Section 16 |
+| Session 12 | **New sport modules Part 1** — Sprint Mechanics + Basketball Shot Form (full onboarding, live session, report) | Section 5 |
+| Session 13 | **New sport modules Part 2** — Golf Swing + Tennis Serve + Yoga/Flexibility | Section 5 |
+| Session 14 | **Logo + visual identity** — generate with AI tools, implement as SwiftUI view, update all icon assets | Section 3 |
+| Session 15 | **Polish + App Store prep** — notifications, analytics review, icon, screenshots, TestFlight build | Sections 3, 14 |
+
+### Honest effort estimate
+
+**Sessions remaining:** ~12 more sessions
+**Per session:** 2–4 hours of Claude build time (you can walk away and come back)
+**Wall clock to "done":** 2–4 weeks at 1 session/day, 4–8 weeks at a slower pace
+**There is no rush** — each session produces a fully working, committed, tested feature
+
+### What "done" looks like
+
+A native iOS app with:
+- 9 sport modules with computer vision coaching (4 existing + 5 new)
+- Full gym workout tracker rivaling Strong and Hevy, unique because of Vision integration
+- Strava-complete GPS activity tracking for runs, rides, hikes
+- Social network: follow athletes, feed, kudos, comments, challenges
+- Full body measurement tracking
+- Rich post-session AI coaching for every module
+- App Store ready with proper icon, screenshots, TestFlight distribution
+
+This is a genuinely competitive product — not a weekend project. The combination of computer vision coaching + gym logging + GPS tracking + social exists nowhere else on the App Store.
+
+---
+
+## SECTION 18 — LOGO AND DESIGN (DO THIS IN SESSION 14)
+
+**This was already in Section 3 but is now scheduled for Session 14.**
+
+The logo design process requires YOU (Rayan) to do the following before Session 14:
+
+### Step 1: Generate logo concepts (takes ~30 minutes, you do this, not Claude)
+
+Open **claude.ai** (the web app with image support) or **Midjourney**.
+
+Use these exact prompts:
+
+**Prompt A — App icon (use in Midjourney or DALL-E):**
+```
+iOS app icon for a sports AI coaching app called Kinetics. Dark background #080C10.
+Geometric abstract human figure in motion made of clean vector lines. Electric blue
+#00C2FF glow. Rounded square format, 1024x1024. Minimal. No text. Style: Apple
+Fitness+ meets NASA mission patch. Ultra clean, modern, professional.
+```
+
+**Prompt B — Alternative mark:**
+```
+Abstract logo mark for a real-time motion capture sports coaching app called Kinetics.
+A human silhouette deconstructed into 5-7 geometric lines suggesting movement at speed.
+Electric blue and neon green gradient. Dark background #080C10. Clean vector style,
+scalable to 29px icon size. No text.
+```
+
+**Prompt C — Wordmark only:**
+```
+Clean typographic logo for KINETICS. All caps geometric sans-serif. Electric blue
+#00C2FF on jet black. Wide letter spacing 0.15em. Speed lines on the K only.
+Vector style.
+```
+
+### Step 2: Bring the best 2-3 concepts to claude.ai (web, with image upload)
+
+Upload the generated images and write:
+```
+I need you to refine this into a final app icon for iOS. The app is called Kinetics
+— it uses computer vision to coach athletes in real time. Please:
+1. Critique what works and what doesn't
+2. Suggest specific shape/color changes
+3. Write me an SVG code version of a simplified mark based on your critique
+4. The final icon must work at 29px (small), 60px (home screen), and 1024px (App Store)
+```
+
+### Step 3: Tell Claude Code in Session 14
+
+```
+Here is the SVG code from claude.ai: [paste SVG]. Convert this to a 1024px PNG
+using rsvg-convert and add it to Assets.xcassets as AppIcon. Then write a
+KineticsLogoView in SwiftUI using Canvas and Path that draws this mark programmatically
+with a draw-on animation using trim() on appear.
+```
+
+---
+
 *This document is the single source of truth for Kinetics development. Update it when specs change. Never delete sections — append updates below the relevant section.*

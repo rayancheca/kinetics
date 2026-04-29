@@ -469,6 +469,39 @@ extension GymRepository {
     }
 }
 
+// MARK: - Streak Calculation
+
+extension GymRepository {
+
+    /// Returns the current consecutive-day workout streak for `userId`.
+    ///
+    /// Walks backward from today, checking whether at least one completed
+    /// `WorkoutSession` exists for each calendar day. Stops at the first gap
+    /// and returns the count of consecutive days found.
+    func calculateStreak(userId: String) throws -> Int {
+        let sessions = try fetchSessions(userId: userId, limit: 500)
+        let completedSessions = sessions.filter { $0.isCompleted }
+        guard !completedSessions.isEmpty else { return 0 }
+
+        let calendar = Calendar.current
+        // Build a Set of day start dates for O(1) lookup.
+        let sessionDays: Set<Date> = Set(
+            completedSessions.map { calendar.startOfDay(for: $0.startedAt) }
+        )
+
+        var streak = 0
+        var dayToCheck = calendar.startOfDay(for: Date())
+
+        while sessionDays.contains(dayToCheck) {
+            streak += 1
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: dayToCheck) else { break }
+            dayToCheck = previousDay
+        }
+
+        return streak
+    }
+}
+
 // MARK: - Firebase Sync
 
 private extension GymRepository {

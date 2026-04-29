@@ -78,6 +78,7 @@
 		ED04CA4FA88F26989DD1CDCF /* WorkoutRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7B95E1925765E8119CF3FF /* WorkoutRepository.swift */; };
 		EF19DFF6DAF112D684FCCE3F /* GymHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A95A2EC5EFE23571ABDBD194 /* GymHomeView.swift */; };
 		F0625C27A79CC0D116990168 /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E248662A4970A12F5F6FAD9 /* FeedView.swift */; };
+		F0D91AAE5B8ACFFBF4347D88 /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20EAF72B62C316979E21DCEB /* DeepLinkRouter.swift */; };
 		F2BF7D9E611D9C7C8554DB30 /* IronTrackerSessionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECE0D529563112634E110515 /* IronTrackerSessionReportView.swift */; };
 		F3C7D67C0CD2853294BC67D9 /* TrainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90F5D52A2B4BD6611D7FD00 /* TrainView.swift */; };
 		F49F31E064DD1C9596B014AC /* StrikingOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A05C80397FFC400824161B /* StrikingOnboardingView.swift */; };
@@ -123,6 +124,7 @@
 		1BD8F79988934C12079F95AB /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		1CE4A03B66CD4B11DD6E9FE4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1CFDEB608EE0C4C47FEA8440 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		20EAF72B62C316979E21DCEB /* DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
 		2B7B95E1925765E8119CF3FF /* WorkoutRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutRepository.swift; sourceTree = "<group>"; };
 		2C192019AE80768F03CED177 /* TrackAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackAnalytics.swift; sourceTree = "<group>"; };
 		2E48187450AB5A96B52417ED /* WorkoutDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutDetailView.swift; sourceTree = "<group>"; };
@@ -306,6 +308,7 @@
 			isa = PBXGroup;
 			children = (
 				9008B990FE65CFFFF7F53EAB /* AppState.swift */,
+				20EAF72B62C316979E21DCEB /* DeepLinkRouter.swift */,
 				3648047108B6B4CA0E33C4CF /* KineticsApp.swift */,
 				F9EC3A501E98D2D04B904ABB /* MainTabView.swift */,
 				514D783F0279F09D15F268E7 /* PermissionsGateView.swift */,
@@ -578,6 +581,7 @@
 				31A6EE899D6BC52F5BA390BC /* CameraPreviewView.swift in Sources */,
 				80540CFE2336B7C01E02211C /* CoachingEngine.swift in Sources */,
 				0FC3C27122B7C7C1C81A087B /* Color+Kinetics.swift in Sources */,
+				F0D91AAE5B8ACFFBF4347D88 /* DeepLinkRouter.swift in Sources */,
 				F0625C27A79CC0D116990168 /* FeedView.swift in Sources */,
 				6DB9F094B9B3D5F739C3FC27 /* GrapplingAnalytics.swift in Sources */,
 				E4DC3B328F23443705BCE86A /* GrapplingOnboardingView.swift in Sources */,

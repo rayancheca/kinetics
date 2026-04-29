@@ -82,6 +82,24 @@ final class NotificationService {
 
             try? await center.add(request)
         }
+
+        // Update the widget so the next scheduled workout description is current.
+        WidgetDataStore.shared.updateNextWorkout("\(title) · \(formattedTime(hour: hour, minute: minute))")
+    }
+
+    // MARK: - Private Helpers
+
+    /// Returns a human-readable time string, e.g. "7:00 AM" or "10:30 PM".
+    private func formattedTime(hour: Int, minute: Int) -> String {
+        var components = DateComponents()
+        components.hour   = hour
+        components.minute = minute
+        guard let date = Calendar.current.date(from: components) else {
+            return String(format: "%d:%02d", hour, minute)
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date)
     }
 
     /// Cancels all pending workout reminders whose identifier begins with `identifier`.

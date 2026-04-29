@@ -33,5 +33,22 @@ struct MainTabView: View {
         .tint(Color.kineticsBlue)
         .toolbarBackground(.black, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
+        .onOpenURL { url in
+            guard let link = DeepLink(url: url) else { return }
+            switch link {
+            case .home, .todayStats:
+                selectedTab = 0
+            case .train:
+                selectedTab = 1
+            case .track:
+                selectedTab = 2
+            case .gym:
+                selectedTab = 3
+            case .feed:
+                selectedTab = 4
+            case .notifications:
+                selectedTab = 0
+            }
+        }
     }
 }

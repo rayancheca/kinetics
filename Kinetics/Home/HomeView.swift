@@ -33,7 +33,13 @@ struct HomeView: View {
                     headerSection
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
-                        .padding(.bottom, 28)
+                        .padding(.bottom, viewModel.streakDays > 0 ? 16 : 28)
+
+                    if viewModel.streakDays > 0 {
+                        streakBadge
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+                    }
 
                     moduleGrid
                         .padding(.horizontal, 16)
@@ -107,6 +113,29 @@ struct HomeView: View {
             authPill
                 .padding(.top, 5)
         }
+    }
+
+    // MARK: - Streak Badge
+
+    private var streakBadge: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "flame.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.kineticsAmber)
+
+            Text("\(viewModel.streakDays) day streak")
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.85))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.kineticsAmber.opacity(0.12))
+        .clipShape(Capsule())
+        .overlay(
+            Capsule()
+                .strokeBorder(Color.kineticsAmber.opacity(0.28), lineWidth: 0.75)
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Auth Pill

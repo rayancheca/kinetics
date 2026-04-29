@@ -51,6 +51,10 @@ targets:
         NSHealthShareUsageDescription: "Kinetics reads your heart rate and step count to enhance workout tracking."
         NSHealthUpdateUsageDescription: "Kinetics writes your workouts to Apple Health so they appear in your Health app activity history."
         NSUserNotificationUsageDescription: "Kinetics sends workout reminders and achievement alerts to keep you on track."
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - kinetics
+            CFBundleURLName: com.rayancheca.kinetics
         UIApplicationSupportsIndirectInputEvents: YES
         UILaunchScreen:
           UIColorName: "LaunchBackground"

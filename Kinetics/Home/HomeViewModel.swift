@@ -25,6 +25,9 @@ final class HomeViewModel {
     /// Defaults to `.empty` until the first successful read.
     var dashboardStats: HealthKitDashboardStats = .empty
 
+    /// Current consecutive-day workout streak. Updated each time history loads.
+    var streakDays: Int = 0
+
     // MARK: - History
 
     /// Fetches the five most recent sessions for `userId` from Firestore.
@@ -42,6 +45,10 @@ final class HomeViewModel {
         } catch {
             recentSessions = []
         }
+
+        let streak = (try? GymRepository.shared.calculateStreak(userId: userId)) ?? 0
+        streakDays = streak
+        WidgetDataStore.shared.updateStreak(streak)
     }
 
     /// Convenience wrapper so the view can trigger a reload by name without

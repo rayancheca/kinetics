@@ -77,6 +77,7 @@ struct TodayStatsWidget: Widget {
         StaticConfiguration(kind: kind, provider: KineticsProvider()) { entry in
             TodayStatsView(entry: entry)
                 .containerBackground(.black, for: .widget)
+                .widgetURL(URL(string: "kinetics://today-stats"))
         }
         .configurationDisplayName("Today's Stats")
         .description("Steps, calories, and active minutes at a glance.")
@@ -93,6 +94,7 @@ struct NextWorkoutWidget: Widget {
         StaticConfiguration(kind: kind, provider: KineticsProvider()) { entry in
             NextWorkoutView(entry: entry)
                 .containerBackground(.black, for: .widget)
+                .widgetURL(URL(string: "kinetics://gym"))
         }
         .configurationDisplayName("Next Workout")
         .description("See your next scheduled workout.")

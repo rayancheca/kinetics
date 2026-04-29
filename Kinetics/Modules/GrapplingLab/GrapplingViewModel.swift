@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import Foundation
 import Observation
 
@@ -87,10 +87,17 @@ final class GrapplingViewModel {
     /// Stops the session, cancels all background tasks, and persists the result.
     ///
     /// - Parameter userId: The authenticated user's Firebase UID.
+    func stopProcessing() {
+        processingTask?.cancel()
+        timerTask?.cancel()
+        processingTask = nil
+        timerTask = nil
+        isSessionActive = false
+    }
+
     func endSession(userId: String) async {
         guard isSessionActive else { return }
 
-        // Cancel both background tasks before mutating shared state.
         processingTask?.cancel()
         timerTask?.cancel()
         processingTask = nil

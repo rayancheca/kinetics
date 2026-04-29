@@ -25,7 +25,7 @@ final class AuthManager {
 
     // MARK: - Private
 
-    private var listenerHandle: AuthStateDidChangeListenerHandle?
+    nonisolated(unsafe) private var listenerHandle: AuthStateDidChangeListenerHandle?
 
     /// Returns `true` only when a real Firebase app has been configured.
     /// When the placeholder plist is active, `FirebaseApp.app()` returns `nil`.

@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import Foundation
 import Observation
 import Vision
@@ -120,6 +120,14 @@ final class WallBetaViewModel {
     /// Sessions shorter than 2 seconds are discarded — they represent accidental taps.
     ///
     /// - Parameter userId: The authenticated user's Firebase UID.
+    func stopProcessing() {
+        processingTask?.cancel()
+        timerTask?.cancel()
+        processingTask = nil
+        timerTask      = nil
+        isSessionActive = false
+    }
+
     func endSession(userId: String) async {
         guard isSessionActive else { return }
 

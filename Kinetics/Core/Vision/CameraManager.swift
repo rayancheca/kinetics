@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import Foundation
 import Observation
 import UIKit
@@ -151,6 +151,9 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
+        // @preconcurrency import AVFoundation suppresses the Sendable requirement
+        // on CMSampleBuffer, which lacks a Sendable conformance on iOS in this SDK.
+        // Thread safety is guaranteed by sessionQueue (serial) for all writes.
         frameContinuation?.yield(sampleBuffer)
     }
 }

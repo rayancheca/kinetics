@@ -24,7 +24,7 @@ final class AppState {
     // MARK: - Init
 
     init() {
-        configureFirebaseIfReady()
+        AppState.configureFirebaseIfReady()
         authManager = AuthManager()
     }
 
@@ -38,7 +38,7 @@ final class AppState {
     /// The placeholder plist sets API_KEY to "PLACEHOLDER-REPLACE-WITH-REAL-PLIST",
     /// which we use as a sentinel to skip configuration during development.
     /// Guards against double-configuration with a `FirebaseApp.app() == nil` check.
-    private func configureFirebaseIfReady() {
+    private static func configureFirebaseIfReady() {
         guard FirebaseApp.app() == nil else { return }
         guard
             let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),

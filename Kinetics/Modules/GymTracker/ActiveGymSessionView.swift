@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 // MARK: - ActiveGymSessionViewModel
 
@@ -20,6 +21,13 @@ final class ActiveGymSessionViewModel {
 
     /// Entry IDs that are currently expanded.
     var expandedEntries: Set<String> = []
+
+    // MARK: - PR Tracking
+
+    /// Exercise IDs that achieved a new PR this session.
+    var newPRExerciseIds: Set<String> = []
+    /// Map from exerciseId → (exerciseName, newWeight) for PRs hit this session.
+    var sessionPRs: [(exerciseName: String, weight: Double, reps: Int)] = []
 
     // MARK: - Rest Timer State
 
@@ -145,6 +153,31 @@ final class ActiveGymSessionViewModel {
     func markSetCompleted(_ set: WorkoutSet) throws {
         try GymRepository.shared.markSetCompleted(set)
         startRestTimer()
+        // Haptic feedback: medium impact on set completion
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+    }
+
+    /// Checks if the completed set is a new PR for this exercise and records it.
+    func checkAndRecordPR(for entry: WorkoutExerciseEntry, set: WorkoutSet, userId: String) async {
+        guard set.weight > 0, set.reps > 0 else { return }
+        let existingPR = await GymRepository.shared.fetchPersonalRecord(
+            exerciseId: entry.exerciseId,
+            userId: userId
+        )
+        if existingPR == nil || set.weight > (existingPR?.weight ?? 0) {
+            // New PR — record it for the finish sheet and give haptic celebration
+            let isNew = !newPRExerciseIds.contains(entry.exerciseId)
+            newPRExerciseIds.insert(entry.exerciseId)
+            if isNew || set.weight > (sessionPRs.first(where: { _ in true })?.weight ?? 0) {
+                sessionPRs.removeAll { $0.exerciseName == entry.exerciseName }
+                sessionPRs.append((exerciseName: entry.exerciseName, weight: set.weight, reps: set.reps))
+            }
+            if isNew {
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.success)
+            }
+        }
     }
 
     func deleteSet(_ set: WorkoutSet, from entry: WorkoutExerciseEntry) throws {
@@ -161,9 +194,22 @@ final class ActiveGymSessionViewModel {
         stopTimer()
         cancelRestTimer()
         session.notes = workoutName
-        // Update personal records for every completed set before persisting.
+
+        // Build the sessionPRs list by checking what actually set records.
+        var prMap: [String: (name: String, weight: Double, reps: Int)] = [:]
         for entry in session.entries {
             for set in entry.sets where set.isCompleted && set.weight > 0 && set.reps > 0 {
+                let existing = try? GymRepository.shared.fetchPersonalRecords(userId: userId)
+                    .first { $0.exerciseId == entry.exerciseId }
+                if existing == nil || set.weight > (existing?.weight ?? 0) {
+                    if let current = prMap[entry.exerciseId] {
+                        if set.weight > current.weight {
+                            prMap[entry.exerciseId] = (name: entry.exerciseName, weight: set.weight, reps: set.reps)
+                        }
+                    } else {
+                        prMap[entry.exerciseId] = (name: entry.exerciseName, weight: set.weight, reps: set.reps)
+                    }
+                }
                 try? GymRepository.shared.updatePersonalRecord(
                     userId: userId,
                     exerciseId: entry.exerciseId,
@@ -173,6 +219,9 @@ final class ActiveGymSessionViewModel {
                 )
             }
         }
+        sessionPRs = prMap.values.map { (exerciseName: $0.name, weight: $0.weight, reps: $0.reps) }
+            .sorted { $0.exerciseName < $1.exerciseName }
+
         try GymRepository.shared.completeSession(session)
         // Refresh widget data — fire-and-forget, failure is non-fatal.
         let streak = (try? GymRepository.shared.calculateStreak(userId: userId)) ?? 0
@@ -911,50 +960,111 @@ private struct FinishWorkoutSheet: View {
                     VStack(spacing: 24) {
                         // Header trophy area
                         VStack(spacing: 8) {
-                            Image(systemName: "trophy.fill")
-                                .font(.system(size: 44))
-                                .foregroundStyle(Color.kineticsAmber)
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 52))
+                                .foregroundStyle(Color.kineticsGreen)
                                 .padding(.top, 8)
 
-                            Text("Great work!")
-                                .font(.system(size: 28, weight: .bold))
+                            Text("Workout Complete!")
+                                .font(.system(size: 26, weight: .bold))
                                 .foregroundStyle(.white)
 
-                            Text(viewModel.workoutName)
-                                .font(.system(size: 15))
-                                .foregroundStyle(Color.kineticsSubtext)
+                            HStack(spacing: 4) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.kineticsBlue)
+                                Text(viewModel.formattedElapsed)
+                                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                                    .foregroundStyle(Color.kineticsBlue)
+                                Text("·")
+                                    .foregroundStyle(Color.kineticsSubtext)
+                                Text(viewModel.workoutName)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.kineticsSubtext)
+                            }
                         }
                         .frame(maxWidth: .infinity)
 
-                        // Stats grid
+                        // Stats grid — 2×2
                         HStack(spacing: 12) {
-                            finishStatCard(
-                                icon: "clock.fill",
-                                value: viewModel.formattedElapsed,
-                                label: "Duration",
-                                color: Color.kineticsBlue
-                            )
                             finishStatCard(
                                 icon: "scalemass.fill",
                                 value: viewModel.totalVolumeKg > 0 ? viewModel.formattedTotalVolume : "—",
                                 label: "Volume",
                                 color: Color.kineticsGreen
                             )
-                        }
-
-                        HStack(spacing: 12) {
                             finishStatCard(
                                 icon: "dumbbell.fill",
                                 value: "\(viewModel.exerciseCount)",
                                 label: "Exercises",
-                                color: Color.kineticsPurple
+                                color: Color.kineticsBlue
                             )
+                        }
+
+                        HStack(spacing: 12) {
                             finishStatCard(
                                 icon: "checkmark.circle.fill",
                                 value: "\(viewModel.completedSetCount)",
                                 label: "Sets Done",
+                                color: Color.kineticsPurple
+                            )
+                            finishStatCard(
+                                icon: "trophy.fill",
+                                value: "\(viewModel.sessionPRs.count)",
+                                label: "New PRs",
                                 color: Color.kineticsAmber
                             )
+                        }
+
+                        // Personal Records achieved this session
+                        if !viewModel.sessionPRs.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "trophy.fill")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.kineticsAmber)
+                                    Text("PERSONAL RECORDS")
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .tracking(1.5)
+                                        .foregroundStyle(Color.kineticsAmber)
+                                }
+
+                                VStack(spacing: 8) {
+                                    ForEach(viewModel.sessionPRs, id: \.exerciseName) { pr in
+                                        HStack(spacing: 12) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.kineticsAmber.opacity(0.15))
+                                                    .frame(width: 36, height: 36)
+                                                Image(systemName: "trophy.fill")
+                                                    .font(.system(size: 14))
+                                                    .foregroundStyle(Color.kineticsAmber)
+                                            }
+
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(pr.exerciseName)
+                                                    .font(.system(size: 13, weight: .semibold))
+                                                    .foregroundStyle(.white)
+                                                Text("New PR: \(String(format: "%.1f", pr.weight)) kg × \(pr.reps) reps")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(Color.kineticsAmber.opacity(0.9))
+                                            }
+
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(Color.kineticsAmber.opacity(0.08))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .strokeBorder(Color.kineticsAmber.opacity(0.2), lineWidth: 1)
+                                                )
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         // Notes field

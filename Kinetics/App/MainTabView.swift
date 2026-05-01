@@ -59,7 +59,7 @@ struct MainTabView: View {
                 switch selectedTab {
                 case .home:    HomeView()
                 case .train:   TrainView()
-                case .gym:     GymHomeView()
+                case .gym:     GymRootView()
                 case .feed:    FeedView()
                 case .profile: ProfileView()
                 }

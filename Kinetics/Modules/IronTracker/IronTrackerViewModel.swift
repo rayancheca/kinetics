@@ -57,6 +57,9 @@ final class IronTrackerViewModel {
     /// the top-of-overlay warning banner and to drive CoachVoice danger cues.
     var activeRiskFlags: [InjuryRiskDetector.RiskFlag] = []
 
+    /// The current real-time coaching cue, derived from live metrics via `CoachingEngine`.
+    var currentCoachCue: CoachCue?
+
     /// Elapsed session time formatted as M:SS for display.
     var formattedDuration: String {
         let total = Int(sessionDuration)
@@ -85,7 +88,8 @@ final class IronTrackerViewModel {
     private var sessionStartTime: Date?
     private var durationTask: Task<Void, Never>?
     private var processingTask: Task<Void, Never>?
-    /// Tracks the last cue text spoken so we only call CoachVoice when the cue changes.
+    /// Cue cooldown state: maps category key → last fire time.
+    private var cueCooldowns: [String: Date] = [:]
     private var lastSpokenCue: String = ""
 
     private var repCounter = RepCounter()
@@ -129,6 +133,8 @@ final class IronTrackerViewModel {
         previousPose = nil
         errorMessage = nil
         lastSpokenCue = ""
+        cueCooldowns = [:]
+        currentCoachCue = nil
         autoRepCount = 0
         activeRiskFlags = []
         repCounter.reset()
@@ -282,12 +288,20 @@ final class IronTrackerViewModel {
             previousPose = pose
             currentPose = pose
 
-            // Speak the coaching cue only when it changes to avoid repetition at 30 fps.
-            let cue = coachingCue
-            if cue != lastSpokenCue {
-                lastSpokenCue = cue
-                let priority: SpeechPriority = cue.isHighPriorityCue ? .high : .normal
-                CoachVoice.shared.speak(cue, priority: priority)
+            // Build live metrics bag and evaluate for a coaching cue.
+            let liveMetrics = LiveCoachingMetrics(
+                vbtVelocityMs: Double(metrics.barVelocityMS),
+                bilateralSymmetry: max(0.0, 1.0 - abs(metrics.bilateralSymmetry) / 100.0),
+                buttWinkDetected: metrics.isButtWink,
+                autoRepCount: autoRepCount
+            )
+            if let cue = CoachingEngine.evaluate(
+                metrics: liveMetrics,
+                sport: .ironTracker,
+                cooldowns: &cueCooldowns
+            ) {
+                currentCoachCue = cue
+                CoachVoice.shared.speakIfChanged(cue: cue)
             }
         } catch {
             errorMessage = error.localizedDescription

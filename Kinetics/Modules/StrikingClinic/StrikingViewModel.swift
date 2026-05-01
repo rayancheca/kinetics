@@ -34,18 +34,14 @@ final class StrikingViewModel {
     /// The result of the most recently completed session; populated after `endSession` saves.
     var lastCompletedSession: SessionResult?
 
+    /// The current real-time coaching cue, derived from live metrics via `CoachingEngine`.
+    /// `nil` when no condition is triggered or no session is active.
+    var currentCoachCue: CoachCue?
+
     /// Elapsed session time formatted as M:SS for display.
     var formattedDuration: String {
         let total = Int(sessionDuration)
         return String(format: "%d:%02d", total / 60, total % 60)
-    }
-
-    /// A real-time coaching cue derived from the current frame metrics.
-    var coachingCue: String {
-        if metrics.peakVelocityMPH < 10 { return "Engage your rear foot — push off the ground before rotating" }
-        if metrics.kinematicScore < 50 { return "Hips first! Rotate before your shoulder moves" }
-        if metrics.hipShoulderSeparation < 20 { return "Load up — twist further before releasing the strike" }
-        return "Great chain — feel that hip-to-shoulder sequence"
     }
 
     // MARK: - Private
@@ -56,7 +52,9 @@ final class StrikingViewModel {
     private var sessionStartTime: Date?
     private var durationTask: Task<Void, Never>?
     private var processingTask: Task<Void, Never>?
-    /// Tracks the last cue text spoken so we only call CoachVoice when the cue changes.
+    /// Cue cooldown state: maps category key → last fire time. Prevents flooding at 30 fps.
+    private var cueCooldowns: [String: Date] = [:]
+    /// Tracks the last cue spoken so CoachVoice deduplication works across frames.
     private var lastSpokenCue: String = ""
 
     // MARK: - Session Lifecycle
@@ -93,6 +91,8 @@ final class StrikingViewModel {
         previousPose = nil
         errorMessage = nil
         lastSpokenCue = ""
+        cueCooldowns = [:]
+        currentCoachCue = nil
 
         startDurationTimer()
 
@@ -198,12 +198,20 @@ final class StrikingViewModel {
             previousPose = pose
             currentPose = pose
 
-            // Speak the coaching cue only when it changes to avoid repetition at 30 fps.
-            let cue = coachingCue
-            if cue != lastSpokenCue {
-                lastSpokenCue = cue
-                let priority: SpeechPriority = cue.isHighPriorityCue ? .high : .normal
-                CoachVoice.shared.speak(cue, priority: priority)
+            // Build live metrics bag and ask CoachingEngine for the best cue this frame.
+            let liveMetrics = LiveCoachingMetrics(
+                hipShoulderSeparation: metrics.hipShoulderSeparation,
+                strikeVelocityMPH: metrics.strikeVelocityMPH,
+                stanceRecoveryTime: metrics.recoveryTimeSeconds,
+                isSessionActive: isSessionActive
+            )
+            if let cue = CoachingEngine.evaluate(
+                metrics: liveMetrics,
+                sport: .striking,
+                cooldowns: &cueCooldowns
+            ) {
+                currentCoachCue = cue
+                CoachVoice.shared.speakIfChanged(cue: cue)
             }
         } catch {
             errorMessage = error.localizedDescription

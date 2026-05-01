@@ -45,6 +45,14 @@ final class GymHomeViewModel {
         try GymRepository.shared.createSession(userId: userId)
     }
 
+    func repeatSession(_ session: WorkoutSession, userId: String) throws -> WorkoutSession {
+        try GymRepository.shared.repeatSession(session, userId: userId)
+    }
+
+    func startRoutineSession(_ routine: Routine, userId: String) throws -> WorkoutSession {
+        try GymRepository.shared.startSession(from: routine, userId: userId)
+    }
+
     // MARK: Private Helpers
 
     private func computeWeeklyCount(userId: String) -> Int {
@@ -86,7 +94,6 @@ struct GymHomeView: View {
         appState.authManager.currentUser?.uid ?? "preview-user"
     }
 
-    /// Derives a first name from the Firebase user's email prefix, matching ProfileView logic.
     private var firstName: String {
         let isAnonymous = appState.authManager.currentUser?.isAnonymous == true
         if isAnonymous { return "Athlete" }
@@ -132,13 +139,6 @@ struct GymHomeView: View {
             .sheet(isPresented: $viewModel.showExerciseLibrary) {
                 ExerciseLibraryView()
             }
-            .sheet(isPresented: $viewModel.showNewWorkout) {
-                Color.clear
-                    .onAppear {
-                        viewModel.showNewWorkout = false
-                        startSession()
-                    }
-            }
             .sheet(item: $activeSession) { session in
                 ActiveGymSessionView(session: session)
                     .onDisappear {
@@ -162,50 +162,41 @@ struct GymHomeView: View {
     private var scrollContent: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-                dashboardHeader
+                // Header
+                logHeader
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
                     .padding(.bottom, 24)
 
-                quickActionsRow
-                    .padding(.bottom, 24)
-
-                todaysFocusCard
-                    .padding(.horizontal, 20)
+                // Big CTA
+                startWorkoutButton
+                    .padding(.horizontal, 16)
                     .padding(.bottom, 28)
 
-                statsStrip
-                    .padding(.horizontal, 20)
+                // Quick Start Routines
+                quickStartRoutinesSection
                     .padding(.bottom, 28)
 
+                // Recent Workouts
                 recentWorkoutsSection
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 28)
-
-                quickAccessGrid
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 16)
                     .padding(.bottom, 40)
             }
         }
     }
 
-    // MARK: - Dashboard Header
+    // MARK: - Log Header
 
-    private var dashboardHeader: some View {
+    private var logHeader: some View {
         HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("GYM")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.kineticsBlue)
-                    .kerning(2.5)
-
-                Text(firstName)
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(.white)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(headerDayString)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.kineticsSubtext)
 
                 Text(headerDateString)
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundStyle(Color.kineticsSubtext)
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundStyle(.white)
             }
 
             Spacer()
@@ -216,134 +207,91 @@ struct GymHomeView: View {
         }
     }
 
+    private var headerDayString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE"
+        return formatter.string(from: Date()).uppercased()
+    }
+
     private var headerDateString: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE, MMM d"
+        formatter.dateFormat = "MMMM d"
         return formatter.string(from: Date())
     }
 
     private var streakBadge: some View {
-        VStack(spacing: 2) {
-            HStack(spacing: 4) {
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.kineticsAmber)
+        HStack(spacing: 5) {
+            Image(systemName: "flame.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.kineticsAmber)
 
-                Text("\(viewModel.streak)")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-            }
-
-            Text("day streak")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(Color.kineticsAmber.opacity(0.8))
+            Text("\(viewModel.streak) day streak")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.kineticsAmber)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 14)
+            Capsule()
                 .fill(Color.kineticsAmber.opacity(0.12))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .strokeBorder(Color.kineticsAmber.opacity(0.25), lineWidth: 1)
+                    Capsule()
+                        .strokeBorder(Color.kineticsAmber.opacity(0.28), lineWidth: 1)
                 )
         )
     }
 
-    // MARK: - Quick Actions Row
+    // MARK: - Big Start Workout Button
 
-    private var quickActionsRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                Spacer().frame(width: 10)
+    private var startWorkoutButton: some View {
+        StartWorkoutButton {
+            startEmptySession()
+        }
+    }
 
-                QuickActionPill(
-                    icon: "dumbbell.fill",
-                    label: "New Workout",
-                    color: Color.kineticsBlue
-                ) {
-                    startSession()
-                }
+    // MARK: - Quick Start Routines Section
 
-                QuickActionPill(
-                    icon: "books.vertical.fill",
-                    label: "Quick Log",
-                    color: Color.kineticsGreen
-                ) {
-                    viewModel.showExerciseLibrary = true
-                }
-
-                QuickActionPill(
-                    icon: "rectangle.stack.fill",
-                    label: "Routines",
-                    color: Color.kineticsPurple
-                ) {
+    private var quickStartRoutinesSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                GymSectionHeader(title: "Quick Start")
+                Spacer()
+                Button {
                     navigationPath.append("routines")
+                } label: {
+                    Text("All Routines")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.kineticsBlue)
                 }
+                .buttonStyle(.plain)
+                .padding(.trailing, 16)
+            }
+            .padding(.horizontal, 16)
 
-                QuickActionPill(
-                    icon: "chart.line.uptrend.xyaxis",
-                    label: "Progress",
-                    color: Color.kineticsAmber
-                ) {
-                    navigationPath.append("progress")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    Spacer().frame(width: 6)
+
+                    ForEach(viewModel.routines, id: \.id) { routine in
+                        RoutineQuickCard(routine: routine) {
+                            startRoutineSession(routine)
+                        }
+                    }
+
+                    CreateRoutineCard {
+                        navigationPath.append("routines")
+                    }
+
+                    Spacer().frame(width: 6)
                 }
-
-                Spacer().frame(width: 10)
             }
         }
-    }
-
-    // MARK: - Today's Focus Card
-
-    @ViewBuilder
-    private var todaysFocusCard: some View {
-        if let routine = viewModel.routines.first {
-            TodayFocusCard(routine: routine) {
-                startSession()
-            }
-        } else {
-            BuildRoutinePromptCard {
-                navigationPath.append("routines")
-            }
-        }
-    }
-
-    // MARK: - Stats Strip
-
-    private var statsStrip: some View {
-        HStack(spacing: 12) {
-            StatCell(
-                value: "\(viewModel.weeklyWorkoutCount)",
-                label: "This week",
-                color: Color.kineticsBlue
-            )
-
-            StatCell(
-                value: formattedVolume(viewModel.monthlyVolumeKg),
-                label: "kg this month",
-                color: Color.kineticsGreen
-            )
-
-            StatCell(
-                value: "\(viewModel.streak)",
-                label: "day streak",
-                color: Color.kineticsAmber
-            )
-        }
-    }
-
-    private func formattedVolume(_ kg: Double) -> String {
-        if kg >= 1000 {
-            return String(format: "%.1fk", kg / 1000)
-        }
-        return String(Int(kg))
     }
 
     // MARK: - Recent Workouts Section
 
     private var recentWorkoutsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
                 GymSectionHeader(title: "Recent Workouts")
                 Spacer()
@@ -361,13 +309,15 @@ struct GymHomeView: View {
 
             if viewModel.recentSessions.isEmpty {
                 GymEmptyWorkoutsCard {
-                    startSession()
+                    startEmptySession()
                 }
             } else {
-                VStack(spacing: 8) {
+                VStack(spacing: 10) {
                     ForEach(viewModel.recentSessions, id: \.id) { session in
-                        RecentWorkoutRow(session: session) {
+                        RecentWorkoutCard(session: session) {
                             navigationPath.append("history")
+                        } onRepeat: {
+                            repeatSession(session)
                         }
                     }
                 }
@@ -375,57 +325,9 @@ struct GymHomeView: View {
         }
     }
 
-    // MARK: - Quick Access Grid
-
-    private var quickAccessGrid: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            GymSectionHeader(title: "Quick Access")
-
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 12),
-                    GridItem(.flexible(), spacing: 12)
-                ],
-                spacing: 12
-            ) {
-                GridAccessCard(
-                    icon: "books.vertical.fill",
-                    label: "Exercise Library",
-                    color: Color.kineticsBlue
-                ) {
-                    viewModel.showExerciseLibrary = true
-                }
-
-                GridAccessCard(
-                    icon: "calendar",
-                    label: "Routines",
-                    color: Color.kineticsPurple
-                ) {
-                    navigationPath.append("routines")
-                }
-
-                GridAccessCard(
-                    icon: "trophy.fill",
-                    label: "Personal Records",
-                    color: Color.kineticsAmber
-                ) {
-                    navigationPath.append("prs")
-                }
-
-                GridAccessCard(
-                    icon: "chart.line.uptrend.xyaxis",
-                    label: "Progress",
-                    color: Color.kineticsGreen
-                ) {
-                    navigationPath.append("progress")
-                }
-            }
-        }
-    }
-
     // MARK: - Actions
 
-    private func startSession() {
+    private func startEmptySession() {
         Task {
             do {
                 let session = try viewModel.startNewSession(userId: uid)
@@ -435,37 +337,135 @@ struct GymHomeView: View {
             }
         }
     }
+
+    private func startRoutineSession(_ routine: Routine) {
+        Task {
+            do {
+                let session = try viewModel.startRoutineSession(routine, userId: uid)
+                activeSession = session
+            } catch {
+                viewModel.errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func repeatSession(_ session: WorkoutSession) {
+        Task {
+            do {
+                let newSession = try viewModel.repeatSession(session, userId: uid)
+                activeSession = newSession
+            } catch {
+                viewModel.errorMessage = error.localizedDescription
+            }
+        }
+    }
 }
 
-// MARK: - QuickActionPill
+// MARK: - StartWorkoutButton
 
-private struct QuickActionPill: View {
-    let icon: String
-    let label: String
-    let color: Color
+private struct StartWorkoutButton: View {
     let action: () -> Void
-
     @State private var isPressed = false
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(color)
+            HStack(spacing: 12) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(.black)
 
-                Text(label)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("START EMPTY WORKOUT")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.black)
+                        .kerning(0.5)
+                    Text("Log any exercises you want")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.black.opacity(0.65))
+                }
+
+                Spacer()
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.black.opacity(0.7))
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 11)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
             .background(
-                Capsule()
-                    .fill(Color(white: 0.1))
+                LinearGradient(
+                    colors: [Color.kineticsBlue, Color(red: 0.0, green: 0.55, blue: 0.9)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: Color.kineticsBlue.opacity(0.45), radius: 18, x: 0, y: 8)
+            .scaleEffect(isPressed ? 0.97 : 1.0)
+            .animation(.spring(duration: 0.18), value: isPressed)
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+    }
+}
+
+// MARK: - RoutineQuickCard
+
+private struct RoutineQuickCard: View {
+    let routine: Routine
+    let onStart: () -> Void
+
+    @State private var isPressed = false
+
+    var body: some View {
+        Button(action: onStart) {
+            VStack(alignment: .leading, spacing: 12) {
+                // Icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.kineticsBlue.opacity(0.15))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Color.kineticsBlue)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(routine.name)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    Text("\(routine.exerciseIds.count) exercises")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.kineticsSubtext)
+                }
+
+                Spacer(minLength: 0)
+
+                // Start label
+                HStack(spacing: 4) {
+                    Text("Start")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.kineticsBlue)
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Color.kineticsBlue)
+                }
+            }
+            .padding(14)
+            .frame(width: 140, height: 148, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(white: 0.09))
                     .overlay(
-                        Capsule()
-                            .strokeBorder(color.opacity(0.3), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(Color.kineticsBlue.opacity(0.2), lineWidth: 1)
                     )
             )
             .scaleEffect(isPressed ? 0.96 : 1.0)
@@ -480,190 +480,72 @@ private struct QuickActionPill: View {
     }
 }
 
-// MARK: - TodayFocusCard
+// MARK: - CreateRoutineCard
 
-private struct TodayFocusCard: View {
-    let routine: Routine
-    let onStart: () -> Void
-
-    @State private var isPressed = false
-
-    private var estimatedMinutes: Int {
-        // ~3 min per exercise is a reasonable estimate
-        max(15, routine.exerciseIds.count * 3)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("TODAY'S FOCUS")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color.kineticsBlue)
-                        .kerning(1.5)
-
-                    Text(routine.name)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
-                }
-                Spacer()
-                Image(systemName: "figure.strengthtraining.traditional")
-                    .font(.system(size: 28, weight: .light))
-                    .foregroundStyle(Color.kineticsBlue.opacity(0.4))
-            }
-
-            HStack(spacing: 16) {
-                Label(
-                    "\(routine.exerciseIds.count) exercises",
-                    systemImage: "list.bullet"
-                )
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.kineticsSubtext)
-
-                Label(
-                    "~\(estimatedMinutes) min",
-                    systemImage: "clock"
-                )
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.kineticsSubtext)
-            }
-
-            Button(action: onStart) {
-                HStack {
-                    Text("Start Routine")
-                        .font(.system(size: 15, weight: .semibold))
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 13, weight: .semibold))
-                }
-                .foregroundStyle(.black)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(
-                    LinearGradient(
-                        colors: [Color.kineticsBlue, Color.kineticsBlue.opacity(0.8)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .buttonStyle(.plain)
-            .scaleEffect(isPressed ? 0.98 : 1.0)
-            .animation(.spring(duration: 0.18), value: isPressed)
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in isPressed = true }
-                    .onEnded { _ in isPressed = false }
-            )
-        }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(white: 0.08))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
-                )
-        )
-    }
-}
-
-// MARK: - BuildRoutinePromptCard
-
-private struct BuildRoutinePromptCard: View {
+private struct CreateRoutineCard: View {
     let onTap: () -> Void
+    @State private var isPressed = false
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.kineticsPurple.opacity(0.14))
-                        .frame(width: 52, height: 52)
-                    Image(systemName: "plus.rectangle.on.rectangle")
-                        .font(.system(size: 22, weight: .medium))
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.kineticsPurple.opacity(0.15))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: "plus")
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Color.kineticsPurple)
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Build Your First Routine")
-                        .font(.system(size: 16, weight: .semibold))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Create\nRoutine")
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
-                    Text("Save a plan you can launch every session")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(Color.kineticsSubtext)
                         .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    Text("Save a plan")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.kineticsSubtext)
                 }
 
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.kineticsSubtext.opacity(0.5))
+                Spacer(minLength: 0)
             }
-            .padding(18)
+            .padding(14)
+            .frame(width: 140, height: 148, alignment: .topLeading)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.08))
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(white: 0.09))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .strokeBorder(Color.kineticsPurple.opacity(0.2), lineWidth: 1)
                     )
             )
+            .scaleEffect(isPressed ? 0.96 : 1.0)
+            .animation(.spring(duration: 0.18), value: isPressed)
         }
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - StatCell
-
-private struct StatCell: View {
-    let value: String
-    let label: String
-    let color: Color
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
-
-            Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color.kineticsSubtext)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(white: 0.08))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .strokeBorder(color.opacity(0.18), lineWidth: 1)
-                )
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
         )
     }
 }
 
-// MARK: - RecentWorkoutRow
+// MARK: - RecentWorkoutCard
 
-private struct RecentWorkoutRow: View {
+private struct RecentWorkoutCard: View {
     let session: WorkoutSession
     let onTap: () -> Void
+    let onRepeat: () -> Void
 
     private var durationText: String {
         let start = session.startedAt
         let end = session.endedAt ?? Date()
         let minutes = Int(end.timeIntervalSince(start)) / 60
-        if minutes < 60 {
-            return "\(minutes)m"
-        }
+        if minutes < 60 { return "\(minutes) min" }
         let h = minutes / 60
         let m = minutes % 60
         return m > 0 ? "\(h)h \(m)m" : "\(h)h"
@@ -674,7 +556,13 @@ private struct RecentWorkoutRow: View {
         if cal.isDateInToday(session.startedAt) { return "Today" }
         if cal.isDateInYesterday(session.startedAt) { return "Yesterday" }
         let f = DateFormatter()
-        f.dateFormat = "MMM d"
+        f.dateFormat = "EEEE, MMM d"
+        return f.string(from: session.startedAt)
+    }
+
+    private var timeLabel: String {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
         return f.string(from: session.startedAt)
     }
 
@@ -694,73 +582,128 @@ private struct RecentWorkoutRow: View {
 
     private var exerciseCount: Int { session.entries.count }
 
+    private var topExercises: [String] {
+        Array(session.entries
+            .sorted { $0.orderIndex < $1.orderIndex }
+            .prefix(3)
+            .map(\.exerciseName))
+    }
+
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.kineticsBlue.opacity(0.13))
-                        .frame(width: 42, height: 42)
-                    Image(systemName: "figure.strengthtraining.traditional")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(Color.kineticsBlue)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            // Top info row
+            Button(action: onTap) {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(dateLabel)
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(.white)
+                            Text(timeLabel)
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundStyle(Color.kineticsSubtext)
+                        }
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(dateLabel)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
+                        Spacer()
 
-                    HStack(spacing: 6) {
-                        Text("\(exerciseCount) exercise\(exerciseCount == 1 ? "" : "s")")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.kineticsSubtext)
+                        VStack(alignment: .trailing, spacing: 3) {
+                            Text(durationText)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color.kineticsBlue)
+                            if session.isCompleted {
+                                Text("Completed")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(Color.kineticsGreen)
+                            }
+                        }
+                    }
 
-                        Text("·")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.kineticsSubtext.opacity(0.5))
+                    // Stats row
+                    HStack(spacing: 20) {
+                        statPill(
+                            value: formattedVolume,
+                            label: "Volume",
+                            color: Color.kineticsGreen
+                        )
+                        statPill(
+                            value: "\(exerciseCount)",
+                            label: "Exercises",
+                            color: Color.kineticsBlue
+                        )
+                        statPill(
+                            value: "\(session.entries.flatMap(\.sets).filter(\.isCompleted).count)",
+                            label: "Sets",
+                            color: Color.kineticsAmber
+                        )
+                    }
 
-                        Text(formattedVolume)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.kineticsSubtext)
+                    // Exercise chips
+                    if !topExercises.isEmpty {
+                        HStack(spacing: 6) {
+                            ForEach(topExercises, id: \.self) { name in
+                                Text(name)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(Color.kineticsSubtext)
+                                    .lineLimit(1)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        Capsule().fill(Color(white: 0.12))
+                                    )
+                            }
+                            if session.entries.count > 3 {
+                                Text("+\(session.entries.count - 3)")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(Color.kineticsSubtext.opacity(0.6))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Capsule().fill(Color(white: 0.12)))
+                            }
+                        }
                     }
                 }
-
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text(durationText)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-
-                    if session.isCompleted {
-                        Text("Done")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(Color.kineticsGreen)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                Capsule()
-                                    .fill(Color.kineticsGreen.opacity(0.14))
-                            )
-                    }
-                }
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.kineticsSubtext.opacity(0.4))
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
             }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(white: 0.08))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .strokeBorder(Color.white.opacity(0.05), lineWidth: 1)
-                    )
-            )
+            .buttonStyle(.plain)
+
+            // Divider + Repeat button
+            Divider()
+                .background(Color.white.opacity(0.06))
+
+            Button(action: onRepeat) {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("Repeat Workout")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+                .foregroundStyle(Color.kineticsBlue)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(white: 0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+                )
+        )
+    }
+
+    private func statPill(value: String, label: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(value)
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Color.kineticsSubtext)
+        }
     }
 }
 
@@ -812,57 +755,6 @@ private struct GymEmptyWorkoutsCard: View {
                     RoundedRectangle(cornerRadius: 16)
                         .strokeBorder(Color.white.opacity(0.05), lineWidth: 1)
                 )
-        )
-    }
-}
-
-// MARK: - GridAccessCard
-
-private struct GridAccessCard: View {
-    let icon: String
-    let label: String
-    let color: Color
-    let action: () -> Void
-
-    @State private var isPressed = false
-
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 16) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(color.opacity(0.16))
-                        .frame(width: 44, height: 44)
-
-                    Image(systemName: icon)
-                        .font(.system(size: 19, weight: .semibold))
-                        .foregroundStyle(color)
-                }
-
-                Text(label)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.08))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(color.opacity(0.18), lineWidth: 1)
-                    )
-            )
-            .scaleEffect(isPressed ? 0.96 : 1.0)
-            .animation(.spring(duration: 0.18), value: isPressed)
-        }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded { _ in isPressed = false }
         )
     }
 }

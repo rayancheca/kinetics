@@ -577,6 +577,47 @@ extension GymRepository {
         return copy
     }
 
+    /// Creates a new `WorkoutSession` pre-populated with the same exercises
+    /// (and their last-used weights as targets) from a previous session.
+    /// This is the "Repeat Workout" action.
+    func repeatSession(_ previous: WorkoutSession, userId: String) throws -> WorkoutSession {
+        let ctx = try context
+        let session = WorkoutSession(userId: userId)
+        ctx.insert(session)
+
+        let sortedEntries = previous.entries.sorted { $0.orderIndex < $1.orderIndex }
+        for (index, entry) in sortedEntries.enumerated() {
+            let newEntry = WorkoutExerciseEntry(
+                exerciseId: entry.exerciseId,
+                exerciseName: entry.exerciseName,
+                orderIndex: index
+            )
+            ctx.insert(newEntry)
+
+            // Seed the same number of sets as last time, using last session's weights/reps as targets.
+            let sortedSets = entry.sets.sorted { $0.setNumber < $1.setNumber }
+            for (setIndex, previousSet) in sortedSets.enumerated() {
+                let newSet = WorkoutSet(
+                    setNumber: setIndex + 1,
+                    weight: previousSet.weight,
+                    reps: previousSet.reps > 0 ? previousSet.reps : 10
+                )
+                ctx.insert(newSet)
+                newEntry.sets.append(newSet)
+            }
+            // If original had no sets, seed one blank set.
+            if sortedSets.isEmpty {
+                let blankSet = WorkoutSet(setNumber: 1)
+                ctx.insert(blankSet)
+                newEntry.sets.append(blankSet)
+            }
+            session.entries.append(newEntry)
+        }
+
+        try saveContext(ctx)
+        return session
+    }
+
     /// Stamps `lastUsedAt` on the routine and returns a pre-populated `WorkoutSession`
     /// with one `WorkoutExerciseEntry` per exercise slot (each seeded with blank sets
     /// equal to `slot.targetSets`).

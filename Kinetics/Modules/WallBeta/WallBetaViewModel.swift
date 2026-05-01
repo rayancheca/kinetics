@@ -48,6 +48,9 @@ final class WallBetaViewModel {
     /// The result of the most recently completed session; populated after `endSession` saves.
     var lastCompletedSession: SessionResult?
 
+    /// The current real-time coaching cue, derived from live metrics via `CoachingEngine`.
+    var currentCoachCue: CoachCue?
+
     /// Elapsed session time formatted as M:SS for display.
     var formattedDuration: String {
         let total = Int(sessionDuration)
@@ -101,7 +104,8 @@ final class WallBetaViewModel {
     /// Retains the 1-second timer task that ticks `sessionDuration`.
     private var timerTask: Task<Void, Never>?
 
-    /// Tracks the last cue text spoken so we only call CoachVoice when the cue changes.
+    /// Cue cooldown state: maps category key → last fire time.
+    private var cueCooldowns: [String: Date] = [:]
     private var lastSpokenCue: String = ""
 
     // MARK: - Session Lifecycle
@@ -124,6 +128,8 @@ final class WallBetaViewModel {
         holdStartTime  = Date()   // Assume static until first movement detected.
         errorMessage   = nil
         lastSpokenCue  = ""
+        cueCooldowns   = [:]
+        currentCoachCue = nil
 
         // Log the analytics event before the camera rolls so funnel attribution is clean.
         SessionRepository.shared.logSessionStarted(sport: .wallBeta)
@@ -295,12 +301,19 @@ final class WallBetaViewModel {
             previousPose = pose
             currentPose  = pose
 
-            // Speak the coaching cue only when it changes to avoid repetition at 30 fps.
-            let cue = coachingCue
-            if cue != lastSpokenCue {
-                lastSpokenCue = cue
-                let priority: SpeechPriority = cue.isHighPriorityCue ? .high : .normal
-                CoachVoice.shared.speak(cue, priority: priority)
+            // Build live metrics bag and evaluate for a coaching cue.
+            let liveMetrics = LiveCoachingMetrics(
+                hipProximityScore: updatedMetrics.hipProximityScore,
+                sagDetected: updatedMetrics.isHipSag,
+                timeUnderTensionAvg: updatedMetrics.holdTimeSeconds
+            )
+            if let cue = CoachingEngine.evaluate(
+                metrics: liveMetrics,
+                sport: .wallBeta,
+                cooldowns: &cueCooldowns
+            ) {
+                currentCoachCue = cue
+                CoachVoice.shared.speakIfChanged(cue: cue)
             }
 
         } catch {

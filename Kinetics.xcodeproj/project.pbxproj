@@ -82,6 +82,7 @@
 		B875E6380324D015BC9E9920 /* TrackViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8643CBD1C2B047956616ACC /* TrackViewModel.swift */; };
 		B948297D38FEBE9A3E257525 /* RepCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D04000D98CBD21248298A0 /* RepCounter.swift */; };
 		BB26387B878693EE71C9C95A /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 726CF430F8281EF13190F56B /* FirebaseCrashlytics */; };
+		BFB01F19B3C1C6EF05AFD455 /* CoachOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F65BFB10A8F0BCC14D54EA7D /* CoachOverlayView.swift */; };
 		CB6BECC8855AE1CEEABAA02E /* SessionResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63DE416D081F3C588AC652A3 /* SessionResult.swift */; };
 		CBD5745D36354446FB741AE0 /* StrikingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB80A5C42F07AC82B0487B /* StrikingView.swift */; };
 		D4D833C1CD725F485BF5827C /* GrapplingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */; };
@@ -90,6 +91,7 @@
 		E17AF55DA7AC09125EE4669B /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */; };
 		E4DC3B328F23443705BCE86A /* GrapplingOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52A53BDDF7AD6CAA2F4E282 /* GrapplingOnboardingView.swift */; };
 		E80DC249A91B7F7141666BC9 /* InjuryRiskDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 121AC521FEFB5BC065773CAB /* InjuryRiskDetector.swift */; };
+		EB77477CE1F33C60BC74F5FA /* GymRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17CCE96B7C847EF00BEF33CE /* GymRootView.swift */; };
 		ED04CA4FA88F26989DD1CDCF /* WorkoutRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7B95E1925765E8119CF3FF /* WorkoutRepository.swift */; };
 		EF19DFF6DAF112D684FCCE3F /* GymHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A95A2EC5EFE23571ABDBD194 /* GymHomeView.swift */; };
 		F0625C27A79CC0D116990168 /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E248662A4970A12F5F6FAD9 /* FeedView.swift */; };
@@ -137,6 +139,7 @@
 		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerViewModel.swift; sourceTree = "<group>"; };
 		17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
+		17CCE96B7C847EF00BEF33CE /* GymRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymRootView.swift; sourceTree = "<group>"; };
 		180342BA4E84F58CF342FDFC /* SubscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionView.swift; sourceTree = "<group>"; };
 		18D06C3B0FC7C077782C8964 /* WallBetaAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaAnalytics.swift; sourceTree = "<group>"; };
 		1BD8F79988934C12079F95AB /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
@@ -215,6 +218,7 @@
 		F07DA203D96B1ADD4E88F7F1 /* GrapplingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingViewModel.swift; sourceTree = "<group>"; };
 		F36FE62052C6F5934ACAAA40 /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
 		F4DFCCE7474CEB92525C504A /* StrikingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingViewModel.swift; sourceTree = "<group>"; };
+		F65BFB10A8F0BCC14D54EA7D /* CoachOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachOverlayView.swift; sourceTree = "<group>"; };
 		F9EC3A501E98D2D04B904ABB /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseOverlayView.swift; sourceTree = "<group>"; };
 		FC7934535B95DCFCD9079D79 /* TrackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackView.swift; sourceTree = "<group>"; };
@@ -369,6 +373,7 @@
 			isa = PBXGroup;
 			children = (
 				1BD8F79988934C12079F95AB /* CameraPreviewView.swift */,
+				F65BFB10A8F0BCC14D54EA7D /* CoachOverlayView.swift */,
 				8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */,
 				91AF016B55595E5A3008382C /* OnboardingMetricRow.swift */,
 				F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */,
@@ -443,6 +448,7 @@
 				76E6D4584A4566026C4F3591 /* GymModels.swift */,
 				64B1735A24DA64B0245D7374 /* GymProgressView.swift */,
 				DFD4F1CA7451955DB1DA363A /* GymRepository.swift */,
+				17CCE96B7C847EF00BEF33CE /* GymRootView.swift */,
 				9FDD5DE93DFBDA0612A9E04C /* GymWorkoutDetailView.swift */,
 				EADB33E9A1501BDAF9621B7A /* GymWorkoutHistoryView.swift */,
 				497B16EEA223AE88C450FBA8 /* PersonalRecordsView.swift */,
@@ -632,6 +638,7 @@
 				AE091BA3A0E856C1E7FBE128 /* BiomechanicsCalculator.swift in Sources */,
 				A1F9B0AF1252345E962F76C8 /* CameraManager.swift in Sources */,
 				31A6EE899D6BC52F5BA390BC /* CameraPreviewView.swift in Sources */,
+				BFB01F19B3C1C6EF05AFD455 /* CoachOverlayView.swift in Sources */,
 				5DB2165BFB966EF4B40FFEFA /* CoachVoice.swift in Sources */,
 				80540CFE2336B7C01E02211C /* CoachingEngine.swift in Sources */,
 				0FC3C27122B7C7C1C81A087B /* Color+Kinetics.swift in Sources */,
@@ -647,6 +654,7 @@
 				5D424CAB04517AD7ACA5F78F /* GymModels.swift in Sources */,
 				B4D682567F3839AAD7D501A8 /* GymProgressView.swift in Sources */,
 				F676C73FFCE52052E9565D2E /* GymRepository.swift in Sources */,
+				EB77477CE1F33C60BC74F5FA /* GymRootView.swift in Sources */,
 				3FB770EE6112079467C01928 /* GymWorkoutDetailView.swift in Sources */,
 				824300101F9C7F858944679F /* GymWorkoutHistoryView.swift in Sources */,
 				44696766E28EA3E56C921FEC /* HealthKitService.swift in Sources */,

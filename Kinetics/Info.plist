@@ -33,6 +33,8 @@
 	<string>1</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Kinetics uses your camera to analyze movement and provide real-time biomechanics coaching feedback.</string>
+	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+	<string>needs it</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Kinetics reads your heart rate and step count to enhance workout tracking.</string>
 	<key>NSHealthUpdateUsageDescription</key>

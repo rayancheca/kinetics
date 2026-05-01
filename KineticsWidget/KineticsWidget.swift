@@ -56,14 +56,14 @@ struct KineticsProvider: TimelineProvider {
     // MARK: Helpers
 
     private func entry() -> KineticsEntry {
-        let defaults = UserDefaults(suiteName: WidgetDataKey.suiteName)
+        let defaults = UserDefaults(suiteName: WidgetDataKey.suiteName) ?? .standard
         return KineticsEntry(
             date: Date(),
-            steps: defaults?.integer(forKey: WidgetDataKey.steps) ?? 0,
-            calories: defaults?.integer(forKey: WidgetDataKey.calories) ?? 0,
-            workoutMinutes: defaults?.integer(forKey: WidgetDataKey.workoutMinutes) ?? 0,
-            nextWorkout: defaults?.string(forKey: WidgetDataKey.nextWorkout) ?? "Not scheduled",
-            streakDays: defaults?.integer(forKey: WidgetDataKey.streakDays) ?? 0
+            steps: defaults.integer(forKey: WidgetDataKey.steps),
+            calories: defaults.integer(forKey: WidgetDataKey.calories),
+            workoutMinutes: defaults.integer(forKey: WidgetDataKey.workoutMinutes),
+            nextWorkout: defaults.string(forKey: WidgetDataKey.nextWorkout) ?? "Not scheduled",
+            streakDays: defaults.integer(forKey: WidgetDataKey.streakDays)
         )
     }
 }

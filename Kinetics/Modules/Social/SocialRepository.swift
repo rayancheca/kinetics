@@ -109,6 +109,13 @@ final class SocialRepository {
         ])
     }
 
+    // MARK: - Post (alias used by PostComposerViewModel)
+
+    /// Convenience wrapper around `postActivity(_:)` used by `PostComposerViewModel`.
+    func post(item: FeedItem) async throws {
+        try await postActivity(item)
+    }
+
     // MARK: - Delete Activity
 
     /// Deletes the `activity/{activityId}` document.
@@ -338,7 +345,199 @@ final class SocialRepository {
         return stories
     }
 
+    // MARK: - Social Graph
+
+    /// Returns the current follow status between `currentUserId` and `targetUserId`.
+    ///
+    /// Returns `.notFollowing` when Firebase is not configured.
+    func followStatus(currentUserId: String, targetUserId: String) async -> FollowStatus {
+        guard isFirebaseReady else { return .notFollowing }
+        if currentUserId == targetUserId { return .self_ }
+
+        let followDoc = try? await db
+            .collection("users").document(currentUserId)
+            .collection("following").document(targetUserId)
+            .getDocument()
+        if followDoc?.exists == true { return .following }
+
+        let requestDoc = try? await db
+            .collection("users").document(targetUserId)
+            .collection("followRequests").document(currentUserId)
+            .getDocument()
+        if requestDoc?.exists == true { return .requested }
+
+        return .notFollowing
+    }
+
+    /// Follows `targetUserId` from `currentUserId`.
+    ///
+    /// - For public accounts the following/followers documents are written immediately.
+    /// - For private accounts a follow-request document is written instead.
+    ///
+    /// No-ops when Firebase is not configured.
+    func follow(
+        currentUserId: String,
+        currentDisplayName: String,
+        currentUsername: String,
+        targetUserId: String,
+        targetDisplayName: String,
+        targetUsername: String,
+        isTargetPublic: Bool
+    ) async throws {
+        guard isFirebaseReady else { return }
+        let now = Date().timeIntervalSince1970 * 1_000
+
+        if isTargetPublic {
+            let followData: [String: Any] = [
+                "userId": targetUserId,
+                "displayName": targetDisplayName,
+                "username": targetUsername,
+                "avatarURL": "",
+                "primarySport": "",
+                "followedAt": now
+            ]
+            try await db
+                .collection("users").document(currentUserId)
+                .collection("following").document(targetUserId)
+                .setData(followData)
+
+            let followerData: [String: Any] = [
+                "userId": currentUserId,
+                "displayName": currentDisplayName,
+                "username": currentUsername,
+                "avatarURL": "",
+                "primarySport": "",
+                "followedAt": now
+            ]
+            try await db
+                .collection("users").document(targetUserId)
+                .collection("followers").document(currentUserId)
+                .setData(followerData)
+
+            logActivity(event: "follow", parameters: [
+                "target_user_id": targetUserId as NSString
+            ])
+        } else {
+            let requestData: [String: Any] = [
+                "userId": currentUserId,
+                "displayName": currentDisplayName,
+                "username": currentUsername,
+                "avatarURL": "",
+                "primarySport": "",
+                "requestedAt": now
+            ]
+            try await db
+                .collection("users").document(targetUserId)
+                .collection("followRequests").document(currentUserId)
+                .setData(requestData)
+
+            logActivity(event: "follow_request_sent", parameters: [
+                "target_user_id": targetUserId as NSString
+            ])
+        }
+    }
+
+    /// Removes the follow relationship between `currentUserId` and `targetUserId`.
+    ///
+    /// Deletes both the following doc on the current user and the followers doc on the target.
+    /// No-ops when Firebase is not configured.
+    func unfollow(currentUserId: String, targetUserId: String) async throws {
+        guard isFirebaseReady else { return }
+        try await db
+            .collection("users").document(currentUserId)
+            .collection("following").document(targetUserId)
+            .delete()
+        try await db
+            .collection("users").document(targetUserId)
+            .collection("followers").document(currentUserId)
+            .delete()
+
+        logActivity(event: "unfollow", parameters: [
+            "target_user_id": targetUserId as NSString
+        ])
+    }
+
+    /// Withdraws a pending follow request sent by `currentUserId` to `targetUserId`.
+    ///
+    /// No-ops when Firebase is not configured.
+    func cancelFollowRequest(currentUserId: String, targetUserId: String) async throws {
+        guard isFirebaseReady else { return }
+        try await db
+            .collection("users").document(targetUserId)
+            .collection("followRequests").document(currentUserId)
+            .delete()
+
+        logActivity(event: "follow_request_cancelled", parameters: [
+            "target_user_id": targetUserId as NSString
+        ])
+    }
+
+    /// Fetches all followers of `userId`.
+    ///
+    /// Returns an empty array when Firebase is not configured.
+    func fetchFollowers(userId: String) async throws -> [FollowRelationship] {
+        guard isFirebaseReady else { return [] }
+        let snap = try await db
+            .collection("users").document(userId)
+            .collection("followers")
+            .getDocuments()
+        return snap.documents.compactMap { decodeFollowRelationship(from: $0.data()) }
+    }
+
+    /// Fetches all accounts that `userId` is following.
+    ///
+    /// Returns an empty array when Firebase is not configured.
+    func fetchFollowing(userId: String) async throws -> [FollowRelationship] {
+        guard isFirebaseReady else { return [] }
+        let snap = try await db
+            .collection("users").document(userId)
+            .collection("following")
+            .getDocuments()
+        return snap.documents.compactMap { decodeFollowRelationship(from: $0.data()) }
+    }
+
+    /// Returns the number of followers for `userId`.
+    ///
+    /// Returns `0` when Firebase is not configured.
+    func fetchFollowerCount(userId: String) async -> Int {
+        guard isFirebaseReady else { return 0 }
+        let snap = try? await db
+            .collection("users").document(userId)
+            .collection("followers")
+            .getDocuments()
+        return snap?.documents.count ?? 0
+    }
+
+    /// Returns the number of accounts `userId` is following.
+    ///
+    /// Returns `0` when Firebase is not configured.
+    func fetchFollowingCount(userId: String) async -> Int {
+        guard isFirebaseReady else { return 0 }
+        let snap = try? await db
+            .collection("users").document(userId)
+            .collection("following")
+            .getDocuments()
+        return snap?.documents.count ?? 0
+    }
+
     // MARK: - Private Helpers
+
+    private func decodeFollowRelationship(from d: [String: Any]) -> FollowRelationship? {
+        guard
+            let uid = d["userId"] as? String,
+            let name = d["displayName"] as? String,
+            let uname = d["username"] as? String,
+            let ts = d["followedAt"] as? Double
+        else { return nil }
+        return FollowRelationship(
+            userId: uid,
+            displayName: name,
+            username: uname,
+            avatarURL: d["avatarURL"] as? String ?? "",
+            primarySport: d["primarySport"] as? String ?? "",
+            followedAt: Date(timeIntervalSince1970: ts / 1_000)
+        )
+    }
 
     private func sportEmoji(for activityType: String) -> String {
         switch activityType {

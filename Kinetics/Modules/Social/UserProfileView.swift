@@ -31,6 +31,13 @@ final class UserProfileViewModel {
     var isEditingBio = false
     var editBioText = ""
 
+    // MARK: Social Graph Counts
+
+    var followerCount: Int = 0
+    var followingCount: Int = 0
+    var showFollowers = false
+    var showFollowing = false
+
     var badges: [AchievementBadge] {
         let count = profile?.totalWorkouts ?? 0
         return [
@@ -46,14 +53,23 @@ final class UserProfileViewModel {
         isLoading = true
         errorMessage = nil
         do {
-            async let profileFetch = SocialRepository.shared.fetchProfile(userId: userId)
+            async let profileFetch    = SocialRepository.shared.fetchProfile(userId: userId)
             async let activitiesFetch = SocialRepository.shared.fetchUserActivities(userId: userId)
+
             let (fetchedProfile, fetchedActivities) = try await (profileFetch, activitiesFetch)
             profile = fetchedProfile
             activities = fetchedActivities
         } catch {
             errorMessage = error.localizedDescription
         }
+
+        // Fetch counts independently — they never throw.
+        async let fcFetch  = SocialRepository.shared.fetchFollowerCount(userId: userId)
+        async let fgcFetch = SocialRepository.shared.fetchFollowingCount(userId: userId)
+        let (fc, fgc) = await (fcFetch, fgcFetch)
+        followerCount = fc
+        followingCount = fgc
+
         isLoading = false
     }
 
@@ -99,9 +115,27 @@ struct UserProfileView: View {
                     profileHeaderSkeleton
                 }
 
+                // Follow button — only shown when viewing another user's profile.
+                if !isCurrentUser, let profile = viewModel.profile {
+                    FollowButton(
+                        currentUserId: appState.authManager.currentUser?.uid ?? "",
+                        targetUserId: profile.id,
+                        targetDisplayName: profile.displayName,
+                        targetUsername: profile.username,
+                        isTargetPublic: profile.isPublic
+                    )
+                    .padding(.top, 12)
+                }
+
                 if let profile = viewModel.profile {
-                    ProfileStatsStrip(profile: profile)
-                        .padding(.horizontal, 16).padding(.top, 20)
+                    ProfileStatsStrip(
+                        profile: profile,
+                        followerCount: viewModel.followerCount,
+                        followingCount: viewModel.followingCount,
+                        onFollowersTap: { viewModel.showFollowers = true },
+                        onFollowingTap: { viewModel.showFollowing = true }
+                    )
+                    .padding(.horizontal, 16).padding(.top, 16)
                 }
 
                 if viewModel.profile != nil {
@@ -139,6 +173,26 @@ struct UserProfileView: View {
         .toolbarBackground(Color.kineticsBackground, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .task { await viewModel.load(userId: userId) }
+        .sheet(isPresented: Bindable(viewModel).showFollowers) {
+            FollowListView(
+                mode: .followers,
+                userId: userId,
+                currentUserId: appState.authManager.currentUser?.uid ?? "",
+                currentDisplayName: appState.authManager.currentUser?.displayName ?? "",
+                currentUsername: ""
+            )
+            .environment(appState)
+        }
+        .sheet(isPresented: Bindable(viewModel).showFollowing) {
+            FollowListView(
+                mode: .following,
+                userId: userId,
+                currentUserId: appState.authManager.currentUser?.uid ?? "",
+                currentDisplayName: appState.authManager.currentUser?.displayName ?? "",
+                currentUsername: ""
+            )
+            .environment(appState)
+        }
     }
 
     private var achievementSection: some View {
@@ -286,6 +340,10 @@ private struct ProfileBannerHeader: View {
 private struct ProfileStatsStrip: View {
 
     let profile: UserProfile
+    var followerCount: Int = 0
+    var followingCount: Int = 0
+    var onFollowersTap: (() -> Void)? = nil
+    var onFollowingTap: (() -> Void)? = nil
 
     private var volumeFormatted: String {
         let km = profile.totalDistanceMeters / 1_000
@@ -297,9 +355,17 @@ private struct ProfileStatsStrip: View {
         HStack(spacing: 0) {
             statColumn(label: "Sessions", value: "\(profile.totalWorkouts)")
             columnDivider
-            statColumn(label: "Volume", value: volumeFormatted, unit: profile.totalDistanceMeters >= 1_000 ? "km" : nil)
+            statColumn(
+                label: "Followers",
+                value: "\(followerCount)",
+                action: onFollowersTap
+            )
             columnDivider
-            statColumn(label: "Streak", value: "7", unit: "d")
+            statColumn(
+                label: "Following",
+                value: "\(followingCount)",
+                action: onFollowingTap
+            )
             columnDivider
             statColumn(label: "PRs", value: "\(profile.totalWorkouts / 5)")
         }
@@ -308,17 +374,23 @@ private struct ProfileStatsStrip: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
-    private func statColumn(label: String, value: String, unit: String? = nil) -> some View {
-        VStack(spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value)
-                    .font(.system(size: 22, weight: .black, design: .rounded))
-                    .foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
-                if let unit { Text(unit).font(.system(size: 11, weight: .medium)).foregroundStyle(Color.kineticsSubtext) }
+    private func statColumn(label: String, value: String, unit: String? = nil, action: (() -> Void)? = nil) -> some View {
+        Button {
+            action?()
+        } label: {
+            VStack(spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(value)
+                        .font(.system(size: 22, weight: .black, design: .rounded))
+                        .foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                    if let unit { Text(unit).font(.system(size: 11, weight: .medium)).foregroundStyle(Color.kineticsSubtext) }
+                }
+                Text(label).font(.system(size: 10, weight: .medium)).foregroundStyle(Color.kineticsSubtext)
             }
-            Text(label).font(.system(size: 10, weight: .medium)).foregroundStyle(Color.kineticsSubtext)
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
+        .buttonStyle(.plain)
+        .disabled(action == nil)
     }
 
     private var columnDivider: some View {

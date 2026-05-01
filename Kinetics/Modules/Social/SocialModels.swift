@@ -82,6 +82,24 @@ enum FeedItemType: String, Codable, Sendable {
     case wallSession
 }
 
+// MARK: - ExerciseSummary
+
+/// A compact exercise summary attached to gym/iron-tracker feed posts.
+/// Encoded into `FeedItem.exerciseSummaries` so the card can render a
+/// per-exercise breakdown without a secondary Firestore lookup.
+struct ExerciseSummary: Codable, Sendable, Hashable {
+    /// Display name of the exercise, e.g. "Bench Press".
+    var name: String
+    /// Number of sets performed.
+    var sets: Int
+    /// Heaviest single weight lifted in kilograms across all sets.
+    var topWeightKg: Double
+    /// Total reps performed across all sets.
+    var totalReps: Int
+    /// Primary muscle group, e.g. "Chest", "Back", "Legs".
+    var muscleGroup: String
+}
+
 // MARK: - FeedMetric
 
 /// A single highlighted metric displayed on a `FeedItem` card.
@@ -155,8 +173,15 @@ struct FeedItem: Codable, Identifiable, Sendable, Hashable {
     var title: String
     /// Secondary line, e.g. "28:14 • 5:26/km".
     var subtitle: String
+    /// Free-text caption the user typed when posting. Nil = no caption.
+    var caption: String?
     /// Up to three highlight metrics shown in the metrics strip.
     var metrics: [FeedMetric]
+    /// Exercise breakdown for gym/iron-tracker posts. Nil when not a gym session.
+    var exerciseSummaries: [ExerciseSummary]?
+    /// Array of [lat, lng] coordinate pairs describing the GPS route.
+    /// Nil when no route is available. Used to draw a map polyline on the card.
+    var routeCoordinates: [[Double]]?
     /// URL to an optional map snapshot or activity photo in Firebase Storage.
     /// Empty string when no image was attached.
     var imageURL: String
@@ -191,7 +216,8 @@ struct FeedItem: Codable, Identifiable, Sendable, Hashable {
     /// computed client state value resolved after each fetch.
     enum CodingKeys: String, CodingKey {
         case id, userId, displayName, username, avatarURL
-        case itemType, title, subtitle, metrics, imageURL
+        case itemType, title, subtitle, caption, metrics
+        case exerciseSummaries, routeCoordinates, imageURL
         case postedAt, kudosCount, commentCount
         case workoutId, activityType
     }
@@ -208,7 +234,10 @@ struct FeedItem: Codable, Identifiable, Sendable, Hashable {
         itemType = try c.decode(FeedItemType.self, forKey: .itemType)
         title = try c.decode(String.self, forKey: .title)
         subtitle = try c.decode(String.self, forKey: .subtitle)
+        caption = try c.decodeIfPresent(String.self, forKey: .caption)
         metrics = try c.decode([FeedMetric].self, forKey: .metrics)
+        exerciseSummaries = try c.decodeIfPresent([ExerciseSummary].self, forKey: .exerciseSummaries)
+        routeCoordinates = try c.decodeIfPresent([[Double]].self, forKey: .routeCoordinates)
         imageURL = try c.decode(String.self, forKey: .imageURL)
         postedAt = try c.decode(Date.self, forKey: .postedAt)
         kudosCount = try c.decode(Int.self, forKey: .kudosCount)
@@ -230,7 +259,10 @@ struct FeedItem: Codable, Identifiable, Sendable, Hashable {
         itemType: FeedItemType,
         title: String,
         subtitle: String,
+        caption: String? = nil,
         metrics: [FeedMetric],
+        exerciseSummaries: [ExerciseSummary]? = nil,
+        routeCoordinates: [[Double]]? = nil,
         imageURL: String,
         postedAt: Date,
         kudosCount: Int,
@@ -247,7 +279,10 @@ struct FeedItem: Codable, Identifiable, Sendable, Hashable {
         self.itemType = itemType
         self.title = title
         self.subtitle = subtitle
+        self.caption = caption
         self.metrics = metrics
+        self.exerciseSummaries = exerciseSummaries
+        self.routeCoordinates = routeCoordinates
         self.imageURL = imageURL
         self.postedAt = postedAt
         self.kudosCount = kudosCount
@@ -389,6 +424,37 @@ extension CommentModel {
                          text: "Keep grinding 💪", createdAt: Date(timeIntervalSinceNow: -900))
         ]
     }
+}
+
+// MARK: - FollowRelationship
+
+/// A denormalised snapshot of a user stored in the following / followers sub-collections.
+/// Stored under `users/{uid}/following/{targetUid}` and `users/{uid}/followers/{sourceUid}`.
+struct FollowRelationship: Codable, Sendable, Identifiable {
+    /// Firebase Auth UID of the followed / following user.
+    var userId: String
+    var displayName: String
+    var username: String
+    var avatarURL: String
+    var primarySport: String
+    var followedAt: Date
+
+    /// `Identifiable` conformance — use `userId` as the stable identity.
+    var id: String { userId }
+}
+
+// MARK: - FollowStatus
+
+/// Describes the current follow relationship between the signed-in user and a profile.
+enum FollowStatus: Sendable {
+    /// The signed-in user is not following this profile.
+    case notFollowing
+    /// A follow request has been sent to a private account and is awaiting approval.
+    case requested
+    /// The signed-in user is actively following this profile.
+    case following
+    /// The profile belongs to the currently signed-in user.
+    case `self_`
 }
 
 // MARK: - StoryModel

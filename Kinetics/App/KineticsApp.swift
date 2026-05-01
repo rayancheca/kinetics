@@ -4,6 +4,50 @@ import FirebaseCrashlytics
 import FirebaseFirestore
 import SwiftData
 import SwiftUI
+import UserNotifications
+
+// MARK: - KineticsNotificationDelegate
+
+/// Bridges UNUserNotificationCenter taps into the kinetics:// URL scheme so
+/// `MainTabView.onOpenURL` can route notification taps without any extra
+/// AppDelegate machinery.
+///
+/// Set as the `UNUserNotificationCenter.current().delegate` in `KineticsApp`.
+@MainActor
+final class KineticsNotificationDelegate: NSObject, UNUserNotificationCenterDelegate, Sendable {
+
+    /// Present notifications as banners even while the app is in the foreground.
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler:
+            @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound, .badge])
+    }
+
+    /// When the user taps a notification, extract `kinetics_deeplink` from
+    /// `userInfo` and open it via `UIApplication.open(_:)`.  That fires the
+    /// `onOpenURL` modifier in `MainTabView` which calls `handleDeepLink`.
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        defer { completionHandler() }
+        guard
+            let rawURL = response.notification.request.content
+                .userInfo["kinetics_deeplink"] as? String,
+            let url = URL(string: rawURL)
+        else { return }
+
+        Task { @MainActor in
+            UIApplication.shared.open(url)
+        }
+    }
+}
+
+// MARK: - KineticsApp
 
 @main
 struct KineticsApp: App {
@@ -11,9 +55,11 @@ struct KineticsApp: App {
     @State private var appState = AppState()
     @AppStorage("permissions_requested") private var permissionsRequested = false
 
-    init() {
-        FirebaseApp.configure()
-    }
+    // Notification delegate must be retained for the lifetime of the app.
+    private let notificationDelegate = KineticsNotificationDelegate()
+
+    // Firebase is configured inside AppState.init() via configureFirebaseIfReady().
+    // Do NOT call FirebaseApp.configure() here — it would double-configure and crash.
 
     private static let modelContainer: ModelContainer = {
         let schema = Schema([
@@ -42,6 +88,9 @@ struct KineticsApp: App {
                 .preferredColorScheme(.dark)
                 .modelContainer(Self.modelContainer)
                 .onAppear {
+                    // Register notification delegate so taps deep-link correctly.
+                    UNUserNotificationCenter.current().delegate = notificationDelegate
+
                     GymRepository.shared.modelContainer = Self.modelContainer
                     VideoRepository.shared.modelContainer = Self.modelContainer
                     Analytics.logEvent("app_session_started", parameters: [

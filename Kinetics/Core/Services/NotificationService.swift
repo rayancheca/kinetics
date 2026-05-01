@@ -11,6 +11,9 @@ import UserNotifications
 /// and it avoids the Sendable-capture friction of an actor when
 /// the caller is already on the main thread (e.g., SwiftUI views /
 /// `@Observable` ViewModels).
+///
+/// All notifications include a `kinetics_deeplink` key in their `userInfo`
+/// so `DeepLinkRouter` can route the tap to the correct screen.
 @MainActor
 final class NotificationService {
 
@@ -18,9 +21,20 @@ final class NotificationService {
 
     static let shared = NotificationService()
 
+    // MARK: - UserDefaults keys (for achievement gate tracking)
+
+    private enum DefaultsKey {
+        static let firstSessionFired    = "notif_achievement_first_session"
+        static let sevenDayStreakFired  = "notif_achievement_7day_streak"
+        static let firstPRFired         = "notif_achievement_first_pr"
+        static let lastActiveDate       = "notif_last_active_date"
+        static let inactivityReminderID = "notif_inactivity_reminder_id"
+    }
+
     // MARK: - Private
 
-    private let center = UNUserNotificationCenter.current()
+    private let center   = UNUserNotificationCenter.current()
+    private let defaults = UserDefaults.standard
 
     private init() {}
 
@@ -28,13 +42,17 @@ final class NotificationService {
 
     /// Requests `.alert`, `.badge`, and `.sound` notification permissions.
     ///
+    /// Also registers the app as the notification delegate so foreground
+    /// notifications can be presented.
+    ///
     /// - Returns: `true` when the user grants authorization; `false` otherwise.
     func requestAuthorization() async -> Bool {
-        await withCheckedContinuation { continuation in
+        let granted = await withCheckedContinuation { continuation in
             center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
                 continuation.resume(returning: granted)
             }
         }
+        return granted
     }
 
     // MARK: - Workout Reminders
@@ -72,6 +90,7 @@ final class NotificationService {
             content.title = title
             content.body  = body
             content.sound = .default
+            content.userInfo = ["kinetics_deeplink": "kinetics://home"]
 
             let requestID = "\(identifier)_weekday_\(weekday)"
             let request   = UNNotificationRequest(
@@ -84,7 +103,111 @@ final class NotificationService {
         }
 
         // Update the widget so the next scheduled workout description is current.
-        WidgetDataStore.shared.updateNextWorkout("\(title) · \(formattedTime(hour: hour, minute: minute))")
+        WidgetDataStore.shared.updateNextWorkout(
+            "\(title) · \(formattedTime(hour: hour, minute: minute))"
+        )
+    }
+
+    // MARK: - Inactivity Reminder
+
+    /// Records today as the last active date and reschedules the 2-day inactivity
+    /// reminder. Call this at the end of every successful workout session.
+    func recordActivity() {
+        defaults.set(Date(), forKey: DefaultsKey.lastActiveDate)
+        Task { await scheduleInactivityReminder() }
+    }
+
+    /// Schedules a "Time to train" reminder to fire 48 hours from now.
+    /// Cancels any previously scheduled inactivity reminder first.
+    private func scheduleInactivityReminder() async {
+        // Cancel the old pending reminder, if any.
+        if let oldID = defaults.string(forKey: DefaultsKey.inactivityReminderID) {
+            center.removePendingNotificationRequests(withIdentifiers: [oldID])
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Time to train 💪"
+        content.body  = "You haven't opened Kinetics in 2 days. Keep the momentum going!"
+        content.sound = .default
+        content.userInfo = ["kinetics_deeplink": "kinetics://home"]
+
+        // 48 hours = 172800 seconds. In development/testing use a shorter window if needed.
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 172_800, repeats: false)
+        let requestID = "kinetics_inactivity_\(UUID().uuidString)"
+
+        let request = UNNotificationRequest(
+            identifier: requestID,
+            content: content,
+            trigger: trigger
+        )
+        try? await center.add(request)
+        defaults.set(requestID, forKey: DefaultsKey.inactivityReminderID)
+    }
+
+    // MARK: - Achievement Notifications
+
+    /// Fires a one-shot notification 5 seconds after the call, with the given
+    /// deeplink so a tap routes the user to the right screen.
+    ///
+    /// Each invocation uses a unique UUID so concurrent calls do not collide.
+    func scheduleAchievementNotification(
+        title: String,
+        body: String,
+        deeplink: String = "kinetics://home"
+    ) async {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body  = body
+        content.sound = .default
+        content.userInfo = ["kinetics_deeplink": deeplink]
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: trigger
+        )
+        try? await center.add(request)
+    }
+
+    // MARK: - Achievement Gate Checks
+
+    /// Call after every completed session. Fires the "first session" achievement
+    /// notification once, then never again.
+    func checkFirstSessionAchievement() async {
+        guard !defaults.bool(forKey: DefaultsKey.firstSessionFired) else { return }
+        defaults.set(true, forKey: DefaultsKey.firstSessionFired)
+        await scheduleAchievementNotification(
+            title: "First session logged! 🎉",
+            body: "Your biomechanics journey has begun. Keep it up!",
+            deeplink: "kinetics://history"
+        )
+    }
+
+    /// Call whenever the streak count updates. Fires the "7-day streak" badge
+    /// exactly once when the streak first reaches 7 (or more).
+    func checkStreakAchievement(streakDays: Int) async {
+        guard streakDays >= 7,
+              !defaults.bool(forKey: DefaultsKey.sevenDayStreakFired) else { return }
+        defaults.set(true, forKey: DefaultsKey.sevenDayStreakFired)
+        await scheduleAchievementNotification(
+            title: "7-day streak 🔥",
+            body: "A full week of training — consistency is everything!",
+            deeplink: "kinetics://home"
+        )
+    }
+
+    /// Call after a personal record is set in the Gym Tracker. Fires once and
+    /// resets the gate so a subsequent PR re-fires the notification.
+    ///
+    /// Unlike the other achievements, this one resets after firing so every PR
+    /// earns a notification (not just the very first one).
+    func checkPersonalRecordAchievement(exerciseName: String) async {
+        await scheduleAchievementNotification(
+            title: "New PR! 🏆",
+            body: "You just set a personal record on \(exerciseName). Outstanding work!",
+            deeplink: "kinetics://gym/prs"
+        )
     }
 
     // MARK: - Private Helpers
@@ -109,26 +232,6 @@ final class NotificationService {
             .map(\.identifier)
             .filter { $0.hasPrefix("\(identifier)_weekday_") }
         center.removePendingNotificationRequests(withIdentifiers: toRemove)
-    }
-
-    // MARK: - Achievement Notifications
-
-    /// Fires a one-shot notification 5 seconds after the call.
-    ///
-    /// Each invocation uses a unique UUID so concurrent calls do not collide.
-    func scheduleAchievementNotification(title: String, body: String) async {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body  = body
-        content.sound = .default
-
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: trigger
-        )
-        try? await center.add(request)
     }
 
     // MARK: - Pending Count

@@ -36,9 +36,17 @@ final class SessionRepository: Sendable {
     /// Writes a completed session to Firestore under the user-scoped path
     /// `users/{userId}/sessions/{sessionId}` and fires the
     /// `module_session_completed` Analytics event.
+    ///
+    /// Also triggers achievement notifications and records the activity timestamp
+    /// so the 2-day inactivity reminder resets.
+    ///
     /// No-ops silently when Firebase is not configured.
     func save(_ result: SessionResult) async throws {
-        guard isFirebaseReady else { return }
+        guard isFirebaseReady else {
+            // Even without Firebase, fire achievements and record activity.
+            await firePostSessionSideEffects()
+            return
+        }
 
         let db = Firestore.firestore()
         let data = try encodeToDict(result)
@@ -51,6 +59,15 @@ final class SessionRepository: Sendable {
             .setData(data)
 
         logSessionCompleted(result)
+        await firePostSessionSideEffects()
+    }
+
+    /// Fires notifications and records activity after any successful session save.
+    private func firePostSessionSideEffects() async {
+        await MainActor.run {
+            NotificationService.shared.recordActivity()
+        }
+        await NotificationService.shared.checkFirstSessionAchievement()
     }
 
     // MARK: - Fetch

@@ -263,12 +263,15 @@ extension GymRepository {
         )
         let existing = try ctx.fetch(descriptor).first
 
+        var didSetNewRecord = false
+
         if let existing {
             guard weight > existing.weight else { return }
             existing.weight = weight
             existing.reps = reps
             existing.achievedAt = Date()
             ctx.insert(existing)
+            didSetNewRecord = true
         } else {
             let pr = PersonalRecord(
                 userId: userId,
@@ -278,9 +281,20 @@ extension GymRepository {
                 reps: reps
             )
             ctx.insert(pr)
+            didSetNewRecord = true
         }
 
         try saveContext(ctx)
+
+        // Fire achievement notification on main actor without blocking the save.
+        if didSetNewRecord {
+            let name = exerciseName
+            Task { @MainActor in
+                await NotificationService.shared.checkPersonalRecordAchievement(
+                    exerciseName: name
+                )
+            }
+        }
     }
 }
 

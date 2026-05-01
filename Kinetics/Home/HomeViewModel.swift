@@ -49,6 +49,7 @@ final class HomeViewModel {
         let streak = (try? GymRepository.shared.calculateStreak(userId: userId)) ?? 0
         streakDays = streak
         WidgetDataStore.shared.updateStreak(streak)
+        await NotificationService.shared.checkStreakAchievement(streakDays: streak)
     }
 
     /// Convenience wrapper so the view can trigger a reload by name without

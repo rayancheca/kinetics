@@ -204,6 +204,13 @@ struct HomeView: View {
 
     // MARK: - Health Stats Card
 
+    /// `true` when every stat is zero — indicates HealthKit is not authorized.
+    private var healthKitIsEmpty: Bool {
+        let s = viewModel.dashboardStats
+        return s.steps == 0 && s.activeCalories == 0 && s.restingHeartRate == 0
+            && s.hrv == 0 && s.vo2Max == 0 && s.sleepSeconds == 0
+    }
+
     private var healthStatsCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("TODAY'S STATS")
@@ -211,59 +218,110 @@ struct HomeView: View {
                 .tracking(2.5)
                 .foregroundStyle(.white.opacity(0.38))
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    StatPill(
-                        icon: "figure.walk",
-                        color: .kineticsBlue,
-                        value: viewModel.dashboardStats.steps > 0
-                            ? Self.formattedSteps(viewModel.dashboardStats.steps)
-                            : "--",
-                        unit: viewModel.dashboardStats.steps > 0 ? "steps" : ""
-                    )
-                    StatPill(
-                        icon: "flame.fill",
-                        color: .kineticsAmber,
-                        value: viewModel.dashboardStats.activeCalories > 0
-                            ? String(Int(viewModel.dashboardStats.activeCalories))
-                            : "--",
-                        unit: viewModel.dashboardStats.activeCalories > 0 ? "kcal" : ""
-                    )
-                    StatPill(
-                        icon: "moon.zzz.fill",
-                        color: .kineticsPurple,
-                        value: viewModel.dashboardStats.sleepSeconds > 0
-                            ? Self.formattedSleep(viewModel.dashboardStats.sleepSeconds)
-                            : "--",
-                        unit: ""
-                    )
-                    StatPill(
-                        icon: "heart.fill",
-                        color: .kineticsGreen,
-                        value: viewModel.dashboardStats.restingHeartRate > 0
-                            ? String(Int(viewModel.dashboardStats.restingHeartRate))
-                            : "--",
-                        unit: viewModel.dashboardStats.restingHeartRate > 0 ? "bpm" : ""
-                    )
-                    StatPill(
-                        icon: "waveform.path.ecg",
-                        color: .kineticsBlue,
-                        value: viewModel.dashboardStats.hrv > 0
-                            ? String(Int(viewModel.dashboardStats.hrv))
-                            : "--",
-                        unit: viewModel.dashboardStats.hrv > 0 ? "ms" : ""
-                    )
-                    StatPill(
-                        icon: "lungs.fill",
-                        color: .kineticsGreen,
-                        value: viewModel.dashboardStats.vo2Max > 0
-                            ? String(Int(viewModel.dashboardStats.vo2Max))
-                            : "--",
-                        unit: viewModel.dashboardStats.vo2Max > 0 ? "mL/kg/min" : ""
-                    )
-                }
-                .padding(.horizontal, 2)
+            if healthKitIsEmpty {
+                healthKitConnectPrompt
+            } else {
+                healthPillRow
             }
+        }
+    }
+
+    /// Shown when HealthKit has never been authorized or data is unavailable.
+    private var healthKitConnectPrompt: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.kineticsGreen.opacity(0.12))
+                    .frame(width: 48, height: 48)
+                Image(systemName: "heart.text.square.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Color.kineticsGreen)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Connect Apple Health")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text("Sync steps, heart rate, sleep & more")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.45))
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.25))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.kineticsDark)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.kineticsGreen.opacity(0.18), lineWidth: 0.75)
+                )
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .onTapGesture {
+            Task { await viewModel.loadDashboardStats() }
+        }
+    }
+
+    private var healthPillRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                StatPill(
+                    icon: "figure.walk",
+                    color: .kineticsBlue,
+                    value: viewModel.dashboardStats.steps > 0
+                        ? Self.formattedSteps(viewModel.dashboardStats.steps)
+                        : "--",
+                    unit: viewModel.dashboardStats.steps > 0 ? "steps" : ""
+                )
+                StatPill(
+                    icon: "flame.fill",
+                    color: .kineticsAmber,
+                    value: viewModel.dashboardStats.activeCalories > 0
+                        ? String(Int(viewModel.dashboardStats.activeCalories))
+                        : "--",
+                    unit: viewModel.dashboardStats.activeCalories > 0 ? "kcal" : ""
+                )
+                StatPill(
+                    icon: "moon.zzz.fill",
+                    color: .kineticsPurple,
+                    value: viewModel.dashboardStats.sleepSeconds > 0
+                        ? Self.formattedSleep(viewModel.dashboardStats.sleepSeconds)
+                        : "--",
+                    unit: ""
+                )
+                StatPill(
+                    icon: "heart.fill",
+                    color: .kineticsGreen,
+                    value: viewModel.dashboardStats.restingHeartRate > 0
+                        ? String(Int(viewModel.dashboardStats.restingHeartRate))
+                        : "--",
+                    unit: viewModel.dashboardStats.restingHeartRate > 0 ? "bpm" : ""
+                )
+                StatPill(
+                    icon: "waveform.path.ecg",
+                    color: .kineticsBlue,
+                    value: viewModel.dashboardStats.hrv > 0
+                        ? String(Int(viewModel.dashboardStats.hrv))
+                        : "--",
+                    unit: viewModel.dashboardStats.hrv > 0 ? "ms" : ""
+                )
+                StatPill(
+                    icon: "lungs.fill",
+                    color: .kineticsGreen,
+                    value: viewModel.dashboardStats.vo2Max > 0
+                        ? String(Int(viewModel.dashboardStats.vo2Max))
+                        : "--",
+                    unit: viewModel.dashboardStats.vo2Max > 0 ? "mL/kg/min" : ""
+                )
+            }
+            .padding(.horizontal, 2)
         }
     }
 
@@ -434,10 +492,11 @@ private struct StatPill: View {
 ///
 /// Visual layers (back to front):
 /// 1. Dark card background (`kineticsDark`).
-/// 2. Subtle radial glow behind the icon.
-/// 3. Vertical gradient from clear → accent at bottom for depth.
-/// 4. Hairline border at accent opacity.
-/// 5. Content column (icon, name, tagline, start prompt).
+/// 2. Large ghosted SF Symbol top-right for sport identity at a glance.
+/// 3. Radial glow anchored to the top-leading corner.
+/// 4. Vertical gradient from clear → accent at the bottom for depth.
+/// 5. Hairline border at accent opacity.
+/// 6. Content column (icon badge, sport name, tagline, START CTA).
 struct ModuleCard: View {
 
     let sport: SportType
@@ -450,37 +509,46 @@ struct ModuleCard: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(Color.kineticsDark)
 
-            // MARK: Icon glow (radial, top-left anchored)
+            // MARK: Large ghost icon — sport identity at a glance
+            Image(systemName: sport.systemImage)
+                .font(.system(size: 78, weight: .black))
+                .foregroundStyle(accent.opacity(0.09))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(.top, 10)
+                .padding(.trailing, 8)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            // MARK: Radial glow (top-leading)
             RadialGradient(
-                colors: [accent.opacity(0.12), .clear],
+                colors: [accent.opacity(0.14), .clear],
                 center: .topLeading,
                 startRadius: 0,
-                endRadius: 100
+                endRadius: 110
             )
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
             // MARK: Bottom depth gradient
             LinearGradient(
-                colors: [.clear, accent.opacity(0.20)],
-                startPoint: .top,
+                colors: [.clear, accent.opacity(0.22)],
+                startPoint: .center,
                 endPoint: .bottom
             )
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
             // MARK: Hairline border
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(accent.opacity(0.22), lineWidth: 0.75)
+                .strokeBorder(accent.opacity(0.25), lineWidth: 0.75)
 
             // MARK: Content
             VStack(alignment: .leading, spacing: 0) {
-                // Icon with a tight tinted backing square
+                // Compact icon badge
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(accent.opacity(0.14))
-                        .frame(width: 50, height: 50)
+                        .fill(accent.opacity(0.15))
+                        .frame(width: 44, height: 44)
 
                     Image(systemName: sport.systemImage)
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(accent)
                 }
 
@@ -488,20 +556,20 @@ struct ModuleCard: View {
 
                 // Module name
                 Text(sport.displayName)
-                    .font(.system(size: 16, weight: .bold, design: .default))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
 
                 // Tagline
                 Text(sport.tagline)
-                    .font(.system(size: 11, weight: .regular))
+                    .font(.system(size: 10.5, weight: .regular))
                     .foregroundStyle(.white.opacity(0.42))
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 4)
+                    .padding(.top, 3)
 
-                // Start prompt
+                // START CTA
                 HStack(spacing: 4) {
                     Text("START")
                         .font(.system(size: 9, weight: .bold))
@@ -512,11 +580,11 @@ struct ModuleCard: View {
                         .font(.system(size: 8, weight: .bold))
                         .foregroundStyle(accent)
                 }
-                .padding(.top, 10)
+                .padding(.top, 9)
             }
-            .padding(16)
+            .padding(14)
         }
-        .frame(minHeight: 180)
+        .frame(minHeight: 185)
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }

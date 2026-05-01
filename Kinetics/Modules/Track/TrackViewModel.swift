@@ -58,6 +58,39 @@ final class TrackViewModel {
     /// whenever a new GPS fix arrives.
     var routeCoordinates: [CLLocationCoordinate2D] = []
 
+    /// Maximum speed recorded this session, in metres per second.
+    var maxSpeed: Double = 0
+
+    /// Heart rate zone (1–5) derived from the most recent HR sample.
+    /// Zero until the first HR sample arrives.
+    var currentHeartRateZone: Int = 0
+
+    /// Assumed maximum heart rate used for zone calculations.
+    /// Defaults to 190 bpm when no HealthKit age data is available.
+    var assumedMaxHR: Double = 190
+
+    /// Auto-coaching message shown in the live overlay pill. Set by pace milestone
+    /// triggers and auto-dismissed after 4 seconds.
+    var currentCoachMessage: String?
+
+    /// Target pace in seconds per km. Derived from `targetDistance` and `targetDuration`
+    /// when both are set; `nil` otherwise.
+    var targetPaceSecondsPerKm: Double? {
+        guard let dist = targetDistance, let dur = targetDuration,
+              dist > 0, dur > 0 else { return nil }
+        let km = dist
+        return dur / km
+    }
+
+    /// Target distance in kilometres. Bound to the goal selector in the pre-session UI.
+    var targetDistance: Double?
+
+    /// Target duration in seconds. Bound to the goal duration picker in the pre-session UI.
+    var targetDuration: TimeInterval?
+
+    /// Per-km pace values collected as each split completes. Parallel to `splits`.
+    var splitPaces: [Double] = []
+
     // MARK: - Permission State
 
     /// `true` when the user has explicitly denied location access. Used to surface
@@ -66,7 +99,7 @@ final class TrackViewModel {
 
     // MARK: - Selection
 
-    /// The activity the athlete is about to start. Bound to a picker in the pre-session UI.
+    /// The activity the athlete is about to start. Bound to the horizontal selector in the pre-session UI.
     var selectedActivityType: WorkoutActivityType = .run
 
     // MARK: - Completed Session
@@ -103,6 +136,26 @@ final class TrackViewModel {
         String(format: "+%.0fm", elevationGain)
     }
 
+    /// Current speed formatted as km/h, e.g. `"12.4 km/h"`. Shows `"0.0 km/h"` at rest.
+    var formattedCurrentSpeed: String {
+        let kmh = currentSpeed * 3.6
+        return String(format: "%.1f km/h", kmh)
+    }
+
+    /// Maximum speed this session formatted as km/h, e.g. `"15.2 km/h"`.
+    var formattedMaxSpeed: String {
+        let kmh = maxSpeed * 3.6
+        return String(format: "%.1f km/h", kmh)
+    }
+
+    /// Average speed this session formatted as km/h. Returns `"0.0 km/h"` before
+    /// any distance has been accumulated.
+    var formattedAvgSpeed: String {
+        guard elapsedTime > 0 else { return "0.0 km/h" }
+        let kmh = (distance / elapsedTime) * 3.6
+        return String(format: "%.1f km/h", kmh)
+    }
+
     // MARK: - Services
 
     private let locationService = LocationService()
@@ -117,6 +170,12 @@ final class TrackViewModel {
     private var durationTask: Task<Void, Never>?
     private var locationTask: Task<Void, Never>?
     private var hrTask: Task<Void, Never>?
+    private var coachMessageTask: Task<Void, Never>?
+
+    /// Tracks the number of completed km splits to trigger split-milestone cue once per km.
+    private var lastSplitCountForCue: Int = 0
+    /// Tracks the last time a 5-minute interval cue was fired.
+    private var lastMinuteCueTime: TimeInterval = 0
 
     /// Counts consecutive location samples where speed < 0.5 m/s.
     /// When this reaches `autoPauseThreshold` the location consumer stops accumulating distance.
@@ -328,7 +387,7 @@ final class TrackViewModel {
 
     // MARK: - Private: Location Handling
 
-    /// Processes one incoming GPS fix, updating distance, pace, elevation, and splits.
+    /// Processes one incoming GPS fix, updating distance, pace, elevation, splits, and coach cues.
     ///
     /// Auto-pause logic: if speed is below 0.5 m/s for `autoPauseThreshold` consecutive
     /// samples, `isAutoPaused` becomes `true` and distance accumulation halts until
@@ -336,6 +395,11 @@ final class TrackViewModel {
     private func handleNewLocation(_ location: CLLocation) async {
         currentSpeed = await locationService.currentSpeedMS
         currentPace = TrackAnalytics.formatPace(await locationService.currentPaceSecondsPerKm)
+
+        // Track maximum speed.
+        if currentSpeed > maxSpeed {
+            maxSpeed = currentSpeed
+        }
 
         // Auto-pause detection.
         if location.speed >= 0 && location.speed < 0.5 {
@@ -355,26 +419,70 @@ final class TrackViewModel {
 
             // Refresh splits and route overlay from the full route on every fix.
             let route = await locationService.route
-            splits = TrackAnalytics.buildSplits(
+            let newSplits = TrackAnalytics.buildSplits(
                 route: route,
                 hrSamples: hrSamples,
                 splitDistanceMeters: 1_000
             )
+            splits = newSplits
+            splitPaces = newSplits.map { $0.pace }
             routeCoordinates = route.map { $0.coordinate }
+
+            // Fire a split milestone cue when a new completed (full 1 km) split appears.
+            let completedSplitCount = newSplits.filter { $0.distance >= 999 }.count
+            if completedSplitCount > lastSplitCountForCue {
+                lastSplitCountForCue = completedSplitCount
+                if let latestSplit = newSplits.first(where: { $0.splitNumber == completedSplitCount }) {
+                    let msg = TrackAnalytics.splitMilestoneMessage(
+                        splitNumber: completedSplitCount,
+                        splitPace: latestSplit.pace,
+                        targetPace: targetPaceSecondsPerKm
+                    )
+                    showCoachMessage(msg)
+                }
+            }
         }
 
         // Always update avg pace from total distance + elapsed time.
         let paceSeconds = TrackAnalytics.pace(distance: distance, duration: elapsedTime)
         avgPace = TrackAnalytics.formatPace(paceSeconds)
+
+        // 5-minute interval cue (300 s increments).
+        let minuteMark = floor(elapsedTime / 300) * 300
+        if elapsedTime >= 300, minuteMark > lastMinuteCueTime {
+            lastMinuteCueTime = minuteMark
+            let currentPaceSeconds = TrackAnalytics.pace(
+                distance: distance,
+                duration: elapsedTime
+            )
+            if let msg = TrackAnalytics.paceCoachMessage(
+                currentPace: currentPaceSeconds,
+                targetPace: targetPaceSecondsPerKm
+            ) {
+                showCoachMessage(msg)
+            }
+        }
+    }
+
+    /// Shows `message` in `currentCoachMessage` and auto-clears it after 4 seconds.
+    private func showCoachMessage(_ message: String) {
+        coachMessageTask?.cancel()
+        currentCoachMessage = message
+        coachMessageTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled else { return }
+            self?.currentCoachMessage = nil
+        }
     }
 
     // MARK: - Private: Heart Rate Handling
 
-    /// Appends a new HR sample, updates `currentHeartRate`, and recomputes `avgHeartRate`
-    /// as a true running mean of all samples collected this session.
+    /// Appends a new HR sample, updates `currentHeartRate`, recomputes `avgHeartRate`,
+    /// and derives the current HR zone using `assumedMaxHR`.
     private func handleNewHeartRate(_ bpm: Double) async {
         guard bpm > 0 else { return }
         currentHeartRate = bpm
+        currentHeartRateZone = TrackAnalytics.calculateHeartRateZone(hr: bpm, maxHR: assumedMaxHR)
         hrSamples.append((timestamp: Date(), bpm: bpm))
 
         // Running mean — avoids storing a growing sum separately.
@@ -392,9 +500,11 @@ final class TrackViewModel {
         durationTask?.cancel()
         locationTask?.cancel()
         hrTask?.cancel()
+        coachMessageTask?.cancel()
         durationTask = nil
         locationTask = nil
         hrTask = nil
+        coachMessageTask = nil
     }
 
     private func resetSessionState() {
@@ -406,12 +516,18 @@ final class TrackViewModel {
         avgHeartRate = 0
         currentSpeed = 0
         elevationGain = 0
+        maxSpeed = 0
+        currentHeartRateZone = 0
+        currentCoachMessage = nil
         splits = []
+        splitPaces = []
         routeCoordinates = []
         hrSamples = []
         startTime = nil
         lowSpeedConsecutiveCount = 0
         isAutoPaused = false
+        lastSplitCountForCue = 0
+        lastMinuteCueTime = 0
         lastCompletedWorkout = nil
         showSummary = false
         Task { await locationService.reset() }

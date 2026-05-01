@@ -238,6 +238,120 @@ final class SocialRepository {
         }
     }
 
+    // MARK: - CommentModel Helpers
+
+    /// Writes a new comment (as `CommentModel`) to the Firestore comments sub-collection.
+    ///
+    /// No-ops when Firebase is not configured.
+    func addComment(to postId: String, text: String, userId: String, displayName: String) async throws {
+        guard isFirebaseReady else { return }
+
+        let comment = CommentModel(
+            id: UUID().uuidString,
+            userId: userId,
+            displayName: displayName,
+            text: text,
+            createdAt: Date()
+        )
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .millisecondsSince1970
+        let data = try encoder.encode(comment)
+        guard let dict = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw SocialRepositoryError.encodingFailed
+        }
+
+        try await db
+            .collection("activity")
+            .document(postId)
+            .collection("comments")
+            .document(comment.id)
+            .setData(["data": dict])
+    }
+
+    /// Fetches all `CommentModel` comments for `postId`, ordered by `createdAt` ascending.
+    ///
+    /// Returns an empty array when Firebase is not configured.
+    func fetchCommentModels(for postId: String) async throws -> [CommentModel] {
+        guard isFirebaseReady else { return [] }
+
+        let snapshot = try await db
+            .collection("activity")
+            .document(postId)
+            .collection("comments")
+            .order(by: "createdAt", descending: false)
+            .getDocuments()
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .millisecondsSince1970
+
+        return snapshot.documents.compactMap { doc -> CommentModel? in
+            guard let dict = doc.data()["data"] as? [String: Any],
+                  let jsonData = try? JSONSerialization.data(withJSONObject: dict) else { return nil }
+            return try? decoder.decode(CommentModel.self, from: jsonData)
+        }
+    }
+
+    // MARK: - Stories
+
+    /// Derives story rings from recent feed items for the given `userId` and any followed users.
+    ///
+    /// In Phase 1 this is client-side — returns the most recent session from each unique
+    /// poster in the last 24h feed batch. No separate Firestore stories collection is required.
+    ///
+    /// Returns an empty array when Firebase is not configured.
+    func fetchStories(for userId: String) async throws -> [StoryModel] {
+        guard isFirebaseReady else { return [] }
+
+        let since = Date(timeIntervalSinceNow: -86_400)
+
+        let snapshot = try await db
+            .collection("activity")
+            .whereField("postedAt", isGreaterThan: since.timeIntervalSince1970 * 1_000)
+            .order(by: "postedAt", descending: true)
+            .limit(to: 50)
+            .getDocuments()
+
+        // One story per unique userId, most recent first.
+        var seen = Set<String>()
+        var stories: [StoryModel] = []
+
+        for doc in snapshot.documents {
+            guard let item = try? decodeFeedItem(from: doc.data()) else { continue }
+            guard !seen.contains(item.userId) else { continue }
+            seen.insert(item.userId)
+
+            let emoji = sportEmoji(for: item.activityType)
+            let story = StoryModel(
+                id: "story_\(item.id)",
+                userId: item.userId,
+                displayName: item.displayName,
+                avatarEmoji: emoji,
+                sport: item.activityType,
+                sessionId: item.id,
+                createdAt: item.postedAt,
+                seen: false
+            )
+            stories.append(story)
+        }
+
+        return stories
+    }
+
+    // MARK: - Private Helpers
+
+    private func sportEmoji(for activityType: String) -> String {
+        switch activityType {
+        case "striking":   return "🥊"
+        case "grappling":  return "🤼"
+        case "iron", "ironTracker", "gym": return "🏋️"
+        case "wall":       return "🧗"
+        case "run":        return "🏃"
+        case "ride":       return "🚴"
+        default:           return "⚡️"
+        }
+    }
+
     // MARK: - User Profile
 
     /// Fetches the `UserProfile` stored at `users/{userId}`.

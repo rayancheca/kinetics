@@ -67,7 +67,7 @@ struct GymWorkoutDetailView: View {
                     headerCard
                     statsRow
                     exerciseBreakdown
-                    if !session.notes.isEmpty { notesSection }
+                    if let notes = session.notes, !notes.isEmpty { notesSection }
                     deleteButton
                 }
                 .padding(.horizontal, 16)
@@ -188,7 +188,7 @@ struct GymWorkoutDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             DetailSectionHeader(title: "Notes")
 
-            Text(session.notes)
+            Text(session.notes ?? "")
                 .font(.system(size: 14))
                 .foregroundStyle(Color.kineticsSubtext)
                 .padding(14)

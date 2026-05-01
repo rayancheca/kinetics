@@ -146,7 +146,7 @@ final class WorkoutSession {
     var userId: String
     var startedAt: Date
     var endedAt: Date?
-    var notes: String
+    var notes: String?
     var isCompleted: Bool
     @Relationship(deleteRule: .cascade) var entries: [WorkoutExerciseEntry]
 
@@ -155,7 +155,7 @@ final class WorkoutSession {
         userId: String,
         startedAt: Date = Date(),
         endedAt: Date? = nil,
-        notes: String = "",
+        notes: String? = nil,
         isCompleted: Bool = false,
         entries: [WorkoutExerciseEntry] = []
     ) {
@@ -234,7 +234,7 @@ final class WorkoutSet {
     var isCompleted: Bool
     var completedAt: Date?
     /// Optional per-set note (e.g. "felt easy", "used straps").
-    var notes: String
+    var notes: String?
 
     init(
         id: String = UUID().uuidString,
@@ -244,7 +244,7 @@ final class WorkoutSet {
         rpe: Double = 0,
         isCompleted: Bool = false,
         completedAt: Date? = nil,
-        notes: String = ""
+        notes: String? = nil
     ) {
         self.id = id
         self.setNumber = setNumber
@@ -322,7 +322,7 @@ final class Routine {
     /// Days of the week this routine is scheduled (0 = Sunday ... 6 = Saturday).
     var scheduledDays: [Int]
     /// Optional free-text notes visible in the detail view.
-    var notes: String
+    var notes: String?
     var createdAt: Date
     var lastUsedAt: Date?
 
@@ -335,7 +335,7 @@ final class Routine {
         exerciseNames: [String] = [],
         slots: [RoutineExerciseSlot] = [],
         scheduledDays: [Int] = [],
-        notes: String = "",
+        notes: String? = nil,
         createdAt: Date = Date(),
         lastUsedAt: Date? = nil
     ) {

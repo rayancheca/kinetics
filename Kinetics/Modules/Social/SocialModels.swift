@@ -353,3 +353,83 @@ extension ActivityComment {
         )
     }
 }
+
+// MARK: - CommentModel
+
+/// A simplified comment model used in the redesigned feed comment sheet.
+struct CommentModel: Codable, Identifiable, Sendable, Hashable {
+    var id: String
+    var userId: String
+    var displayName: String
+    var text: String
+    var createdAt: Date
+}
+
+// MARK: CommentModel + Preview
+
+extension CommentModel {
+
+    static var preview: CommentModel {
+        CommentModel(
+            id: "cm_preview_001",
+            userId: "uid_preview_002",
+            displayName: "Alex Guerrero",
+            text: "Crushing it! That velocity on the last combo was insane 🔥",
+            createdAt: Date(timeIntervalSinceNow: -1_800)
+        )
+    }
+
+    static var previewList: [CommentModel] {
+        [
+            CommentModel(id: "cm_001", userId: "uid_002", displayName: "Alex Guerrero",
+                         text: "Those split times are impressive!", createdAt: Date(timeIntervalSinceNow: -3600)),
+            CommentModel(id: "cm_002", userId: "uid_003", displayName: "Jordan Kim",
+                         text: "What shoes are you training in?", createdAt: Date(timeIntervalSinceNow: -2100)),
+            CommentModel(id: "cm_003", userId: "uid_004", displayName: "Sam Torres",
+                         text: "Keep grinding 💪", createdAt: Date(timeIntervalSinceNow: -900))
+        ]
+    }
+}
+
+// MARK: - StoryModel
+
+/// Represents a recent-session story ring in the feed's horizontal stories bar.
+/// Stored under `stories/{storyId}` or derived client-side from recent feed items.
+struct StoryModel: Codable, Identifiable, Sendable, Hashable {
+    var id: String
+    var userId: String
+    var displayName: String
+    /// Single-character emoji representing the user's avatar when no photo is set.
+    var avatarEmoji: String
+    /// Activity type key, e.g. "striking", "grappling", "iron", "wall", "run".
+    var sport: String
+    var sessionId: String
+    var createdAt: Date
+    /// Whether the current user has already viewed this story ring.
+    var seen: Bool
+}
+
+// MARK: StoryModel + Preview
+
+extension StoryModel {
+
+    static var previewList: [StoryModel] {
+        [
+            StoryModel(id: "story_001", userId: "uid_001", displayName: "Rayan",
+                       avatarEmoji: "🥊", sport: "striking", sessionId: "sess_001",
+                       createdAt: Date(timeIntervalSinceNow: -1_200), seen: false),
+            StoryModel(id: "story_002", userId: "uid_002", displayName: "Alex",
+                       avatarEmoji: "🤼", sport: "grappling", sessionId: "sess_002",
+                       createdAt: Date(timeIntervalSinceNow: -3_600), seen: false),
+            StoryModel(id: "story_003", userId: "uid_003", displayName: "Jordan",
+                       avatarEmoji: "🏋️", sport: "iron", sessionId: "sess_003",
+                       createdAt: Date(timeIntervalSinceNow: -7_200), seen: true),
+            StoryModel(id: "story_004", userId: "uid_004", displayName: "Sam",
+                       avatarEmoji: "🧗", sport: "wall", sessionId: "sess_004",
+                       createdAt: Date(timeIntervalSinceNow: -10_800), seen: true),
+            StoryModel(id: "story_005", userId: "uid_005", displayName: "Casey",
+                       avatarEmoji: "🏃", sport: "run", sessionId: "sess_005",
+                       createdAt: Date(timeIntervalSinceNow: -14_400), seen: false)
+        ]
+    }
+}

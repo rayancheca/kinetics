@@ -136,7 +136,7 @@
 		0CFFA101E73EC4F9738ACEED /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
 		0DC032562411DDDC1ED7D376 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		121AC521FEFB5BC065773CAB /* InjuryRiskDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjuryRiskDetector.swift; sourceTree = "<group>"; };
-		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerViewModel.swift; sourceTree = "<group>"; };
 		17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
 		17CCE96B7C847EF00BEF33CE /* GymRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymRootView.swift; sourceTree = "<group>"; };
@@ -193,7 +193,7 @@
 		BDB11B92F27E39BC17FD0099 /* SessionFeedPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionFeedPublisher.swift; sourceTree = "<group>"; };
 		C18D64B47167CC6B91712D56 /* KineticsWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KineticsWidget.entitlements; sourceTree = "<group>"; };
 		C19FEB8C998F1CF53FF5240E /* ActiveGymSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveGymSessionView.swift; sourceTree = "<group>"; };
-		C302C404B5BD0B3928CB0E8C /* KineticsWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KineticsWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C302C404B5BD0B3928CB0E8C /* KineticsWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = KineticsWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingView.swift; sourceTree = "<group>"; };
 		C373127039F43C920BEF03AB /* VideoLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoLibraryView.swift; sourceTree = "<group>"; };
 		C47432F57057C58AB5AF1802 /* GrapplingSessionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingSessionReportView.swift; sourceTree = "<group>"; };
@@ -586,11 +586,9 @@
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					4E104892220093A4B2F8B724 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					9BB8A80AA6448CB87A29DDBD = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -806,7 +804,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = Kinetics/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -886,7 +884,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = Kinetics/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -906,7 +904,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = KineticsWidget/KineticsWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = KineticsWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -926,7 +924,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = KineticsWidget/KineticsWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = KineticsWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

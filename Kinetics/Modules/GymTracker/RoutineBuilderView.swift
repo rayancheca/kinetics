@@ -377,7 +377,7 @@ final class RoutineDetailViewModel {
         self.routine = routine
         self.slots = routine.slots
         self.name = routine.name
-        self.notes = routine.notes
+        self.notes = routine.notes ?? ""
         self.scheduledDays = Set(routine.scheduledDays)
     }
 

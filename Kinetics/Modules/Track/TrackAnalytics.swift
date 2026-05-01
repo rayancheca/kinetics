@@ -388,6 +388,105 @@ enum TrackAnalytics {
         return paces
     }
 
+    // MARK: - Heart Rate Zone (single sample)
+
+    /// Maps a single heart-rate sample to a zone index (1–5) given the athlete's maximum HR.
+    ///
+    /// Zone thresholds (fraction of maxHR):
+    /// | Zone | Range       | Character      |
+    /// |------|-------------|----------------|
+    /// | 1    | < 50%       | Recovery       |
+    /// | 2    | 50–60%      | Aerobic base   |
+    /// | 3    | 60–70%      | Tempo          |
+    /// | 4    | 70–80%      | Threshold      |
+    /// | 5    | > 80%       | Maximum effort |
+    ///
+    /// - Parameters:
+    ///   - hr: Heart rate sample in beats per minute.
+    ///   - maxHR: Maximum heart rate in beats per minute. Pass 190 when unknown.
+    /// - Returns: Zone index from 1 (lowest) to 5 (highest).
+    static func calculateHeartRateZone(hr: Double, maxHR: Double) -> Int {
+        hrZone(bpm: hr, maxHR: maxHR)
+    }
+
+    // MARK: - Pace Coaching
+
+    /// Generates a contextual coaching message based on the athlete's current pace
+    /// relative to their target pace.
+    ///
+    /// Returns `nil` when the current pace is `0` (no valid GPS data yet) or when
+    /// no meaningful message can be formed. Callers should auto-dismiss the returned
+    /// string after 4 seconds.
+    ///
+    /// - Parameters:
+    ///   - currentPace: Athlete's current instantaneous pace in seconds per kilometre.
+    ///   - targetPace: Optional target pace in seconds per kilometre. When `nil`, the
+    ///     method falls back to generic encouragement messages.
+    /// - Returns: A coaching message string, or `nil` when no message is warranted.
+    static func paceCoachMessage(currentPace: Double, targetPace: Double?) -> String? {
+        guard currentPace > 0 else { return nil }
+
+        guard let target = targetPace else {
+            // Generic encouragement when no target is set
+            if currentPace < 240 {
+                return "Outstanding pace — keep it up!"
+            } else if currentPace < 360 {
+                return "Solid rhythm — stay relaxed and breathe"
+            }
+            return "Keep moving — every step counts"
+        }
+
+        let delta = currentPace - target   // positive = slower than target
+        let percentOff = abs(delta) / target
+
+        if delta < -30 {
+            // More than 30 s/km faster than target — risk of blowing up
+            return "Ease back slightly — you're ahead of target pace"
+        } else if delta < 0 && percentOff <= 0.08 {
+            // Within 8 % faster than target — on track
+            return "Looking strong — you're ahead of target pace"
+        } else if abs(delta) <= 15 {
+            // Within ±15 s/km — exactly on pace
+            return "Perfect pacing — right on target"
+        } else if delta <= 30 {
+            // Up to 30 s/km slower — slight nudge
+            return "Pick it up slightly to hit your target"
+        } else {
+            // More than 30 s/km slower — energy conservation note
+            return "Slow down slightly to preserve energy for the finish"
+        }
+    }
+
+    // MARK: - Interval Milestone Messages
+
+    /// Returns an interval audio-cue message for a completed kilometre split.
+    ///
+    /// - Parameters:
+    ///   - splitNumber: The just-completed kilometre number (1-based).
+    ///   - splitPace: Pace for the completed split in seconds per kilometre.
+    ///   - targetPace: Optional target pace in seconds/km for comparison.
+    /// - Returns: A concise message suitable for display in a small pill overlay.
+    static func splitMilestoneMessage(
+        splitNumber: Int,
+        splitPace: Double,
+        targetPace: Double?
+    ) -> String {
+        let paceStr = formatPace(splitPace).replacingOccurrences(of: " /km", with: "")
+
+        if let target = targetPace, splitPace > 0 {
+            let delta = splitPace - target
+            if delta < -15 {
+                return "km \(splitNumber) — \(paceStr) — ahead of pace"
+            } else if delta <= 15 {
+                return "km \(splitNumber) — \(paceStr) — on target"
+            } else {
+                return "km \(splitNumber) — \(paceStr) — behind pace"
+            }
+        }
+
+        return "km \(splitNumber) complete — \(paceStr)"
+    }
+
     // MARK: - Private Helpers
 
     /// Returns the average bpm of all HR samples whose timestamp falls within

@@ -3,12 +3,12 @@ import SwiftUI
 
 // MARK: - HomeView
 
-/// The root screen of Kinetics. Presents the four sport module cards, the
-/// KINETICS wordmark, auth state, and a recent sessions list.
-///
-/// Navigation is handled by a `NavigationStack` with a typed
-/// `navigationDestination(for: SportType.self)` so each `ModuleCard` is a
-/// plain `NavigationLink(value:)` with zero routing logic in the view.
+/// Redesigned Home tab with five distinct sections:
+/// 1. Hero greeting header with time-based salutation and streak pill
+/// 2. Today's snapshot card (HealthKit stats + weekly progress ring)
+/// 3. Quick-launch horizontal module cards
+/// 4. AI coaching insights card
+/// 5. Recent activity feed
 struct HomeView: View {
 
     // MARK: - Dependencies
@@ -18,44 +18,31 @@ struct HomeView: View {
     @State private var showSignIn = false
     @State private var confirmSignOut = false
 
-    // MARK: - Grid Layout
-
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
-
     // MARK: - Body
 
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    headerSection
+                VStack(spacing: 24) {
+                    heroHeader
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
-                        .padding(.bottom, viewModel.streakDays > 0 ? 16 : 28)
 
-                    if viewModel.streakDays > 0 {
-                        streakBadge
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
-                    }
-
-                    moduleGrid
+                    todaySnapshotCard
                         .padding(.horizontal, 16)
 
-                    healthStatsCard
-                        .padding(.top, 20)
+                    quickLaunchSection
+                        .padding(.horizontal, 16)
+
+                    aiInsightsSection
                         .padding(.horizontal, 16)
 
                     if appState.authManager.isSignedIn {
-                        recentSessionsSection
-                            .padding(.top, 28)
+                        recentActivitySection
                             .padding(.horizontal, 16)
                     }
 
-                    Spacer(minLength: 40)
+                    Spacer(minLength: 32)
                 }
             }
             .background(Color.kineticsBackground)
@@ -93,53 +80,74 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Header
+    // MARK: - 1. Hero Header
 
-    private var headerSection: some View {
+    private var heroHeader: some View {
         HStack(alignment: .top, spacing: 0) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("KINETICS")
-                    .font(.system(size: 34, weight: .black, design: .default))
-                    .tracking(8)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(greetingText)
+                    .font(.system(size: 28, weight: .bold, design: .default))
                     .foregroundStyle(.white)
 
-                Text("AI Biomechanics Coach")
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.38))
-                    .tracking(0.5)
+                Text(formattedDate)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.42))
             }
 
             Spacer(minLength: 12)
 
-            authPill
-                .padding(.top, 5)
+            VStack(alignment: .trailing, spacing: 8) {
+                authPill
+
+                if viewModel.streakDays > 0 {
+                    streakPill
+                }
+            }
         }
     }
 
-    // MARK: - Streak Badge
-
-    private var streakBadge: some View {
-        HStack(spacing: 7) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.kineticsAmber)
-
-            Text("\(viewModel.streakDays) day streak")
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.85))
+    private var greetingText: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        let name = displayFirstName
+        switch hour {
+        case 0..<12:  return "Good morning, \(name) 👋"
+        case 12..<17: return "Good afternoon, \(name) 👋"
+        default:      return "Good evening, \(name) 👋"
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(Color.kineticsAmber.opacity(0.12))
+    }
+
+    private var displayFirstName: String {
+        guard let user = appState.authManager.currentUser, user.isAnonymous == false else {
+            return "Athlete"
+        }
+        return user.email?
+            .components(separatedBy: "@").first?
+            .components(separatedBy: ".").first?
+            .capitalized ?? "Athlete"
+    }
+
+    private var formattedDate: String {
+        Date().formatted(.dateTime.weekday(.wide).month(.wide).day())
+    }
+
+    private var streakPill: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "flame.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color.kineticsAmber)
+            Text("\(viewModel.streakDays) day streak")
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.88))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.kineticsAmber.opacity(0.13))
         .clipShape(Capsule())
         .overlay(
             Capsule()
-                .strokeBorder(Color.kineticsAmber.opacity(0.28), lineWidth: 0.75)
+                .strokeBorder(Color.kineticsAmber.opacity(0.30), lineWidth: 0.75)
         )
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
-
-    // MARK: - Auth Pill
 
     private var authPill: some View {
         Button {
@@ -160,7 +168,6 @@ struct HomeView: View {
                             color: (isAnonymous ? Color.yellow : Color.kineticsGreen).opacity(0.8),
                             radius: 4
                         )
-
                     Text(isAnonymous ? "Guest" : "Online")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white.opacity(0.55))
@@ -189,164 +196,286 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Module Grid
+    // MARK: - 2. Today's Snapshot Card
 
-    private var moduleGrid: some View {
-        LazyVGrid(columns: columns, spacing: 12) {
-            ForEach(SportType.allCases, id: \.self) { sport in
-                NavigationLink(value: sport) {
-                    ModuleCard(sport: sport)
+    private var todaySnapshotCard: some View {
+        ZStack(alignment: .topLeading) {
+            // Gradient background
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.04, green: 0.08, blue: 0.18),
+                            Color(red: 0.04, green: 0.04, blue: 0.10)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            // Subtle blue glow top-right
+            RadialGradient(
+                colors: [Color.kineticsBlue.opacity(0.18), .clear],
+                center: .topTrailing,
+                startRadius: 0,
+                endRadius: 160
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+
+            // Hairline border
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Color.kineticsBlue.opacity(0.18), lineWidth: 0.75)
+
+            // Content
+            VStack(alignment: .leading, spacing: 16) {
+                // Header row
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("TODAY'S SNAPSHOT")
+                            .font(.system(size: 10, weight: .semibold))
+                            .tracking(2.5)
+                            .foregroundStyle(.white.opacity(0.40))
+
+                        Text(todayStatusText)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+
+                    Spacer()
+
+                    // Weekly progress ring
+                    weeklyProgressRing
                 }
-                .buttonStyle(ScaleButtonStyle())
+
+                // Stats row
+                HStack(spacing: 10) {
+                    snapshotStatBadge(
+                        icon: "figure.walk",
+                        color: Color.kineticsBlue,
+                        value: viewModel.dashboardStats.steps > 0
+                            ? HomeView.formattedSteps(viewModel.dashboardStats.steps) : "--",
+                        unit: "steps"
+                    )
+                    snapshotStatBadge(
+                        icon: "flame.fill",
+                        color: Color.kineticsAmber,
+                        value: viewModel.dashboardStats.activeCalories > 0
+                            ? String(Int(viewModel.dashboardStats.activeCalories)) : "--",
+                        unit: "kcal"
+                    )
+                    snapshotStatBadge(
+                        icon: "heart.fill",
+                        color: Color.kineticsGreen,
+                        value: viewModel.dashboardStats.restingHeartRate > 0
+                            ? String(Int(viewModel.dashboardStats.restingHeartRate)) : "--",
+                        unit: "bpm"
+                    )
+                }
+            }
+            .padding(18)
+        }
+    }
+
+    private var todayStatusText: String {
+        guard let last = viewModel.recentSessions.first else { return "Rest Day" }
+        let cal = Calendar.current
+        if cal.isDateInToday(last.startedAt) {
+            return "Active Today · \(last.sport.displayName)"
+        }
+        return "Rest Day"
+    }
+
+    private var weeklySessionCount: Int {
+        let cal = Calendar.current
+        guard let weekStart = cal.dateInterval(of: .weekOfYear, for: Date())?.start else { return 0 }
+        return viewModel.recentSessions.filter { $0.startedAt >= weekStart }.count
+    }
+
+    private var weeklyProgressRing: some View {
+        let target: Int = 5
+        let count = min(weeklySessionCount, target)
+        let progress = target > 0 ? Double(count) / Double(target) : 0.0
+
+        return ZStack {
+            Circle()
+                .stroke(Color.white.opacity(0.08), lineWidth: 5)
+                .frame(width: 58, height: 58)
+
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.kineticsBlue, Color.kineticsGreen],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    style: StrokeStyle(lineWidth: 5, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+                .frame(width: 58, height: 58)
+                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: progress)
+
+            VStack(spacing: 1) {
+                Text("\(count)")
+                    .font(.system(size: 16, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                Text("/\(target)")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.40))
             }
         }
     }
 
-    // MARK: - Health Stats Card
+    private func snapshotStatBadge(icon: String, color: Color, value: String, unit: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(color)
 
-    /// `true` when every stat is zero — indicates HealthKit is not authorized.
-    private var healthKitIsEmpty: Bool {
-        let s = viewModel.dashboardStats
-        return s.steps == 0 && s.activeCalories == 0 && s.restingHeartRate == 0
-            && s.hrv == 0 && s.vo2Max == 0 && s.sleepSeconds == 0
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text(unit)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.40))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private var healthStatsCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("TODAY'S STATS")
+    // MARK: - 3. Quick Launch Section
+
+    private var quickLaunchSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("QUICK LAUNCH")
                 .font(.system(size: 10, weight: .semibold))
                 .tracking(2.5)
                 .foregroundStyle(.white.opacity(0.38))
 
-            if healthKitIsEmpty {
-                healthKitConnectPrompt
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(SportType.allCases, id: \.self) { sport in
+                        NavigationLink(value: sport) {
+                            QuickLaunchCard(
+                                sport: sport,
+                                lastSession: viewModel.recentSessions.first { $0.sport == sport }
+                            )
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 2)
+                .padding(.vertical, 2)
+            }
+        }
+    }
+
+    // MARK: - 4. AI Insights Section
+
+    private var aiInsightsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("AI INSIGHTS")
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(2.5)
+                .foregroundStyle(.white.opacity(0.38))
+
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(white: 0.08))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(.white.opacity(0.07), lineWidth: 0.5)
+                    )
+
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 10) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.kineticsPurple.opacity(0.15))
+                                .frame(width: 38, height: 38)
+                            Image(systemName: "brain.head.profile")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(Color.kineticsPurple)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Coach AI")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(.white)
+                            Text("Personalized feedback")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.white.opacity(0.40))
+                        }
+                    }
+
+                    if viewModel.recentSessions.isEmpty {
+                        HStack(spacing: 10) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 14))
+                                .foregroundStyle(Color.kineticsPurple.opacity(0.6))
+                            Text("Complete your first session to unlock AI insights.")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.white.opacity(0.50))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    } else {
+                        VStack(spacing: 10) {
+                            ForEach(aiInsights(from: viewModel.recentSessions), id: \.self) { insight in
+                                AIInsightRow(text: insight)
+                            }
+                        }
+                    }
+                }
+                .padding(16)
+            }
+        }
+    }
+
+    private func aiInsights(from sessions: [SessionResult]) -> [String] {
+        var insights: [String] = []
+
+        // Most-used module this week
+        let cal = Calendar.current
+        let weekStart = cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+        let weekSessions = sessions.filter { $0.startedAt >= weekStart }
+        if !weekSessions.isEmpty {
+            let counts = Dictionary(grouping: weekSessions, by: \.sport).mapValues(\.count)
+            if let top = counts.max(by: { $0.value < $1.value })?.key {
+                insights.append("You're most active in \(top.displayName) this week — keep the momentum going.")
+            }
+        }
+
+        // Metric-based insight from most recent session
+        if let latest = sessions.first {
+            if let velocity = latest.metrics["strikeVelocityMPH"] {
+                insights.append("Latest strike velocity: \(String(format: "%.1f", velocity)) mph — focus on hip rotation for more power.")
+            } else if let barDev = latest.metrics["barPathDeviationCM"] {
+                insights.append("Bar path deviation was \(String(format: "%.1f", barDev)) cm — aim for a straighter vertical path.")
+            } else if let hipProx = latest.metrics["hipToWallProximity"] {
+                insights.append("Hip proximity score: \(String(format: "%.0f", hipProx * 100))% — closer hips mean less arm strain on the wall.")
             } else {
-                healthPillRow
+                insights.append("Great session on \(latest.sport.displayName) — \(latest.formattedDate).")
             }
         }
-    }
 
-    /// Shown when HealthKit has never been authorized or data is unavailable.
-    private var healthKitConnectPrompt: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.kineticsGreen.opacity(0.12))
-                    .frame(width: 48, height: 48)
-                Image(systemName: "heart.text.square.fill")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(Color.kineticsGreen)
-            }
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Connect Apple Health")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                Text("Sync steps, heart rate, sleep & more")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.45))
-            }
-
-            Spacer(minLength: 0)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.25))
+        // Consistency nudge
+        if sessions.count >= 3 {
+            insights.append("You're building a habit — \(sessions.count) sessions logged so far. Consistency compounds.")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.kineticsDark)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Color.kineticsGreen.opacity(0.18), lineWidth: 0.75)
-                )
-        )
-        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .onTapGesture {
-            Task { await viewModel.loadDashboardStats() }
-        }
+
+        return Array(insights.prefix(3))
     }
 
-    private var healthPillRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                StatPill(
-                    icon: "figure.walk",
-                    color: .kineticsBlue,
-                    value: viewModel.dashboardStats.steps > 0
-                        ? Self.formattedSteps(viewModel.dashboardStats.steps)
-                        : "--",
-                    unit: viewModel.dashboardStats.steps > 0 ? "steps" : ""
-                )
-                StatPill(
-                    icon: "flame.fill",
-                    color: .kineticsAmber,
-                    value: viewModel.dashboardStats.activeCalories > 0
-                        ? String(Int(viewModel.dashboardStats.activeCalories))
-                        : "--",
-                    unit: viewModel.dashboardStats.activeCalories > 0 ? "kcal" : ""
-                )
-                StatPill(
-                    icon: "moon.zzz.fill",
-                    color: .kineticsPurple,
-                    value: viewModel.dashboardStats.sleepSeconds > 0
-                        ? Self.formattedSleep(viewModel.dashboardStats.sleepSeconds)
-                        : "--",
-                    unit: ""
-                )
-                StatPill(
-                    icon: "heart.fill",
-                    color: .kineticsGreen,
-                    value: viewModel.dashboardStats.restingHeartRate > 0
-                        ? String(Int(viewModel.dashboardStats.restingHeartRate))
-                        : "--",
-                    unit: viewModel.dashboardStats.restingHeartRate > 0 ? "bpm" : ""
-                )
-                StatPill(
-                    icon: "waveform.path.ecg",
-                    color: .kineticsBlue,
-                    value: viewModel.dashboardStats.hrv > 0
-                        ? String(Int(viewModel.dashboardStats.hrv))
-                        : "--",
-                    unit: viewModel.dashboardStats.hrv > 0 ? "ms" : ""
-                )
-                StatPill(
-                    icon: "lungs.fill",
-                    color: .kineticsGreen,
-                    value: viewModel.dashboardStats.vo2Max > 0
-                        ? String(Int(viewModel.dashboardStats.vo2Max))
-                        : "--",
-                    unit: viewModel.dashboardStats.vo2Max > 0 ? "mL/kg/min" : ""
-                )
-            }
-            .padding(.horizontal, 2)
-        }
-    }
+    // MARK: - 5. Recent Activity Feed
 
-    // MARK: - Formatting Helpers
-
-    private static func formattedSteps(_ steps: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        return formatter.string(from: NSNumber(value: steps)) ?? String(steps)
-    }
-
-    private static func formattedSleep(_ seconds: Double) -> String {
-        let hours = Int(seconds) / 3600
-        let minutes = (Int(seconds) % 3600) / 60
-        if hours == 0 { return "\(minutes)m" }
-        if minutes == 0 { return "\(hours)h" }
-        return "\(hours)h \(minutes)m"
-    }
-
-    // MARK: - Recent Sessions
-
-    private var recentSessionsSection: some View {
+    private var recentActivitySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("RECENT SESSIONS")
+                Text("RECENT ACTIVITY")
                     .font(.system(size: 10, weight: .semibold))
                     .tracking(2.5)
                     .foregroundStyle(.white.opacity(0.38))
@@ -361,21 +490,21 @@ struct HomeView: View {
             }
 
             if viewModel.isLoadingHistory && viewModel.recentSessions.isEmpty {
-                sessionHistorySkeleton
+                activitySkeleton
             } else if !viewModel.isLoadingHistory && viewModel.recentSessions.isEmpty {
-                emptySessionsState
+                emptyActivityState
             } else {
-                sessionHistoryList
+                activityFeed
             }
         }
     }
 
-    private var sessionHistoryList: some View {
+    private var activityFeed: some View {
         VStack(spacing: 0) {
             ForEach(viewModel.recentSessions) { session in
-                SessionHistoryRow(session: session)
+                ActivityFeedRow(session: session)
                     .padding(.horizontal, 14)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 10)
 
                 if session.id != viewModel.recentSessions.last?.id {
                     Rectangle()
@@ -385,45 +514,49 @@ struct HomeView: View {
                 }
             }
         }
-        .padding(.vertical, 6)
-        .background(Color.kineticsDark)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color(white: 0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(.white.opacity(0.06), lineWidth: 0.5)
         )
     }
 
-    /// Empty state shown when the user is signed in but has no recorded sessions.
-    private var emptySessionsState: some View {
-        VStack(spacing: 8) {
+    private var emptyActivityState: some View {
+        VStack(spacing: 10) {
             Image(systemName: "figure.run.circle")
-                .font(.system(size: 32, weight: .thin))
-                .foregroundStyle(Color(red: 0, green: 0.76, blue: 1).opacity(0.5))
+                .font(.system(size: 34, weight: .thin))
+                .foregroundStyle(Color.kineticsBlue.opacity(0.45))
             Text("No sessions yet")
                 .font(.system(.subheadline, weight: .medium))
                 .foregroundStyle(.white.opacity(0.35))
-            Text("Start a module above to record your first session.")
+            Text("Pick a module above to start your first session.")
                 .font(.system(.caption))
                 .foregroundStyle(.white.opacity(0.25))
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
-        .background(Color(red: 0.075, green: 0.075, blue: 0.075))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.vertical, 28)
+        .background(Color(white: 0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    /// Placeholder shimmer rows shown while history is loading.
-    private var sessionHistorySkeleton: some View {
+    private var activitySkeleton: some View {
         VStack(spacing: 0) {
             ForEach(0..<3, id: \.self) { _ in
                 SkeletonRow()
             }
         }
-        .padding(.vertical, 6)
-        .background(Color.kineticsDark)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color(white: 0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    // MARK: - Formatting Helpers
+
+    private static func formattedSteps(_ steps: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter.string(from: NSNumber(value: steps)) ?? String(steps)
     }
 
     // MARK: - Module Navigation
@@ -443,46 +576,159 @@ struct HomeView: View {
     }
 }
 
-// MARK: - StatPill
+// MARK: - QuickLaunchCard
 
-/// A compact horizontal pill showing a colored icon, a numeric value, and a unit label.
-/// Used in the health stats card on the Home screen.
-private struct StatPill: View {
+/// Horizontal-scroll sport card for the Quick Launch section.
+/// Shows sport gradient, icon, name, and relative time of last session.
+private struct QuickLaunchCard: View {
 
-    let icon: String
-    let color: Color
-    /// Formatted value string — pass "--" when data is unavailable.
-    let value: String
-    /// Unit label (e.g. "bpm", "kcal"). Pass empty string when `value` is "--".
-    let unit: String
+    let sport: SportType
+    let lastSession: SessionResult?
+
+    private var accent: Color { Color.moduleColor(for: sport) }
+
+    private var relativeTime: String {
+        guard let session = lastSession else { return "Never" }
+        let interval = Date().timeIntervalSince(session.startedAt)
+        let days = Int(interval / 86400)
+        if days == 0 { return "Today" }
+        if days == 1 { return "Yesterday" }
+        return "\(days) days ago"
+    }
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(color)
-                .frame(width: 20)
+        ZStack(alignment: .bottomLeading) {
+            // Base
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.kineticsDark)
 
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value)
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+            // Ghost icon background
+            Image(systemName: sport.systemImage)
+                .font(.system(size: 64, weight: .black))
+                .foregroundStyle(accent.opacity(0.10))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(.top, 8)
+                .padding(.trailing, 8)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-                if !unit.isEmpty {
-                    Text(unit)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.45))
+            // Bottom gradient
+            LinearGradient(
+                colors: [.clear, accent.opacity(0.26)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            // Border
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(accent.opacity(0.22), lineWidth: 0.75)
+
+            // Text content
+            VStack(alignment: .leading, spacing: 4) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(accent.opacity(0.18))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: sport.systemImage)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(accent)
                 }
+
+                Spacer()
+
+                Text(sport.displayName)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+
+                Text(relativeTime)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.42))
+
+                Text("Tap to start")
+                    .font(.system(size: 9, weight: .medium))
+                    .tracking(0.5)
+                    .foregroundStyle(accent.opacity(0.7))
+                    .padding(.top, 2)
             }
+            .padding(12)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.kineticsDark)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(color.opacity(0.18), lineWidth: 0.75)
-        )
+        .frame(width: 138, height: 170)
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+// MARK: - AIInsightRow
+
+/// A single coaching insight bullet in the AI Insights card.
+private struct AIInsightRow: View {
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Circle()
+                .fill(Color.kineticsPurple.opacity(0.55))
+                .frame(width: 6, height: 6)
+                .padding(.top, 5)
+
+            Text(text)
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(.white.opacity(0.78))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+// MARK: - ActivityFeedRow
+
+/// A single row in the Recent Activity feed.
+private struct ActivityFeedRow: View {
+    let session: SessionResult
+
+    private var accent: Color { Color.moduleColor(for: session.sport) }
+
+    private var topMetricText: String {
+        if let velocity = session.metrics["strikeVelocityMPH"] {
+            return String(format: "%.1f mph", velocity)
+        }
+        if let barDev = session.metrics["barPathDeviationCM"] {
+            return String(format: "%.1f cm dev", barDev)
+        }
+        if let hipProx = session.metrics["hipToWallProximity"] {
+            return String(format: "%.0f%% prox", hipProx * 100)
+        }
+        return session.formattedDuration
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Sport icon badge
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(accent.opacity(0.14))
+                    .frame(width: 40, height: 40)
+                Image(systemName: session.sport.systemImage)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(accent)
+            }
+
+            // Labels
+            VStack(alignment: .leading, spacing: 3) {
+                Text(session.sport.displayName)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text(session.formattedDate)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.40))
+            }
+
+            Spacer()
+
+            // Top metric
+            Text(topMetricText)
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.kineticsGreen)
+        }
     }
 }
 
@@ -611,7 +857,7 @@ private struct SkeletonRow: View {
         HStack(spacing: 12) {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(.white.opacity(0.07))
-                .frame(width: 44, height: 44)
+                .frame(width: 40, height: 40)
 
             VStack(alignment: .leading, spacing: 6) {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -627,7 +873,7 @@ private struct SkeletonRow: View {
 
             RoundedRectangle(cornerRadius: 4, style: .continuous)
                 .fill(.white.opacity(0.07))
-                .frame(width: 36, height: 11)
+                .frame(width: 50, height: 11)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

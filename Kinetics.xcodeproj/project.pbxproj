@@ -16,6 +16,9 @@
 		0FEB7175E23B33B615E506B0 /* UserProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64295A75846A5227141320D /* UserProfileView.swift */; };
 		1088DCBF512BA3FBC2F0C253 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CF8E2F952DD6ED295C43EA /* HomeView.swift */; };
 		112FAFFB42872D754E3C11FA /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */; };
+		DD22EE33FF44AA55BB66CC02 /* HomeCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD22EE33FF44AA55BB66CC01 /* HomeCards.swift */; };
+		DD22EE33FF44AA55BB66CC04 /* HomeAchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD22EE33FF44AA55BB66CC03 /* HomeAchievementsView.swift */; };
+		DD22EE33FF44AA55BB66CC06 /* HomeNotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD22EE33FF44AA55BB66CC05 /* HomeNotificationsView.swift */; };
 		162DF5DD793770496994F63A /* FollowButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18BF209B819D2FBDF6BB175E /* FollowButton.swift */; };
 		175C3ADDB5DCFB9C6D9B1167 /* RouteMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F16ADFA50EB885D3690144D /* RouteMapView.swift */; };
 		1C2426229591F54127DB3EFA /* VideoModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60C049ACD5028A62BCFBB96 /* VideoModels.swift */; };
@@ -150,6 +153,9 @@
 		BB33CC44DD55EE66FF0013AA /* UserProfilePreviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfilePreviewSheet.swift; sourceTree = "<group>"; };
 		AA22BB33CC44DD55EE66FF01 /* CommentSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentSheetView.swift; sourceTree = "<group>"; };
 		04CF8E2F952DD6ED295C43EA /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		DD22EE33FF44AA55BB66CC01 /* HomeCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCards.swift; sourceTree = "<group>"; };
+		DD22EE33FF44AA55BB66CC03 /* HomeAchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAchievementsView.swift; sourceTree = "<group>"; };
+		DD22EE33FF44AA55BB66CC05 /* HomeNotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNotificationsView.swift; sourceTree = "<group>"; };
 		05FB80A5C42F07AC82B0487B /* StrikingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingView.swift; sourceTree = "<group>"; };
 		099853C55F62679C9537A8A4 /* SocialRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialRepository.swift; sourceTree = "<group>"; };
 		0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Kinetics.swift"; sourceTree = "<group>"; };
@@ -579,6 +585,9 @@
 			children = (
 				04CF8E2F952DD6ED295C43EA /* HomeView.swift */,
 				54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */,
+				DD22EE33FF44AA55BB66CC01 /* HomeCards.swift */,
+				DD22EE33FF44AA55BB66CC03 /* HomeAchievementsView.swift */,
+				DD22EE33FF44AA55BB66CC05 /* HomeNotificationsView.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -738,6 +747,9 @@
 				FDBD12D7A1E09F769C5884E1 /* HistoryView.swift in Sources */,
 				1088DCBF512BA3FBC2F0C253 /* HomeView.swift in Sources */,
 				112FAFFB42872D754E3C11FA /* HomeViewModel.swift in Sources */,
+				DD22EE33FF44AA55BB66CC02 /* HomeCards.swift in Sources */,
+				DD22EE33FF44AA55BB66CC04 /* HomeAchievementsView.swift in Sources */,
+				DD22EE33FF44AA55BB66CC06 /* HomeNotificationsView.swift in Sources */,
 				E80DC249A91B7F7141666BC9 /* InjuryRiskDetector.swift in Sources */,
 				DA2AA3C77D50FCE82C91B928 /* IronTrackerAnalytics.swift in Sources */,
 				31E7709CD8F8F3A1BDA2F934 /* IronTrackerOnboardingView.swift in Sources */,

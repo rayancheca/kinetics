@@ -29,7 +29,7 @@ final class WorkoutRepository {
 
     // MARK: - Private
 
-    private let db = Firestore.firestore()
+    private var db: Firestore { Firestore.firestore() }
 
     /// Returns `true` only when a real Firebase app has been configured.
     private var isFirebaseReady: Bool { FirebaseApp.app() != nil }

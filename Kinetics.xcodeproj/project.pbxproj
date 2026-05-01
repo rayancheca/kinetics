@@ -115,6 +115,10 @@
 		F90A5D952B85707BC02B18C8 /* ProfileCharts.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC54442084B6FB301EA5443D /* ProfileCharts.swift */; };
 		FDBD12D7A1E09F769C5884E1 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC032562411DDDC1ED7D376 /* HistoryView.swift */; };
 		FF00AA11BB22CC33DD44EE02 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FF00AA11BB22CC33DD44EE01 /* GoogleService-Info.plist */; };
+		CC11DD22EE33FF44AA55BB02 /* TrainCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11DD22EE33FF44AA55BB01 /* TrainCards.swift */; };
+		CC11DD22EE33FF44AA55BB04 /* SportDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11DD22EE33FF44AA55BB03 /* SportDetailView.swift */; };
+		CC11DD22EE33FF44AA55BB06 /* TrainPerformanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11DD22EE33FF44AA55BB05 /* TrainPerformanceView.swift */; };
+		CC11DD22EE33FF44AA55BB08 /* DrillLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11DD22EE33FF44AA55BB07 /* DrillLibraryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -249,6 +253,10 @@
 		FF00AA11BB22CC33DD44EE01 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		FF26AF759C2CAF15557EA802 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		FF66EE55DD44CC33BB22AA11 /* FeedSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedSeeder.swift; sourceTree = "<group>"; };
+		CC11DD22EE33FF44AA55BB01 /* TrainCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainCards.swift; sourceTree = "<group>"; };
+		CC11DD22EE33FF44AA55BB03 /* SportDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportDetailView.swift; sourceTree = "<group>"; };
+		CC11DD22EE33FF44AA55BB05 /* TrainPerformanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainPerformanceView.swift; sourceTree = "<group>"; };
+		CC11DD22EE33FF44AA55BB07 /* DrillLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrillLibraryView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -319,6 +327,10 @@
 			isa = PBXGroup;
 			children = (
 				C90F5D52A2B4BD6611D7FD00 /* TrainView.swift */,
+				CC11DD22EE33FF44AA55BB01 /* TrainCards.swift */,
+				CC11DD22EE33FF44AA55BB03 /* SportDetailView.swift */,
+				CC11DD22EE33FF44AA55BB05 /* TrainPerformanceView.swift */,
+				CC11DD22EE33FF44AA55BB07 /* DrillLibraryView.swift */,
 				0D3316917AB164AB306F0212 /* GrapplingLab */,
 				A42956EBF5D6D28141FE59C1 /* GymTracker */,
 				DF7713EBD259B82C29A9F65A /* IronTracker */,
@@ -770,6 +782,10 @@
 				B605CD90ADBE4244CF2E5A99 /* TrackView.swift in Sources */,
 				B875E6380324D015BC9E9920 /* TrackViewModel.swift in Sources */,
 				F3C7D67C0CD2853294BC67D9 /* TrainView.swift in Sources */,
+				CC11DD22EE33FF44AA55BB02 /* TrainCards.swift in Sources */,
+				CC11DD22EE33FF44AA55BB04 /* SportDetailView.swift in Sources */,
+				CC11DD22EE33FF44AA55BB06 /* TrainPerformanceView.swift in Sources */,
+				CC11DD22EE33FF44AA55BB08 /* DrillLibraryView.swift in Sources */,
 				86FB595B448BF9FE7E537B63 /* TrajectoryPath.swift in Sources */,
 				5A7D41C9A6C3862567130171 /* TrajectoryTracker.swift in Sources */,
 				0FEB7175E23B33B615E506B0 /* UserProfileView.swift in Sources */,

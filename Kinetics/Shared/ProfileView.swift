@@ -361,6 +361,20 @@ struct ProfileView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
+
+            SettingsDivider()
+
+            // Debug: seed demo feed data
+            Button {
+                Task { await FeedSeeder.shared.seed() }
+            } label: {
+                Text("Seed Demo Data")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.3))
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
         }
     }
 

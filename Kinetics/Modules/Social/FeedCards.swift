@@ -1,3 +1,4 @@
+import MapKit
 import SwiftUI
 
 // MARK: - ActivityFeedCard
@@ -23,6 +24,9 @@ struct ActivityFeedCard: View {
                 headerRow
                 titleBlock
                 metricsRow
+                captionBlock
+                exerciseList
+                routeMap
                 Divider().background(Color.white.opacity(0.07))
                 actionRow
             }
@@ -99,20 +103,56 @@ struct ActivityFeedCard: View {
         ZStack {
             if !item.avatarURL.isEmpty, let url = URL(string: item.avatarURL) {
                 AsyncImage(url: url) { image in image.resizable().scaledToFill() }
-                    placeholder: { purpleGradientAvatar }
+                    placeholder: { defaultAvatar }
                     .frame(width: 40, height: 40).clipShape(Circle())
             } else {
-                purpleGradientAvatar
+                defaultAvatar
             }
         }
     }
 
-    private var purpleGradientAvatar: some View {
-        Circle()
-            .fill(LinearGradient(colors: [Color.kineticsPurple, Color.kineticsBlue.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing))
-            .frame(width: 40, height: 40)
-            .overlay(Text(item.displayName.prefix(1).uppercased())
-                .font(.system(.subheadline, design: .rounded, weight: .bold)).foregroundStyle(.white))
+    /// Shows a sport emoji for known demo users; falls back to an initials circle.
+    private var defaultAvatar: some View {
+        let resolved = resolvedAvatar(for: item.userId, displayName: item.displayName)
+        return ZStack {
+            Circle()
+                .fill(LinearGradient(
+                    colors: [Color.kineticsPurple, Color.kineticsBlue.opacity(0.7)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                ))
+                .frame(width: 40, height: 40)
+            if resolved.isEmoji {
+                Text(resolved.text).font(.system(size: 20))
+            } else {
+                Text(resolved.text)
+                    .font(.system(.subheadline, design: .rounded, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+        }
+    }
+
+    private struct AvatarContent {
+        let text: String
+        let isEmoji: Bool
+    }
+
+    private func resolvedAvatar(for userId: String, displayName: String) -> AvatarContent {
+        let emojiMap: [String: String] = [
+            "demo_001": "🥊",
+            "demo_002": "🏋️",
+            "demo_003": "🏃",
+            "demo_004": "🧗",
+            "demo_005": "🤼",
+            "demo_006": "🏋️",
+            "demo_007": "🥋",
+            "demo_008": "🏃‍♂️",
+            "demo_009": "🤼‍♂️",
+            "demo_010": "🧗‍♂️",
+        ]
+        if let emoji = emojiMap[userId] {
+            return AvatarContent(text: emoji, isEmoji: true)
+        }
+        return AvatarContent(text: String(displayName.prefix(1).uppercased()), isEmoji: false)
     }
 
     // MARK: Title Block
@@ -142,6 +182,73 @@ struct ActivityFeedCard: View {
             }
             .padding(.vertical, 10)
             .background(Color.kineticsBackground.opacity(0.6), in: RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
+    // MARK: Caption Block
+
+    @ViewBuilder
+    private var captionBlock: some View {
+        if let caption = item.caption, !caption.isEmpty {
+            Text(caption)
+                .font(.system(size: 14))
+                .foregroundStyle(.white.opacity(0.88))
+                .lineSpacing(3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: Exercise List
+
+    @ViewBuilder
+    private var exerciseList: some View {
+        if let summaries = item.exerciseSummaries, !summaries.isEmpty {
+            VStack(spacing: 0) {
+                ForEach(Array(summaries.prefix(4).enumerated()), id: \.offset) { index, exercise in
+                    HStack(spacing: 10) {
+                        Circle()
+                            .fill(muscleGroupColor(exercise.muscleGroup))
+                            .frame(width: 7, height: 7)
+                        Text(exercise.name)
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.88))
+                            .lineLimit(1)
+                        Spacer(minLength: 4)
+                        Text("\(exercise.sets)x @ \(formattedWeight(exercise.topWeightKg))")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.kineticsAmber)
+                    }
+                    .padding(.vertical, 5)
+                    .padding(.horizontal, 12)
+                    if index < min(summaries.prefix(4).count, 4) - 1 {
+                        Divider().background(Color.white.opacity(0.05)).padding(.leading, 29)
+                    }
+                }
+                if summaries.count > 4 {
+                    HStack {
+                        Spacer()
+                        Text("+ \(summaries.count - 4) more")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(Color.kineticsSubtext)
+                            .padding(.vertical, 5)
+                            .padding(.horizontal, 12)
+                    }
+                }
+            }
+            .background(Color(white: 0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
+        }
+    }
+
+    // MARK: Route Map
+
+    @ViewBuilder
+    private var routeMap: some View {
+        if let coords = item.routeCoordinates, coords.count >= 2 {
+            RouteMapView(coordinates: coords)
+                .frame(height: 130)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
@@ -187,8 +294,22 @@ struct ActivityFeedCard: View {
 
             Spacer()
 
-            Button {} label: {
-                Image(systemName: "square.and.arrow.up").font(.system(size: 14, weight: .medium)).foregroundStyle(Color.kineticsSubtext)
+            Button {
+                let shareText = "\(item.displayName) on Kinetics: \(item.title)\n\(item.subtitle)"
+                let activityVC = UIActivityViewController(
+                    activityItems: [shareText],
+                    applicationActivities: nil
+                )
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let rootVC = windowScene.windows.first?.rootViewController {
+                    var presented = rootVC
+                    while let next = presented.presentedViewController { presented = next }
+                    presented.present(activityVC, animated: true)
+                }
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.kineticsSubtext)
             }
             .buttonStyle(.plain)
         }
@@ -230,6 +351,25 @@ struct ActivityFeedCard: View {
         }
     }
 
+    private func muscleGroupColor(_ group: String) -> Color {
+        switch group.lowercased() {
+        case "chest":           return Color.kineticsBlue
+        case "back":            return Color.kineticsPurple
+        case "legs", "glutes":  return Color.kineticsGreen
+        case "shoulders":       return Color.kineticsAmber
+        case "arms", "biceps", "triceps": return Color(hex: "#FF6B35")
+        case "core":            return Color.kineticsRed
+        default:                return Color.kineticsSubtext
+        }
+    }
+
+    private func formattedWeight(_ kg: Double) -> String {
+        if kg == kg.rounded() {
+            return "\(Int(kg))kg"
+        }
+        return String(format: "%.1fkg", kg)
+    }
+
     private func timeAgo(_ date: Date) -> String {
         let seconds = Int(Date.now.timeIntervalSince(date))
         switch seconds {
@@ -241,6 +381,55 @@ struct ActivityFeedCard: View {
         case 86_400..<172_800: return "Yesterday"
         default:               return "\(seconds / 86_400)d ago"
         }
+    }
+}
+
+// MARK: - RouteMapView
+
+/// A non-interactive satellite map that draws a `MapPolyline` for a GPS route.
+/// Coordinates are `[[lat, lng]]` pairs matching the `FeedItem.routeCoordinates` format.
+private struct RouteMapView: View {
+
+    let coordinates: [[Double]]
+
+    private var clCoordinates: [CLLocationCoordinate2D] {
+        coordinates.compactMap { pair in
+            guard pair.count == 2 else { return nil }
+            return CLLocationCoordinate2D(latitude: pair[0], longitude: pair[1])
+        }
+    }
+
+    private var region: MKCoordinateRegion {
+        guard !clCoordinates.isEmpty else {
+            return MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+            )
+        }
+        let lats = clCoordinates.map(\.latitude)
+        let lngs = clCoordinates.map(\.longitude)
+        let minLat = lats.min() ?? 0
+        let maxLat = lats.max() ?? 0
+        let minLng = lngs.min() ?? 0
+        let maxLng = lngs.max() ?? 0
+        let center = CLLocationCoordinate2D(
+            latitude: (minLat + maxLat) / 2,
+            longitude: (minLng + maxLng) / 2
+        )
+        let span = MKCoordinateSpan(
+            latitudeDelta: max((maxLat - minLat) * 1.35, 0.003),
+            longitudeDelta: max((maxLng - minLng) * 1.35, 0.003)
+        )
+        return MKCoordinateRegion(center: center, span: span)
+    }
+
+    var body: some View {
+        Map(initialPosition: .region(region)) {
+            MapPolyline(coordinates: clCoordinates)
+                .stroke(Color.kineticsBlue, lineWidth: 3)
+        }
+        .mapStyle(.imagery(elevation: .realistic))
+        .disabled(true)
     }
 }
 

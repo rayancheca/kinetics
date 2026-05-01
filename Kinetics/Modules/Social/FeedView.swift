@@ -63,7 +63,11 @@ final class FeedViewModel {
             displayName: current.displayName, username: current.username,
             avatarURL: current.avatarURL, itemType: current.itemType,
             title: current.title, subtitle: current.subtitle,
-            metrics: current.metrics, imageURL: current.imageURL,
+            caption: current.caption,
+            metrics: current.metrics,
+            exerciseSummaries: current.exerciseSummaries,
+            routeCoordinates: current.routeCoordinates,
+            imageURL: current.imageURL,
             postedAt: current.postedAt,
             kudosCount: current.kudosCount + (wasLiked ? -1 : 1),
             commentCount: current.commentCount,
@@ -161,7 +165,10 @@ struct FeedView: View {
                     }
                 }
             }
-            .task { await viewModel.load(currentUserId: currentUserId) }
+            .task {
+                await FeedSeeder.shared.seedIfNeeded()
+                await viewModel.load(currentUserId: currentUserId)
+            }
         }
         .sheet(isPresented: $viewModel.showNewPostSheet) {
             ComposePostSheet(

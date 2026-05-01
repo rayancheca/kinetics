@@ -7,31 +7,50 @@ import SwiftData
 @MainActor
 final class ActiveGymSessionViewModel {
 
-    // MARK: State
+    // MARK: - Session State
 
     var session: WorkoutSession
+    var workoutName: String
     var elapsedTime: TimeInterval = 0
     var showExercisePicker = false
+    var showFinishSheet = false
     var errorMessage: String?
 
-    // MARK: Rest Timer State
+    // MARK: - Expanded Cards
 
-    /// Seconds remaining on the active rest timer. `nil` means no timer is running.
-    var restSecondsRemaining: Int? = nil
+    /// Entry IDs that are currently expanded.
+    var expandedEntries: Set<String> = []
+
+    // MARK: - Rest Timer State
+
+    var restSecondsRemaining: Int?
+    var restTimerInitialSeconds: Int = 90
     var showRestTimer = false
 
-    // MARK: Private
+    // MARK: - Private
 
     private var timerTask: Task<Void, Never>?
     private var restTimerTask: Task<Void, Never>?
 
-    // MARK: Init
+    // MARK: - Init
 
     init(session: WorkoutSession) {
         self.session = session
+        // Use a friendly default name derived from the time of day.
+        let hour = Calendar.current.component(.hour, from: session.startedAt)
+        switch hour {
+        case 5..<12:  workoutName = "Morning Session"
+        case 12..<17: workoutName = "Afternoon Session"
+        case 17..<21: workoutName = "Evening Session"
+        default:      workoutName = "Night Session"
+        }
+        // Expand the first entry by default so the UI isn't completely empty.
+        if let first = session.entries.first {
+            expandedEntries.insert(first.id)
+        }
     }
 
-    // MARK: Workout Timer
+    // MARK: - Workout Timer
 
     func startTimer() {
         timerTask?.cancel()
@@ -50,11 +69,11 @@ final class ActiveGymSessionViewModel {
         timerTask = nil
     }
 
-    // MARK: Rest Timer
+    // MARK: - Rest Timer
 
-    /// Starts a countdown rest timer for `seconds`. Replaces any existing timer.
     func startRestTimer(seconds: Int = 90) {
         restTimerTask?.cancel()
+        restTimerInitialSeconds = seconds
         restSecondsRemaining = seconds
         showRestTimer = true
 
@@ -80,7 +99,6 @@ final class ActiveGymSessionViewModel {
         showRestTimer = false
     }
 
-    /// Formatted rest countdown label, e.g. "1:30".
     var formattedRest: String {
         guard let secs = restSecondsRemaining else { return "0:00" }
         let minutes = secs / 60
@@ -88,7 +106,13 @@ final class ActiveGymSessionViewModel {
         return String(format: "%d:%02d", minutes, seconds)
     }
 
-    // MARK: Exercise Management
+    /// Progress from 1.0 (full) down to 0.0 (empty).
+    var restRingProgress: Double {
+        guard let secs = restSecondsRemaining, restTimerInitialSeconds > 0 else { return 0 }
+        return Double(secs) / Double(restTimerInitialSeconds)
+    }
+
+    // MARK: - Exercise Management
 
     func addExercise(_ exercise: Exercise) throws {
         let entry = WorkoutExerciseEntry(
@@ -99,10 +123,12 @@ final class ActiveGymSessionViewModel {
         let firstSet = WorkoutSet(setNumber: 1)
         entry.sets.append(firstSet)
         session.entries.append(entry)
+        // Auto-expand the newly added entry.
+        expandedEntries.insert(entry.id)
         try GymRepository.shared.saveSession(session)
     }
 
-    // MARK: Set Management
+    // MARK: - Set Management
 
     func addSet(to entry: WorkoutExerciseEntry) throws {
         let lastWeight = entry.sets.last?.weight ?? 0
@@ -113,8 +139,6 @@ final class ActiveGymSessionViewModel {
             weight: lastWeight,
             reps: lastReps
         )
-        // addSet returns the inserted set; setNumber may differ from the
-        // repository default so we align it here.
         newSet.setNumber = nextNumber
     }
 
@@ -125,22 +149,39 @@ final class ActiveGymSessionViewModel {
 
     func deleteSet(_ set: WorkoutSet, from entry: WorkoutExerciseEntry) throws {
         try GymRepository.shared.deleteSet(set)
-        // Re-sequence remaining sets so numbers stay contiguous.
         let sorted = entry.sets.sorted { $0.setNumber < $1.setNumber }
         for (index, s) in sorted.enumerated() {
             s.setNumber = index + 1
         }
     }
 
-    // MARK: Session Completion
+    // MARK: - Session Completion
 
-    func completeSession() throws {
+    func completeSession(userId: String) throws {
         stopTimer()
         cancelRestTimer()
+        session.notes = workoutName
+        // Update personal records for every completed set before persisting.
+        for entry in session.entries {
+            for set in entry.sets where set.isCompleted && set.weight > 0 && set.reps > 0 {
+                try? GymRepository.shared.updatePersonalRecord(
+                    userId: userId,
+                    exerciseId: entry.exerciseId,
+                    exerciseName: entry.exerciseName,
+                    weight: set.weight,
+                    reps: set.reps
+                )
+            }
+        }
         try GymRepository.shared.completeSession(session)
+        // Refresh widget data — fire-and-forget, failure is non-fatal.
+        let streak = (try? GymRepository.shared.calculateStreak(userId: userId)) ?? 0
+        let durationMinutes = Int(elapsedTime) / 60
+        WidgetDataStore.shared.updateStreak(streak)
+        WidgetDataStore.shared.updateTodayStats(steps: 0, calories: 0, workoutMinutes: durationMinutes)
     }
 
-    // MARK: Computed
+    // MARK: - Computed
 
     var formattedElapsed: String {
         let total = Int(elapsedTime)
@@ -152,6 +193,30 @@ final class ActiveGymSessionViewModel {
         }
         return String(format: "%02d:%02d", minutes, seconds)
     }
+
+    var totalVolumeKg: Double {
+        session.entries.flatMap(\.sets).filter(\.isCompleted).reduce(0) { $0 + $1.weight * Double($1.reps) }
+    }
+
+    var formattedTotalVolume: String {
+        let volume = totalVolumeKg
+        if volume >= 1000 {
+            return String(format: "%.1f t", volume / 1000)
+        }
+        return String(format: "%.0f kg", volume)
+    }
+
+    var completedSetCount: Int {
+        session.entries.flatMap(\.sets).filter(\.isCompleted).count
+    }
+
+    var exerciseCount: Int {
+        session.entries.count
+    }
+
+    var sortedEntries: [WorkoutExerciseEntry] {
+        session.entries.sorted { $0.orderIndex < $1.orderIndex }
+    }
 }
 
 // MARK: - ActiveGymSessionView
@@ -159,37 +224,43 @@ final class ActiveGymSessionViewModel {
 @MainActor
 struct ActiveGymSessionView: View {
 
-    // MARK: Properties
+    // MARK: - Properties
 
     let session: WorkoutSession
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: ActiveGymSessionViewModel
+    @State private var isEditingName = false
+    @FocusState private var nameFieldFocused: Bool
 
-    // MARK: Init
+    // MARK: - Init
 
     init(session: WorkoutSession) {
         self.session = session
         self._viewModel = State(initialValue: ActiveGymSessionViewModel(session: session))
     }
 
-    // MARK: Body
+    // MARK: - Body
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             Color.kineticsBackground
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                headerSection
-                Divider()
-                    .background(Color.kineticsSubtext.opacity(0.3))
-                exerciseList
-                bottomToolbar
+                headerBar
+                exerciseScrollList
+                bottomSummaryBar
             }
 
-            // Rest Timer Overlay — appears above content when a set is completed
+            // Floating Add Exercise Button
+            if !viewModel.showRestTimer {
+                addExerciseFAB
+                    .transition(.scale.combined(with: .opacity))
+            }
+
+            // Rest Timer — slides up from bottom
             if viewModel.showRestTimer {
-                RestTimerOverlay(viewModel: viewModel)
+                RestTimerPanel(viewModel: viewModel)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .zIndex(10)
             }
@@ -197,10 +268,28 @@ struct ActiveGymSessionView: View {
         .navigationBarBackButtonHidden()
         .onAppear { viewModel.startTimer() }
         .onDisappear { viewModel.stopTimer() }
+        .onTapGesture {
+            nameFieldFocused = false
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                            to: nil, from: nil, for: nil)
+        }
         .sheet(isPresented: $viewModel.showExercisePicker) {
             ExercisePickerView { exercise in
                 try viewModel.addExercise(exercise)
             }
+        }
+        .sheet(isPresented: $viewModel.showFinishSheet) {
+            FinishWorkoutSheet(viewModel: viewModel, onSave: {
+                do {
+                    try viewModel.completeSession(userId: session.userId)
+                    dismiss()
+                } catch {
+                    viewModel.errorMessage = error.localizedDescription
+                    viewModel.showFinishSheet = false
+                }
+            }, onDiscard: {
+                dismiss()
+            })
         }
         .alert("Error", isPresented: Binding(
             get: { viewModel.errorMessage != nil },
@@ -211,289 +300,372 @@ struct ActiveGymSessionView: View {
             Text(viewModel.errorMessage ?? "")
         }
         .animation(.spring(duration: 0.3), value: viewModel.showRestTimer)
+        .animation(.spring(duration: 0.25), value: viewModel.exerciseCount)
     }
 
-    // MARK: Header
+    // MARK: - Header Bar
 
-    private var headerSection: some View {
-        VStack(spacing: 4) {
+    private var headerBar: some View {
+        HStack(spacing: 12) {
+            // Workout name — tappable to edit
+            Group {
+                if isEditingName {
+                    TextField("Workout name", text: $viewModel.workoutName)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .focused($nameFieldFocused)
+                        .submitLabel(.done)
+                        .onSubmit { isEditingName = false }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Button {
+                        isEditingName = true
+                        nameFieldFocused = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(viewModel.workoutName)
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                            Image(systemName: "pencil")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.kineticsSubtext)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            // Live timer
             Text(viewModel.formattedElapsed)
-                .font(.system(size: 48, weight: .bold, design: .monospaced))
+                .font(.system(size: 18, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.kineticsBlue)
                 .contentTransition(.numericText())
                 .animation(.linear(duration: 0.25), value: viewModel.formattedElapsed)
+                .fixedSize()
 
-            Text("ACTIVE WORKOUT")
-                .font(.system(size: 11, weight: .semibold, design: .default))
-                .tracking(2.5)
-                .foregroundStyle(Color.kineticsSubtext)
+            // Finish button
+            Button {
+                viewModel.showFinishSheet = true
+            } label: {
+                Text("Finish")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(Color.kineticsBlue, in: Capsule())
+            }
         }
-        .padding(.vertical, 20)
-        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .background(Color.kineticsDark)
+        .overlay(alignment: .bottom) {
+            Divider().background(Color.kineticsSubtext.opacity(0.25))
+        }
     }
 
-    // MARK: Exercise List
+    // MARK: - Exercise Scroll List
 
-    private var exerciseList: some View {
+    private var exerciseScrollList: some View {
         ScrollView {
-            LazyVStack(spacing: 12, pinnedViews: []) {
-                ForEach(
-                    viewModel.session.entries.sorted { $0.orderIndex < $1.orderIndex },
-                    id: \.id
-                ) { entry in
-                    ExerciseEntrySection(entry: entry, viewModel: viewModel)
+            LazyVStack(spacing: 10) {
+                ForEach(viewModel.sortedEntries, id: \.id) { entry in
+                    ExerciseCard(
+                        entry: entry,
+                        isExpanded: viewModel.expandedEntries.contains(entry.id),
+                        onToggleExpand: {
+                            withAnimation(.spring(duration: 0.28)) {
+                                if viewModel.expandedEntries.contains(entry.id) {
+                                    viewModel.expandedEntries.remove(entry.id)
+                                } else {
+                                    viewModel.expandedEntries.insert(entry.id)
+                                }
+                            }
+                        },
+                        viewModel: viewModel
+                    )
                 }
+
+                // Bottom padding so FAB doesn't cover last card
+                Color.clear.frame(height: 100)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 14)
+            .padding(.top, 12)
         }
     }
 
-    // MARK: Bottom Toolbar
+    // MARK: - Floating Add Exercise Button
 
-    private var bottomToolbar: some View {
-        HStack {
-            Button {
-                viewModel.showExercisePicker = true
-            } label: {
-                Label("Add Exercise", systemImage: "plus.circle.fill")
+    private var addExerciseFAB: some View {
+        Button {
+            viewModel.showExercisePicker = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "dumbbell.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                Text("Add Exercise")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.kineticsGreen)
             }
-
-            Spacer()
-
-            Button {
-                do {
-                    try viewModel.completeSession()
-                    dismiss()
-                } catch {
-                    viewModel.errorMessage = error.localizedDescription
-                }
-            } label: {
-                Label("Finish", systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.kineticsBlue)
-            }
+            .foregroundStyle(.black)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 14)
+            .background(Color.kineticsBlue, in: Capsule())
+            .shadow(color: Color.kineticsBlue.opacity(0.45), radius: 14, x: 0, y: 6)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.bottom, 82)
+    }
+
+    // MARK: - Bottom Summary Bar
+
+    private var bottomSummaryBar: some View {
+        HStack(spacing: 0) {
+            summaryItem(
+                title: "VOLUME",
+                value: viewModel.totalVolumeKg > 0 ? viewModel.formattedTotalVolume : "—",
+                color: Color.kineticsGreen
+            )
+
+            Divider()
+                .frame(height: 28)
+                .background(Color.kineticsSubtext.opacity(0.3))
+
+            summaryItem(
+                title: "EXERCISES",
+                value: "\(viewModel.exerciseCount)",
+                color: .white
+            )
+
+            Divider()
+                .frame(height: 28)
+                .background(Color.kineticsSubtext.opacity(0.3))
+
+            summaryItem(
+                title: "SETS DONE",
+                value: "\(viewModel.completedSetCount)",
+                color: .white
+            )
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
         .background(Color.kineticsDark)
         .overlay(alignment: .top) {
-            Divider()
-                .background(Color.kineticsSubtext.opacity(0.3))
+            Divider().background(Color.kineticsSubtext.opacity(0.25))
         }
+    }
+
+    private func summaryItem(title: String, value: String, color: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundStyle(color)
+                .contentTransition(.numericText())
+                .animation(.spring(duration: 0.3), value: value)
+            Text(title)
+                .font(.system(size: 9, weight: .semibold))
+                .tracking(1.2)
+                .foregroundStyle(Color.kineticsSubtext)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
-// MARK: - RestTimerOverlay
+// MARK: - ExerciseCard
 
-private struct RestTimerOverlay: View {
+private struct ExerciseCard: View {
 
+    let entry: WorkoutExerciseEntry
+    let isExpanded: Bool
+    let onToggleExpand: () -> Void
     let viewModel: ActiveGymSessionViewModel
 
-    private let presets: [(label: String, seconds: Int)] = [
-        ("45s", 45), ("1:00", 60), ("1:30", 90), ("2:00", 120), ("3:00", 180)
-    ]
+    private var completedSets: Int {
+        entry.sets.filter(\.isCompleted).count
+    }
+
+    private var totalSets: Int {
+        entry.sets.count
+    }
+
+    private var entryVolume: Double {
+        entry.sets.filter(\.isCompleted).reduce(0) { $0 + $1.weight * Double($1.reps) }
+    }
+
+    private var formattedEntryVolume: String {
+        entryVolume > 0 ? String(format: "%.0f kg", entryVolume) : "—"
+    }
+
+    /// Best weight from completed sets — used as previous-best hint.
+    private var previousBestWeight: Double? {
+        let weights = entry.sets.filter { $0.isCompleted && $0.weight > 0 }.map(\.weight)
+        return weights.max()
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
+            // MARK: Card Header (always visible)
+            cardHeader
 
-            VStack(spacing: 20) {
-                // Header row
-                HStack {
-                    Text("REST TIMER")
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(2)
-                        .foregroundStyle(Color.kineticsSubtext)
-                    Spacer()
-                    Button { viewModel.cancelRestTimer() } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundStyle(Color.kineticsSubtext)
-                    }
-                }
+            // MARK: Expanded Content
+            if isExpanded {
+                VStack(spacing: 0) {
+                    // Column headers
+                    columnHeaders
 
-                // Countdown ring
-                ZStack {
-                    Circle()
-                        .stroke(Color.kineticsBlue.opacity(0.15), lineWidth: 8)
-                        .frame(width: 120, height: 120)
-
-                    Circle()
-                        .trim(from: 0, to: ringProgress)
-                        .stroke(
-                            Color.kineticsBlue,
-                            style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                    // Set rows
+                    let sortedSets = entry.sets.sorted { $0.setNumber < $1.setNumber }
+                    ForEach(sortedSets, id: \.id) { set in
+                        SetRow(
+                            set: set,
+                            previousBestWeight: set.isCompleted ? nil : previousBestWeight,
+                            onComplete: {
+                                do {
+                                    try viewModel.markSetCompleted(set)
+                                } catch {
+                                    viewModel.errorMessage = error.localizedDescription
+                                }
+                            },
+                            onDelete: {
+                                do {
+                                    try viewModel.deleteSet(set, from: entry)
+                                } catch {
+                                    viewModel.errorMessage = error.localizedDescription
+                                }
+                            }
                         )
-                        .frame(width: 120, height: 120)
-                        .rotationEffect(.degrees(-90))
-                        .animation(.linear(duration: 1), value: viewModel.restSecondsRemaining)
 
-                    VStack(spacing: 2) {
-                        Text(viewModel.formattedRest)
-                            .font(.system(size: 30, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .contentTransition(.numericText())
-                            .animation(.linear(duration: 0.25), value: viewModel.formattedRest)
-                        Text("remaining")
-                            .font(.system(size: 10))
-                            .foregroundStyle(Color.kineticsSubtext)
-                    }
-                }
-
-                // Preset duration chips
-                HStack(spacing: 8) {
-                    ForEach(presets, id: \.seconds) { preset in
-                        Button {
-                            viewModel.startRestTimer(seconds: preset.seconds)
-                        } label: {
-                            Text(preset.label)
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(
-                                    viewModel.restSecondsRemaining == preset.seconds
-                                        ? Color.black : Color.kineticsBlue
-                                )
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 7)
-                                .background(
-                                    Capsule().fill(
-                                        viewModel.restSecondsRemaining == preset.seconds
-                                            ? Color.kineticsBlue
-                                            : Color.kineticsBlue.opacity(0.15)
-                                    )
-                                )
+                        if set.id != sortedSets.last?.id {
+                            Divider()
+                                .background(Color.kineticsSubtext.opacity(0.12))
+                                .padding(.horizontal, 14)
                         }
-                        .buttonStyle(.plain)
+                    }
+
+                    // Add Set button
+                    addSetButton
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(Color.kineticsDark)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(
+                    completedSets == totalSets && totalSets > 0
+                        ? Color.kineticsGreen.opacity(0.3)
+                        : Color.white.opacity(0.06),
+                    lineWidth: 1
+                )
+        )
+    }
+
+    // MARK: Card Header
+
+    private var cardHeader: some View {
+        Button(action: onToggleExpand) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(entry.exerciseName)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    HStack(spacing: 8) {
+                        // Set progress
+                        HStack(spacing: 3) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 10))
+                                .foregroundStyle(
+                                    completedSets > 0 ? Color.kineticsGreen : Color.kineticsSubtext
+                                )
+                            Text("\(completedSets)/\(totalSets) sets")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.kineticsSubtext)
+                        }
+
+                        if entryVolume > 0 {
+                            Text("·")
+                                .foregroundStyle(Color.kineticsSubtext.opacity(0.5))
+                            Text(formattedEntryVolume)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.kineticsGreen)
+                        }
                     }
                 }
-
-                // Skip
-                Button { viewModel.cancelRestTimer() } label: {
-                    Text("Skip Rest")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.kineticsSubtext)
-                }
-            }
-            .padding(24)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color.kineticsDark)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .strokeBorder(Color.kineticsBlue.opacity(0.25), lineWidth: 1)
-                    )
-            )
-            .shadow(color: Color.black.opacity(0.5), radius: 24, x: 0, y: -8)
-            .padding(.horizontal, 16)
-            .padding(.bottom, 110)
-        }
-    }
-
-    private var ringProgress: Double {
-        guard let secs = viewModel.restSecondsRemaining, secs > 0 else { return 0 }
-        // Ring drains from full (1.0) to empty as time elapses.
-        // We track relative to the full 90s default; clamp at 1.0 for longer presets.
-        return min(Double(secs) / 90.0, 1.0)
-    }
-}
-
-// MARK: - ExerciseEntrySection
-
-private struct ExerciseEntrySection: View {
-
-    let entry: WorkoutExerciseEntry
-    let viewModel: ActiveGymSessionViewModel
-
-    /// Best weight from already-completed sets in this entry — shown as a hint in pending rows.
-    private var previousBestWeight: Double? {
-        let completedWeights = entry.sets.filter { $0.isCompleted && $0.weight > 0 }.map(\.weight)
-        return completedWeights.max()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Exercise header
-            HStack {
-                Text(entry.exerciseName)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color.white)
 
                 Spacer()
 
-                Button {
-                    do {
-                        try viewModel.addSet(to: entry)
-                    } catch {
-                        viewModel.errorMessage = error.localizedDescription
-                    }
-                } label: {
-                    Text("Add Set")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.kineticsBlue)
-                }
+                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.kineticsSubtext)
+                    .rotationEffect(.degrees(isExpanded ? 0 : 0))
             }
             .padding(.horizontal, 14)
-            .padding(.top, 14)
-
-            // Column headers
-            HStack(spacing: 0) {
-                Text("SET")
-                    .frame(width: 40, alignment: .center)
-                Text("KG")
-                    .frame(maxWidth: .infinity, alignment: .center)
-                Text("REPS")
-                    .frame(maxWidth: .infinity, alignment: .center)
-                Color.clear.frame(width: 44)
-            }
-            .font(.system(size: 10, weight: .semibold))
-            .tracking(1.5)
-            .foregroundStyle(Color.kineticsSubtext)
-            .padding(.horizontal, 14)
-
-            Divider()
-                .background(Color.kineticsSubtext.opacity(0.2))
-                .padding(.horizontal, 14)
-
-            // Set rows
-            let sortedSets = entry.sets.sorted { $0.setNumber < $1.setNumber }
-            ForEach(sortedSets, id: \.id) { set in
-                SetRowView(
-                    set: set,
-                    previousBestWeight: set.isCompleted ? nil : previousBestWeight,
-                    onComplete: {
-                        do {
-                            try viewModel.markSetCompleted(set)
-                        } catch {
-                            viewModel.errorMessage = error.localizedDescription
-                        }
-                    },
-                    onDelete: {
-                        do {
-                            try viewModel.deleteSet(set, from: entry)
-                        } catch {
-                            viewModel.errorMessage = error.localizedDescription
-                        }
-                    }
-                )
-            }
-            .padding(.bottom, 8)
+            .padding(.vertical, 12)
         }
-        .background(Color.kineticsDark)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Column Headers
+
+    private var columnHeaders: some View {
+        HStack(spacing: 0) {
+            Text("SET")
+                .frame(width: 44, alignment: .center)
+            Text("KG")
+                .frame(maxWidth: .infinity, alignment: .center)
+            Text("REPS")
+                .frame(maxWidth: .infinity, alignment: .center)
+            Color.clear.frame(width: 46)
+        }
+        .font(.system(size: 9, weight: .semibold))
+        .tracking(1.5)
+        .foregroundStyle(Color.kineticsSubtext)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 4)
+
+        .overlay(alignment: .top) {
+            Divider()
+                .background(Color.kineticsSubtext.opacity(0.18))
+        }
+    }
+
+    // MARK: Add Set Button
+
+    private var addSetButton: some View {
+        Button {
+            do {
+                try viewModel.addSet(to: entry)
+            } catch {
+                viewModel.errorMessage = error.localizedDescription
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "plus")
+                    .font(.system(size: 12, weight: .bold))
+                Text("Add Set")
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            .foregroundStyle(Color.kineticsBlue)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .top) {
+            Divider()
+                .background(Color.kineticsSubtext.opacity(0.18))
+        }
     }
 }
 
-// MARK: - SetRowView
+// MARK: - SetRow
 
-struct SetRowView: View {
+private struct SetRow: View {
 
-    // MARK: Properties
+    // MARK: - Properties
 
     let set: WorkoutSet
-    /// Best weight from previously completed sets — shown as a small amber hint below the input.
     let previousBestWeight: Double?
     let onComplete: () -> Void
     let onDelete: () -> Void
@@ -501,7 +673,7 @@ struct SetRowView: View {
     @State private var weight: String
     @State private var reps: String
 
-    // MARK: Init
+    // MARK: - Init
 
     init(
         set: WorkoutSet,
@@ -517,74 +689,77 @@ struct SetRowView: View {
         self._reps = State(initialValue: set.reps > 0 ? "\(set.reps)" : "")
     }
 
-    // MARK: Body
+    // MARK: - Body
 
     var body: some View {
         HStack(spacing: 0) {
             // Set number badge
             ZStack {
                 Circle()
-                    .fill(set.isCompleted ? Color.kineticsGreen.opacity(0.2) : Color.kineticsSubtext.opacity(0.15))
+                    .fill(set.isCompleted
+                          ? Color.kineticsGreen.opacity(0.2)
+                          : Color.kineticsSubtext.opacity(0.12))
                     .frame(width: 28, height: 28)
 
                 Text("\(set.setNumber)")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundStyle(set.isCompleted ? Color.kineticsGreen : Color.kineticsSubtext)
             }
-            .frame(width: 40, alignment: .center)
+            .frame(width: 44, alignment: .center)
 
-            // Weight input + prev-best hint
-            VStack(spacing: 2) {
+            // Weight input
+            VStack(spacing: 1) {
                 TextField(weightPlaceholder, text: $weight)
-                    .font(.system(size: 16, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Color.white)
+                    .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(set.isCompleted ? Color.kineticsGreen : .white)
                     .multilineTextAlignment(.center)
                     .keyboardType(.decimalPad)
                     .disabled(set.isCompleted)
+                    .frame(maxWidth: .infinity)
 
-                if let best = previousBestWeight, best > 0 {
+                if let best = previousBestWeight, best > 0, !set.isCompleted {
                     Text("prev \(String(format: "%.1f", best))")
                         .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Color.kineticsAmber.opacity(0.75))
+                        .foregroundStyle(Color.kineticsAmber.opacity(0.8))
                 }
             }
             .frame(maxWidth: .infinity)
 
             // Reps input
             TextField("0", text: $reps)
-                .font(.system(size: 16, weight: .medium, design: .monospaced))
-                .foregroundStyle(Color.white)
+                .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                .foregroundStyle(set.isCompleted ? Color.kineticsGreen : .white)
                 .multilineTextAlignment(.center)
                 .keyboardType(.numberPad)
                 .frame(maxWidth: .infinity)
                 .disabled(set.isCompleted)
 
-            // Checkmark button
+            // Complete / done button
             Button {
                 guard !set.isCompleted else { return }
                 let parsedWeight = Double(weight) ?? 0
                 let parsedReps = Int(reps) ?? 0
                 do {
-                    try GymRepository.shared.updateSet(set, weight: parsedWeight, reps: parsedReps, rpe: set.rpe)
+                    try GymRepository.shared.updateSet(set,
+                                                       weight: parsedWeight,
+                                                       reps: parsedReps,
+                                                       rpe: set.rpe)
                 } catch {
-                    // save failure is non-fatal; still invoke onComplete to trigger rest timer
+                    // Non-fatal — still complete the set to trigger rest timer.
                 }
                 onComplete()
             } label: {
                 Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "checkmark.circle")
-                    .font(.system(size: 22))
+                    .font(.system(size: 24))
                     .foregroundStyle(set.isCompleted ? Color.kineticsGreen : Color.kineticsSubtext)
             }
-            .frame(width: 44, alignment: .center)
+            .frame(width: 46, alignment: .center)
             .disabled(set.isCompleted)
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 11)
         .padding(.horizontal, 14)
-        .background(
-            set.isCompleted
-                ? Color.kineticsGreen.opacity(0.07)
-                : Color.clear
-        )
+        .background(set.isCompleted ? Color.kineticsGreen.opacity(0.07) : Color.clear)
+        .animation(.easeInOut(duration: 0.2), value: set.isCompleted)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 onDelete()
@@ -592,14 +767,285 @@ struct SetRowView: View {
                 Label("Delete", systemImage: "trash.fill")
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: set.isCompleted)
     }
 
-    // MARK: Helpers
+    // MARK: - Helpers
 
     private var weightPlaceholder: String {
         guard let best = previousBestWeight, best > 0 else { return "0.0" }
         return String(format: "%.1f", best)
+    }
+}
+
+// MARK: - RestTimerPanel
+
+private struct RestTimerPanel: View {
+
+    let viewModel: ActiveGymSessionViewModel
+
+    private let presets: [(label: String, seconds: Int)] = [
+        ("45s", 45), ("1:00", 60), ("1:30", 90), ("2:00", 120), ("3:00", 180)
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 18) {
+                // Header row
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("REST TIMER")
+                            .font(.system(size: 10, weight: .semibold))
+                            .tracking(2)
+                            .foregroundStyle(Color.kineticsSubtext)
+                        Text("Take a breath")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(Color.kineticsSubtext.opacity(0.7))
+                    }
+                    Spacer()
+                    Button { viewModel.cancelRestTimer() } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundStyle(Color.kineticsSubtext)
+                    }
+                }
+
+                // Countdown ring + time
+                ZStack {
+                    // Track
+                    Circle()
+                        .stroke(Color.kineticsBlue.opacity(0.12), lineWidth: 10)
+                        .frame(width: 112, height: 112)
+
+                    // Fill
+                    Circle()
+                        .trim(from: 0, to: viewModel.restRingProgress)
+                        .stroke(
+                            Color.kineticsBlue,
+                            style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                        )
+                        .frame(width: 112, height: 112)
+                        .rotationEffect(.degrees(-90))
+                        .animation(.linear(duration: 1), value: viewModel.restSecondsRemaining)
+
+                    VStack(spacing: 0) {
+                        Text(viewModel.formattedRest)
+                            .font(.system(size: 28, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+                            .contentTransition(.numericText())
+                            .animation(.linear(duration: 0.25), value: viewModel.formattedRest)
+                        Text("remaining")
+                            .font(.system(size: 9, weight: .regular))
+                            .foregroundStyle(Color.kineticsSubtext)
+                    }
+                }
+
+                // Preset chips
+                HStack(spacing: 6) {
+                    ForEach(presets, id: \.seconds) { preset in
+                        Button {
+                            viewModel.startRestTimer(seconds: preset.seconds)
+                        } label: {
+                            Text(preset.label)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(
+                                    viewModel.restTimerInitialSeconds == preset.seconds
+                                        ? Color.black : Color.kineticsBlue
+                                )
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule().fill(
+                                        viewModel.restTimerInitialSeconds == preset.seconds
+                                            ? Color.kineticsBlue
+                                            : Color.kineticsBlue.opacity(0.13)
+                                    )
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                // Skip
+                Button { viewModel.cancelRestTimer() } label: {
+                    Text("Skip Rest")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.kineticsSubtext)
+                }
+            }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 22)
+            .background(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(Color.kineticsDark)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .strokeBorder(Color.kineticsBlue.opacity(0.22), lineWidth: 1)
+                    )
+            )
+            .shadow(color: .black.opacity(0.55), radius: 28, x: 0, y: -10)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 90)
+        }
+    }
+}
+
+// MARK: - FinishWorkoutSheet
+
+private struct FinishWorkoutSheet: View {
+
+    let viewModel: ActiveGymSessionViewModel
+    let onSave: () -> Void
+    let onDiscard: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var notes: String = ""
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.kineticsBackground.ignoresSafeArea()
+
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Header trophy area
+                        VStack(spacing: 8) {
+                            Image(systemName: "trophy.fill")
+                                .font(.system(size: 44))
+                                .foregroundStyle(Color.kineticsAmber)
+                                .padding(.top, 8)
+
+                            Text("Great work!")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundStyle(.white)
+
+                            Text(viewModel.workoutName)
+                                .font(.system(size: 15))
+                                .foregroundStyle(Color.kineticsSubtext)
+                        }
+                        .frame(maxWidth: .infinity)
+
+                        // Stats grid
+                        HStack(spacing: 12) {
+                            finishStatCard(
+                                icon: "clock.fill",
+                                value: viewModel.formattedElapsed,
+                                label: "Duration",
+                                color: Color.kineticsBlue
+                            )
+                            finishStatCard(
+                                icon: "scalemass.fill",
+                                value: viewModel.totalVolumeKg > 0 ? viewModel.formattedTotalVolume : "—",
+                                label: "Volume",
+                                color: Color.kineticsGreen
+                            )
+                        }
+
+                        HStack(spacing: 12) {
+                            finishStatCard(
+                                icon: "dumbbell.fill",
+                                value: "\(viewModel.exerciseCount)",
+                                label: "Exercises",
+                                color: Color.kineticsPurple
+                            )
+                            finishStatCard(
+                                icon: "checkmark.circle.fill",
+                                value: "\(viewModel.completedSetCount)",
+                                label: "Sets Done",
+                                color: Color.kineticsAmber
+                            )
+                        }
+
+                        // Notes field
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("NOTES")
+                                .font(.system(size: 10, weight: .semibold))
+                                .tracking(1.5)
+                                .foregroundStyle(Color.kineticsSubtext)
+
+                            TextField("How did it go? (optional)", text: $notes, axis: .vertical)
+                                .font(.system(size: 14))
+                                .foregroundStyle(.white)
+                                .lineLimit(3...6)
+                                .padding(12)
+                                .background(Color.kineticsDark, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        }
+
+                        // Save button
+                        Button {
+                            if !notes.isEmpty {
+                                viewModel.session.notes = notes
+                            }
+                            onSave()
+                        } label: {
+                            Text("Save Workout")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(.black)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color.kineticsGreen, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+
+                        // Discard link
+                        Button {
+                            dismiss()
+                            onDiscard()
+                        } label: {
+                            Text("Discard Workout")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color.kineticsRed.opacity(0.85))
+                        }
+                        .padding(.bottom, 24)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                }
+            }
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.kineticsDark, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundStyle(Color.kineticsSubtext)
+                }
+            }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Color.kineticsBackground)
+    }
+
+    private func finishStatCard(
+        icon: String,
+        value: String,
+        label: String,
+        color: Color
+    ) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 22))
+                .foregroundStyle(color)
+                .frame(width: 36)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text(label)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.kineticsSubtext)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.kineticsDark, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -608,7 +1054,7 @@ struct SetRowView: View {
 @MainActor
 struct ExercisePickerView: View {
 
-    // MARK: Properties
+    // MARK: - Properties
 
     let onSelect: (Exercise) throws -> Void
 
@@ -616,13 +1062,12 @@ struct ExercisePickerView: View {
     @State private var searchText = ""
     @Environment(\.dismiss) private var dismiss
 
-    // MARK: Body
+    // MARK: - Body
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.kineticsBackground
-                    .ignoresSafeArea()
+                Color.kineticsBackground.ignoresSafeArea()
 
                 if exercises.isEmpty {
                     emptyState
@@ -656,11 +1101,11 @@ struct ExercisePickerView: View {
         }
     }
 
-    // MARK: Exercise List
+    // MARK: - Exercise List
 
     private var exerciseList: some View {
         ScrollView {
-            LazyVStack(spacing: 1) {
+            LazyVStack(spacing: 6) {
                 ForEach(exercises, id: \.id) { exercise in
                     exerciseRow(exercise)
                 }
@@ -679,37 +1124,35 @@ struct ExercisePickerView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(exercise.name)
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color.white)
+                        .foregroundStyle(.white)
                         .multilineTextAlignment(.leading)
 
                     Text(exercise.primaryMuscle)
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.system(size: 12))
                         .foregroundStyle(Color.kineticsSubtext)
                 }
 
                 Spacer()
 
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 18))
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 20))
                     .foregroundStyle(Color.kineticsBlue)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .background(Color.kineticsDark)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(Color.kineticsDark, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)
-        .padding(.bottom, 6)
     }
 
-    // MARK: Empty State
+    // MARK: - Empty State
 
     private var emptyState: some View {
         VStack(spacing: 16) {
             Spacer()
             Image(systemName: "dumbbell.fill")
                 .font(.system(size: 44, weight: .light))
-                .foregroundStyle(Color.kineticsBlue.opacity(0.45))
+                .foregroundStyle(Color.kineticsBlue.opacity(0.4))
             Text(searchText.isEmpty ? "No exercises found" : "No results for \"\(searchText)\"")
                 .font(.headline)
                 .foregroundStyle(.white)

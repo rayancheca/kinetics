@@ -267,6 +267,8 @@ extension GymRepository {
 
         if let existing {
             guard weight > existing.weight else { return }
+            let oldWeight = existing.weight
+            existing.previousWeight = oldWeight
             existing.weight = weight
             existing.reps = reps
             existing.achievedAt = Date()
@@ -278,7 +280,8 @@ extension GymRepository {
                 exerciseId: exerciseId,
                 exerciseName: exerciseName,
                 weight: weight,
-                reps: reps
+                reps: reps,
+                previousWeight: 0
             )
             ctx.insert(pr)
             didSetNewRecord = true
@@ -313,22 +316,23 @@ extension GymRepository {
         let existing = try ctx.fetch(checkDescriptor)
         guard existing.isEmpty else { return }
 
+        // Exact 20-exercise canonical library matching the product spec.
         let seeds: [Exercise] = [
             Exercise(
-                name: "Barbell Back Squat",
-                category: "Strength",
-                primaryMuscle: "Quadriceps",
-                secondaryMuscles: ["Glutes", "Hamstrings", "Core"],
-                equipment: "Barbell",
-                instructions: "Bar on upper traps, feet shoulder-width. Brace core, drive knees out, descend until hip crease passes knee. Drive through mid-foot to stand."
-            ),
-            Exercise(
-                name: "Barbell Bench Press",
+                name: "Bench Press",
                 category: "Strength",
                 primaryMuscle: "Chest",
                 secondaryMuscles: ["Triceps", "Shoulders"],
                 equipment: "Barbell",
                 instructions: "Retract scapulae, slight arch. Lower bar to lower chest under control. Drive through the bar, squeeze chest at lockout."
+            ),
+            Exercise(
+                name: "Squat",
+                category: "Strength",
+                primaryMuscle: "Quadriceps",
+                secondaryMuscles: ["Glutes", "Hamstrings", "Core"],
+                equipment: "Barbell",
+                instructions: "Bar on upper traps, feet shoulder-width. Brace core, drive knees out, descend until hip crease passes knee. Drive through mid-foot to stand."
             ),
             Exercise(
                 name: "Deadlift",
@@ -337,6 +341,14 @@ extension GymRepository {
                 secondaryMuscles: ["Glutes", "Back", "Core"],
                 equipment: "Barbell",
                 instructions: "Bar over mid-foot, hip-width stance. Hinge to grip, lats engaged. Push the floor away, keep bar against shins. Lock hips and knees simultaneously at the top."
+            ),
+            Exercise(
+                name: "Pull-up",
+                category: "Strength",
+                primaryMuscle: "Back",
+                secondaryMuscles: ["Biceps"],
+                equipment: "Bodyweight",
+                instructions: "Dead hang start, overhand grip. Drive elbows to hips to initiate. Chin clears the bar at the top. Full extension on every rep."
             ),
             Exercise(
                 name: "Overhead Press",
@@ -350,33 +362,17 @@ extension GymRepository {
                 name: "Barbell Row",
                 category: "Strength",
                 primaryMuscle: "Back",
-                secondaryMuscles: ["Biceps", "Rear Delts"],
-                equipment: "Barbell",
-                instructions: "Hip hinge until torso is nearly parallel. Pull bar to lower sternum, drive elbows back. Lower under control — do not let momentum bounce the weight."
-            ),
-            Exercise(
-                name: "Dumbbell Curl",
-                category: "Strength",
-                primaryMuscle: "Biceps",
-                secondaryMuscles: ["Forearms"],
-                equipment: "Dumbbell",
-                instructions: "Supinate wrist as you curl. Full extension at the bottom, squeeze at the top. Avoid swinging the torso."
-            ),
-            Exercise(
-                name: "Tricep Pushdown",
-                category: "Strength",
-                primaryMuscle: "Triceps",
-                secondaryMuscles: [],
-                equipment: "Cable",
-                instructions: "Elbows pinned at sides, slight forward lean. Push the bar to full extension. Squeeze triceps hard at the bottom before controlled return."
-            ),
-            Exercise(
-                name: "Lat Pulldown",
-                category: "Strength",
-                primaryMuscle: "Back",
                 secondaryMuscles: ["Biceps"],
-                equipment: "Cable",
-                instructions: "Overhand grip slightly wider than shoulders. Lean back slightly, pull bar to upper chest. Initiate with lats, not arms."
+                equipment: "Barbell",
+                instructions: "Hip hinge until torso is nearly parallel. Pull bar to lower sternum, drive elbows back. Lower under control."
+            ),
+            Exercise(
+                name: "Incline Dumbbell Press",
+                category: "Strength",
+                primaryMuscle: "Chest",
+                secondaryMuscles: ["Shoulders", "Triceps"],
+                equipment: "Dumbbell",
+                instructions: "Bench at 30-45 degrees. Press from beside the upper chest to full lockout overhead. Lower dumbbells to chest line."
             ),
             Exercise(
                 name: "Leg Press",
@@ -384,39 +380,7 @@ extension GymRepository {
                 primaryMuscle: "Quadriceps",
                 secondaryMuscles: ["Glutes", "Hamstrings"],
                 equipment: "Machine",
-                instructions: "Feet shoulder-width, high on platform for more glute recruitment. Descend until knees are at 90°. Do not lock knees at the top."
-            ),
-            Exercise(
-                name: "Push-up",
-                category: "Strength",
-                primaryMuscle: "Chest",
-                secondaryMuscles: ["Triceps", "Core"],
-                equipment: "Bodyweight",
-                instructions: "Hands slightly wider than shoulders. Maintain a rigid plank. Lower until chest grazes the floor, then press to full lockout."
-            ),
-            Exercise(
-                name: "Pull-up",
-                category: "Strength",
-                primaryMuscle: "Back",
-                secondaryMuscles: ["Biceps"],
-                equipment: "Bodyweight",
-                instructions: "Dead hang start, overhand grip. Drive elbows to hips to initiate. Chin clears the bar at the top. Full extension on every rep."
-            ),
-            Exercise(
-                name: "Dip",
-                category: "Strength",
-                primaryMuscle: "Triceps",
-                secondaryMuscles: ["Chest", "Shoulders"],
-                equipment: "Bodyweight",
-                instructions: "Upright torso targets triceps; forward lean shifts emphasis to chest. Lower until shoulder is at elbow height. Press to full lockout."
-            ),
-            Exercise(
-                name: "Plank",
-                category: "Strength",
-                primaryMuscle: "Core",
-                secondaryMuscles: ["Shoulders"],
-                equipment: "Bodyweight",
-                instructions: "Forearms on floor, elbows under shoulders. Neutral spine — no sagging hips or raised glutes. Breathe steadily and brace as if taking a punch."
+                instructions: "Feet shoulder-width, high on platform. Descend until knees are at 90 degrees. Do not lock knees at the top."
             ),
             Exercise(
                 name: "Romanian Deadlift",
@@ -427,36 +391,44 @@ extension GymRepository {
                 instructions: "Start standing, soft knee bend. Push hips back and hinge forward, bar tracking legs. Lower until a deep stretch in the hamstrings, then drive hips forward to stand."
             ),
             Exercise(
-                name: "Bulgarian Split Squat",
+                name: "Lat Pulldown",
                 category: "Strength",
-                primaryMuscle: "Quadriceps",
-                secondaryMuscles: ["Glutes", "Hamstrings"],
-                equipment: "Dumbbell",
-                instructions: "Rear foot elevated on bench, front foot two long strides forward. Descend until front knee is at 90°. Drive through the front heel to stand."
+                primaryMuscle: "Back",
+                secondaryMuscles: ["Biceps"],
+                equipment: "Cable",
+                instructions: "Overhand grip slightly wider than shoulders. Lean back slightly, pull bar to upper chest. Initiate with lats, not arms."
             ),
             Exercise(
-                name: "Incline Dumbbell Press",
+                name: "Cable Fly",
                 category: "Strength",
                 primaryMuscle: "Chest",
-                secondaryMuscles: ["Shoulders", "Triceps"],
-                equipment: "Dumbbell",
-                instructions: "Bench at 30-45°. Press from beside the upper chest to full lockout overhead. Lower dumbbells to chest line — avoid flaring elbows excessively."
-            ),
-            Exercise(
-                name: "Face Pull",
-                category: "Strength",
-                primaryMuscle: "Rear Delts",
-                secondaryMuscles: ["Rotator Cuff", "Trapezius"],
+                secondaryMuscles: ["Shoulders"],
                 equipment: "Cable",
-                instructions: "Cable set above head height, rope attachment. Pull handles to eye level, elbows flaring wide. External-rotate wrists so knuckles face the ceiling at the end."
+                instructions: "Set cables at shoulder height with D-ring handles. Keep a slight elbow bend, arc hands together in front of chest. Control the return."
             ),
             Exercise(
-                name: "Goblet Squat",
+                name: "Tricep Pushdown",
+                category: "Strength",
+                primaryMuscle: "Triceps",
+                secondaryMuscles: [],
+                equipment: "Cable",
+                instructions: "Elbows pinned at sides, slight forward lean. Push the bar to full extension. Squeeze triceps hard at the bottom before controlled return."
+            ),
+            Exercise(
+                name: "Bicep Curl",
+                category: "Strength",
+                primaryMuscle: "Biceps",
+                secondaryMuscles: ["Forearms"],
+                equipment: "Dumbbell",
+                instructions: "Supinate wrist as you curl. Full extension at the bottom, squeeze at the top. Avoid swinging the torso."
+            ),
+            Exercise(
+                name: "Lunges",
                 category: "Strength",
                 primaryMuscle: "Quadriceps",
-                secondaryMuscles: ["Glutes", "Core"],
-                equipment: "Kettlebell",
-                instructions: "Hold the bell at chest height by the horns. Feet shoulder-width, toes slightly out. Sit between the knees, keeping elbows inside thighs. Drive through heels to stand."
+                secondaryMuscles: ["Glutes", "Hamstrings", "Core"],
+                equipment: "Dumbbell",
+                instructions: "Step forward into a long stride. Lower back knee toward the floor, keep front shin vertical. Drive through the front heel to return."
             ),
             Exercise(
                 name: "Hip Thrust",
@@ -464,15 +436,47 @@ extension GymRepository {
                 primaryMuscle: "Glutes",
                 secondaryMuscles: ["Hamstrings", "Core"],
                 equipment: "Barbell",
-                instructions: "Upper back on bench, bar across hips over a pad. Plant feet flat, drive hips to full extension. Squeeze glutes hard at the top — do not hyperextend the lumbar."
+                instructions: "Upper back on bench, bar across hips over a pad. Plant feet flat, drive hips to full extension. Squeeze glutes hard at the top."
             ),
             Exercise(
-                name: "Clean and Jerk",
-                category: "Olympic",
-                primaryMuscle: "Full Body",
-                secondaryMuscles: ["Quadriceps", "Glutes", "Shoulders", "Core"],
-                equipment: "Barbell",
-                instructions: "First pull: bar from floor to knees staying over the bar. Second pull: explosive hip extension and high pull. Catch in a front squat rack position. Stand, then split or power jerk overhead to full lockout."
+                name: "Plank",
+                category: "Strength",
+                primaryMuscle: "Core",
+                secondaryMuscles: ["Shoulders"],
+                equipment: "Bodyweight",
+                instructions: "Forearms on floor, elbows under shoulders. Neutral spine. Breathe steadily and brace."
+            ),
+            Exercise(
+                name: "Face Pull",
+                category: "Strength",
+                primaryMuscle: "Shoulders",
+                secondaryMuscles: ["Biceps", "Trapezius"],
+                equipment: "Cable",
+                instructions: "Cable set above head height, rope attachment. Pull handles to eye level, elbows flaring wide. External-rotate wrists so knuckles face the ceiling."
+            ),
+            Exercise(
+                name: "Lateral Raise",
+                category: "Strength",
+                primaryMuscle: "Shoulders",
+                secondaryMuscles: [],
+                equipment: "Dumbbell",
+                instructions: "Stand tall, slight forward lean. Raise dumbbells to shoulder height with a slight elbow bend. Lower under control. Avoid shrugging."
+            ),
+            Exercise(
+                name: "Calf Raise",
+                category: "Strength",
+                primaryMuscle: "Calves",
+                secondaryMuscles: [],
+                equipment: "Machine",
+                instructions: "Rise onto the balls of your feet as high as possible. Pause at the top, then lower to a full stretch. Full range of motion on every rep."
+            ),
+            Exercise(
+                name: "Russian Twist",
+                category: "Strength",
+                primaryMuscle: "Core",
+                secondaryMuscles: [],
+                equipment: "Bodyweight",
+                instructions: "Sit on the floor with knees bent, lean back slightly. Rotate the torso side to side, touching the floor beside each hip."
             )
         ]
 
@@ -513,6 +517,306 @@ extension GymRepository {
         }
 
         return streak
+    }
+}
+
+// MARK: - Routine CRUD
+
+extension GymRepository {
+
+    /// Saves a new or updated `Routine` to the local store.
+    func saveRoutine(_ routine: Routine) throws {
+        let ctx = try context
+        ctx.insert(routine)
+        try saveContext(ctx)
+    }
+
+    /// Returns all routines belonging to `userId`, newest first.
+    func fetchRoutines(userId: String) throws -> [Routine] {
+        let ctx = try context
+        let descriptor = FetchDescriptor<Routine>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        return try ctx.fetch(descriptor)
+    }
+
+    /// Removes a routine from the store.
+    func deleteRoutine(_ routine: Routine) throws {
+        let ctx = try context
+        ctx.delete(routine)
+        try saveContext(ctx)
+    }
+
+    /// Creates a duplicate of `routine` with a new id and " (Copy)" appended to the name.
+    @discardableResult
+    func duplicateRoutine(_ routine: Routine) throws -> Routine {
+        let copy = Routine(
+            userId: routine.userId,
+            name: "\(routine.name) (Copy)",
+            routineDescription: routine.routineDescription,
+            exerciseIds: routine.exerciseIds,
+            exerciseNames: routine.exerciseNames,
+            slots: routine.slots.enumerated().map { index, slot in
+                RoutineExerciseSlot(
+                    exerciseId: slot.exerciseId,
+                    exerciseName: slot.exerciseName,
+                    primaryMuscle: slot.primaryMuscle,
+                    orderIndex: index,
+                    targetSets: slot.targetSets,
+                    targetReps: slot.targetReps,
+                    restSeconds: slot.restSeconds
+                )
+            },
+            scheduledDays: routine.scheduledDays,
+            notes: routine.notes
+        )
+        let ctx = try context
+        ctx.insert(copy)
+        try saveContext(ctx)
+        return copy
+    }
+
+    /// Stamps `lastUsedAt` on the routine and returns a pre-populated `WorkoutSession`
+    /// with one `WorkoutExerciseEntry` per exercise slot (each seeded with blank sets
+    /// equal to `slot.targetSets`).
+    func startSession(from routine: Routine, userId: String) throws -> WorkoutSession {
+        let ctx = try context
+
+        // Stamp last-used date on the routine.
+        routine.lastUsedAt = Date()
+        ctx.insert(routine)
+
+        let session = WorkoutSession(userId: userId)
+        ctx.insert(session)
+
+        let sortedSlots = routine.slots
+        for (index, slot) in sortedSlots.enumerated() {
+            let entry = WorkoutExerciseEntry(
+                exerciseId: slot.exerciseId,
+                exerciseName: slot.exerciseName,
+                orderIndex: index
+            )
+            ctx.insert(entry)
+            for setNumber in 1...max(1, slot.targetSets) {
+                let workoutSet = WorkoutSet(
+                    setNumber: setNumber,
+                    reps: slot.targetReps
+                )
+                ctx.insert(workoutSet)
+                entry.sets.append(workoutSet)
+            }
+            session.entries.append(entry)
+        }
+
+        try saveContext(ctx)
+        return session
+    }
+}
+
+// MARK: - Async API (caller-friendly wrappers)
+
+/// `async` overloads that mirror the synchronous CRUD layer.
+/// These use the same underlying SwiftData context and never propagate
+/// non-fatal errors to callers (they return empty collections instead).
+extension GymRepository {
+
+    // MARK: Session
+
+    /// Saves or upserts a workout session. Throws on persistence failure.
+    func saveWorkoutSession(_ session: WorkoutSession) async throws {
+        try saveSession(session)
+    }
+
+    /// Returns all completed and in-progress sessions for a user, newest first.
+    func fetchWorkoutSessions(userId: String) async -> [WorkoutSession] {
+        (try? fetchSessions(userId: userId, limit: 1_000)) ?? []
+    }
+
+    /// Returns the `limit` most-recent sessions for a user.
+    func fetchRecentSessions(userId: String, limit: Int) async -> [WorkoutSession] {
+        (try? fetchSessions(userId: userId, limit: limit)) ?? []
+    }
+
+    // MARK: Exercise
+
+    /// Saves an exercise. Throws on persistence failure.
+    func saveExercise(_ exercise: Exercise, userId: String) async throws {
+        exercise.userId = userId
+        try saveExercise(exercise)
+    }
+
+    /// Returns all exercises visible to a user (shared library + user's custom ones).
+    func fetchExercises(userId: String) async -> [Exercise] {
+        guard let ctx = try? context else { return [] }
+        let descriptor = FetchDescriptor<Exercise>(
+            sortBy: [SortDescriptor(\.name, order: .forward)]
+        )
+        let all = (try? ctx.fetch(descriptor)) ?? []
+        return all.filter { $0.userId == nil || $0.userId == userId }
+    }
+
+    /// Returns a single exercise by id, or `nil` when not found.
+    func fetchExercise(id: String) async -> Exercise? {
+        guard let ctx = try? context else { return nil }
+        let descriptor = FetchDescriptor<Exercise>(
+            predicate: #Predicate { $0.id == id }
+        )
+        return (try? ctx.fetch(descriptor))?.first
+    }
+
+    /// Deletes a single exercise. Throws on persistence failure.
+    func deleteExercise(_ exercise: Exercise) async throws {
+        try _deleteExerciseSync(exercise)
+    }
+
+    // MARK: Routine
+
+    /// Inserts or updates a routine. Throws on persistence failure.
+    func saveRoutine(_ routine: Routine) async throws {
+        try _saveRoutineSync(routine)
+    }
+
+    /// Returns all routines for a user, most recently created first.
+    func fetchRoutines(userId: String) async -> [Routine] {
+        (try? _fetchRoutinesSync(userId: userId)) ?? []
+    }
+
+    /// Deletes a routine. Throws on persistence failure.
+    func deleteRoutine(_ routine: Routine) async throws {
+        try _deleteRoutineSync(routine)
+    }
+
+    // MARK: Personal Records
+
+    /// Creates or updates a PR. Parameter order matches the public spec.
+    /// Only raises the record when `weight` exceeds the stored value.
+    /// `previousWeight` is captured and stored automatically by the underlying sync method.
+    func updatePersonalRecord(
+        exerciseId: String,
+        exerciseName: String,
+        weight: Double,
+        reps: Int,
+        userId: String
+    ) async {
+        try? updatePersonalRecord(
+            userId: userId,
+            exerciseId: exerciseId,
+            exerciseName: exerciseName,
+            weight: weight,
+            reps: reps
+        )
+    }
+
+    /// Returns all PRs for a user. Never throws — returns empty on error.
+    /// Async overload — delegates to the synchronous `fetchPersonalRecords` implementation.
+    func fetchPersonalRecords(userId: String) async -> [PersonalRecord] {
+        (try? _fetchPersonalRecordsSync(userId: userId)) ?? []
+    }
+
+    /// Returns the PR for a specific exercise, or `nil` when none exists.
+    func fetchPersonalRecord(exerciseId: String, userId: String) async -> PersonalRecord? {
+        guard let ctx = try? context else { return nil }
+        let descriptor = FetchDescriptor<PersonalRecord>(
+            predicate: #Predicate { $0.exerciseId == exerciseId && $0.userId == userId }
+        )
+        return (try? ctx.fetch(descriptor))?.first
+    }
+
+    // MARK: Body Measurements
+
+    /// Saves a body measurement. Throws on persistence failure.
+    func saveBodyMeasurement(_ measurement: BodyMeasurement) async throws {
+        let ctx = try context
+        ctx.insert(measurement)
+        try saveContext(ctx)
+    }
+
+    /// Returns all body measurements for a user, most recent first.
+    func fetchBodyMeasurements(userId: String) async -> [BodyMeasurement] {
+        guard let ctx = try? context else { return [] }
+        let descriptor = FetchDescriptor<BodyMeasurement>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.recordedAt, order: .reverse)]
+        )
+        return (try? ctx.fetch(descriptor)) ?? []
+    }
+
+    // MARK: Derived Stats
+
+    /// Number of completed workout sessions in the last 7 calendar days.
+    func weeklyWorkoutCount(userId: String) async -> Int {
+        guard let ctx = try? context else { return 0 }
+        let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+        let descriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate { $0.userId == userId && $0.isCompleted && $0.startedAt >= cutoff }
+        )
+        return (try? ctx.fetch(descriptor))?.count ?? 0
+    }
+
+    /// Total training volume in kg lifted during the current calendar month.
+    func monthlyVolume(userId: String) async -> Double {
+        guard let ctx = try? context else { return 0 }
+        let calendar = Calendar.current
+        let startOfMonth = calendar.date(
+            from: calendar.dateComponents([.year, .month], from: Date())
+        ) ?? Date()
+        let descriptor = FetchDescriptor<WorkoutSession>(
+            predicate: #Predicate { $0.userId == userId && $0.isCompleted && $0.startedAt >= startOfMonth }
+        )
+        let sessions = (try? ctx.fetch(descriptor)) ?? []
+        return sessions.reduce(0.0) { total, session in
+            total + session.totalVolumeKg
+        }
+    }
+
+    /// Number of consecutive calendar days ending today that contain at least one completed session.
+    func currentStreak(userId: String) async -> Int {
+        (try? calculateStreak(userId: userId)) ?? 0
+    }
+}
+
+// MARK: - Private sync trampolines
+// These private methods exist solely so the async overloads above can call the
+// synchronous CRUD implementations without triggering Swift's "prefer async
+// overload" resolution and causing infinite recursion.
+
+private extension GymRepository {
+
+    func _deleteExerciseSync(_ exercise: Exercise) throws {
+        let ctx = try context
+        ctx.delete(exercise)
+        try saveContext(ctx)
+    }
+
+    func _saveRoutineSync(_ routine: Routine) throws {
+        let ctx = try context
+        ctx.insert(routine)
+        try saveContext(ctx)
+    }
+
+    func _fetchRoutinesSync(userId: String) throws -> [Routine] {
+        let ctx = try context
+        let descriptor = FetchDescriptor<Routine>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        return try ctx.fetch(descriptor)
+    }
+
+    func _deleteRoutineSync(_ routine: Routine) throws {
+        let ctx = try context
+        ctx.delete(routine)
+        try saveContext(ctx)
+    }
+
+    func _fetchPersonalRecordsSync(userId: String) throws -> [PersonalRecord] {
+        let ctx = try context
+        let descriptor = FetchDescriptor<PersonalRecord>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.achievedAt, order: .reverse)]
+        )
+        return try ctx.fetch(descriptor)
     }
 }
 

@@ -1,5 +1,14 @@
+import Charts
 import SwiftData
 import SwiftUI
+
+// MARK: - PRFilter
+
+private enum PRFilter: String, CaseIterable {
+    case byMuscle = "By Muscle"
+    case byExercise = "By Exercise"
+    case all = "All"
+}
 
 // MARK: - PersonalRecordsView
 
@@ -8,20 +17,36 @@ struct PersonalRecordsView: View {
 
     let userId: String
 
-    // Filter at the @Query level so only this user's PRs are loaded.
     @Query(sort: \PersonalRecord.achievedAt, order: .reverse) private var allRecords: [PersonalRecord]
+    @Query(sort: \Exercise.name, order: .forward) private var exercises: [Exercise]
+
+    @State private var filter: PRFilter = .all
     @State private var searchText = ""
 
     // MARK: Derived
 
-    private var records: [PersonalRecord] {
+    private var userRecords: [PersonalRecord] {
         allRecords.filter { $0.userId == userId }
     }
 
     private var filteredRecords: [PersonalRecord] {
-        guard !searchText.isEmpty else { return records }
-        let query = searchText.lowercased()
-        return records.filter { $0.exerciseName.lowercased().contains(query) }
+        let base = searchText.isEmpty
+            ? userRecords
+            : userRecords.filter { $0.exerciseName.lowercased().contains(searchText.lowercased()) }
+
+        switch filter {
+        case .all, .byExercise:
+            return base.sorted { $0.exerciseName < $1.exerciseName }
+        case .byMuscle:
+            return base.sorted { muscleFor($0) < muscleFor($1) }
+        }
+    }
+
+    private var groupedByMuscle: [(muscle: String, records: [PersonalRecord])] {
+        let grouped = Dictionary(grouping: filteredRecords) { muscleFor($0) }
+        return grouped
+            .sorted { $0.key < $1.key }
+            .map { (muscle: $0.key, records: $0.value.sorted { $0.exerciseName < $1.exerciseName }) }
     }
 
     // MARK: Body
@@ -31,10 +56,16 @@ struct PersonalRecordsView: View {
             ZStack {
                 Color.kineticsBackground.ignoresSafeArea()
 
-                if filteredRecords.isEmpty {
-                    emptyState
-                } else {
-                    recordsList
+                VStack(spacing: 0) {
+                    filterPicker
+                    Divider()
+                        .background(Color.kineticsSubtext.opacity(0.15))
+
+                    if filteredRecords.isEmpty {
+                        emptyState
+                    } else {
+                        recordsContent
+                    }
                 }
             }
             .navigationTitle("Personal Records")
@@ -50,7 +81,60 @@ struct PersonalRecordsView: View {
         }
     }
 
-    // MARK: - Subviews
+    // MARK: - Filter Picker
+
+    private var filterPicker: some View {
+        Picker("Filter", selection: $filter) {
+            ForEach(PRFilter.allCases, id: \.self) { option in
+                Text(option.rawValue).tag(option)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color.kineticsBackground)
+    }
+
+    // MARK: - Records Content
+
+    @ViewBuilder
+    private var recordsContent: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                if filter == .byMuscle {
+                    ForEach(groupedByMuscle, id: \.muscle) { group in
+                        muscleSectionHeader(group.muscle)
+                        ForEach(group.records, id: \.id) { record in
+                            PRCard(record: record, exercises: exercises)
+                        }
+                    }
+                } else {
+                    ForEach(filteredRecords, id: \.id) { record in
+                        PRCard(record: record, exercises: exercises)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 20)
+            .padding(.bottom, 32)
+        }
+    }
+
+    private func muscleSectionHeader(_ muscle: String) -> some View {
+        HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color.kineticsAmber)
+                .frame(width: 3, height: 16)
+
+            Text(muscle.uppercased())
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color.kineticsAmber)
+                .tracking(1.2)
+        }
+        .padding(.top, 8)
+    }
+
+    // MARK: - Empty State
 
     private var emptyState: some View {
         VStack(spacing: 20) {
@@ -83,90 +167,502 @@ struct PersonalRecordsView: View {
         .padding(.horizontal, 40)
     }
 
-    private var recordsList: some View {
-        List {
-            ForEach(filteredRecords) { record in
-                PRDetailRow(record: record)
-                    .listRowBackground(Color.kineticsDark)
-                    .listRowSeparatorTint(Color.kineticsSubtext.opacity(0.25))
-            }
-        }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
+    // MARK: - Helpers
+
+    private func muscleFor(_ record: PersonalRecord) -> String {
+        exercises.first { $0.id == record.exerciseId }?.primaryMuscle ?? "Other"
     }
 }
 
-// MARK: - PRDetailRow
+// MARK: - PRCard
 
-private struct PRDetailRow: View {
+private struct PRCard: View {
 
     let record: PersonalRecord
+    let exercises: [Exercise]
 
-    // MARK: Body
+    private var muscle: String {
+        exercises.first { $0.id == record.exerciseId }?.primaryMuscle ?? "Other"
+    }
+
+    private var weightDisplay: String {
+        record.weight.truncatingRemainder(dividingBy: 1) == 0
+            ? String(format: "%.0f", record.weight)
+            : String(format: "%.1f", record.weight)
+    }
 
     var body: some View {
-        HStack(spacing: 14) {
-            // Trophy icon badge
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.kineticsAmber.opacity(0.12))
-                    .frame(width: 40, height: 40)
+        NavigationLink(destination: PRDetailView(record: record)) {
+            cardContent
+        }
+        .buttonStyle(.plain)
+    }
 
-                Image(systemName: "trophy.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.kineticsAmber)
-            }
+    private var cardContent: some View {
+        ZStack(alignment: .topTrailing) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Top row: exercise name + muscle chip
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(record.exerciseName)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(.white)
+                            .lineLimit(2)
 
-            // Exercise info
-            VStack(alignment: .leading, spacing: 3) {
-                Text(record.exerciseName)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
+                        Text(muscle)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.kineticsAmber)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(
+                                Capsule()
+                                    .fill(Color.kineticsAmber.opacity(0.12))
+                            )
+                    }
+                    Spacer()
+                }
+                .padding(.bottom, 16)
 
-                Text("\(record.reps) reps")
-                    .font(.caption)
-                    .foregroundStyle(Color.kineticsSubtext)
-            }
-
-            Spacer()
-
-            // Weight + date
-            VStack(alignment: .trailing, spacing: 3) {
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(weightFormatted(record.weight))
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(.white)
+                // Weight display — big amber number
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(weightDisplay)
+                        .font(.system(size: 52, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Color.kineticsAmber)
                         .monospacedDigit()
 
                     Text("kg")
-                        .font(.caption)
-                        .foregroundStyle(Color.kineticsSubtext)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(Color.kineticsAmber.opacity(0.6))
+                        .padding(.bottom, 6)
                 }
 
-                Text(record.achievedAt, format: .dateTime.month(.abbreviated).day())
-                    .font(.caption)
-                    .foregroundStyle(Color.kineticsSubtext)
+                // Reps + date row
+                HStack(spacing: 16) {
+                    Label("× \(record.reps) reps", systemImage: "repeat")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.kineticsSubtext)
 
+                    Label(
+                        record.achievedAt.formatted(.dateTime.month(.wide).day().year()),
+                        systemImage: "calendar"
+                    )
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.kineticsSubtext)
+                    .lineLimit(1)
+                }
+                .padding(.top, 10)
+
+                Divider()
+                    .background(Color.kineticsSubtext.opacity(0.15))
+                    .padding(.vertical, 12)
+
+                // Bottom row: estimated 1RM + share
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("EST. 1RM")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color.kineticsSubtext)
+                            .tracking(0.8)
+
+                        Text(estimated1RM)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.kineticsGreen)
+                    }
+
+                    Spacer()
+
+                    // Share button
+                    Button {
+                        ShareCardGenerator.share(record: record)
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text("Share")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.kineticsBlue)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.kineticsBlue.opacity(0.12))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(20)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.kineticsDark)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .strokeBorder(Color.kineticsAmber.opacity(0.15), lineWidth: 1)
+                )
+        )
+    }
+
+    private var estimated1RM: String {
+        guard record.reps > 0 else { return "--" }
+        let oneRM = record.weight * (1 + Double(record.reps) / 30.0)
+        return oneRM.truncatingRemainder(dividingBy: 1) == 0
+            ? "\(Int(oneRM)) kg"
+            : String(format: "%.1f kg", oneRM)
+    }
+}
+
+// MARK: - PRDetailView
+
+struct PRDetailView: View {
+
+    let record: PersonalRecord
+
+    @Query(sort: \PersonalRecord.achievedAt, order: .forward) private var allRecords: [PersonalRecord]
+
+    /// All PRs for the same exercise, used to simulate history
+    /// (in the real model one PR per exercise is stored — we show what we have)
+    private var historyRecords: [PersonalRecord] {
+        allRecords.filter { $0.exerciseId == record.exerciseId }
+    }
+
+    var body: some View {
+        ZStack {
+            Color.kineticsBackground.ignoresSafeArea()
+
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 24) {
+                    headerSection
+                    prHighlight
+                    progressChartSection
+                    historyListSection
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+                .padding(.bottom, 40)
+            }
+        }
+        .navigationTitle(record.exerciseName)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color.kineticsBackground, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     ShareCardGenerator.share(record: record)
                 } label: {
                     Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(Color.kineticsBlue)
                 }
-                .buttonStyle(.plain)
             }
         }
-        .padding(.vertical, 6)
+    }
+
+    // MARK: - Subviews
+
+    private var headerSection: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "trophy.fill")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(Color.kineticsAmber)
+                .frame(width: 44, height: 44)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.kineticsAmber.opacity(0.12))
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Personal Record")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.kineticsAmber)
+                    .tracking(0.5)
+
+                Text(record.exerciseName)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+        }
+    }
+
+    private var prHighlight: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("BEST WEIGHT")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Color.kineticsSubtext)
+                .tracking(1.2)
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(weightDisplay)
+                    .font(.system(size: 64, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Color.kineticsAmber)
+                    .monospacedDigit()
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("kg")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Color.kineticsAmber.opacity(0.6))
+
+                    Text("× \(record.reps) reps")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.kineticsSubtext)
+                }
+                .padding(.bottom, 8)
+            }
+
+            HStack(spacing: 20) {
+                metaStat(
+                    label: "Achieved",
+                    value: record.achievedAt.formatted(.dateTime.month(.abbreviated).day().year())
+                )
+                metaStat(
+                    label: "Est. 1RM",
+                    value: estimated1RM
+                )
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.kineticsDark)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .strokeBorder(Color.kineticsAmber.opacity(0.2), lineWidth: 1)
+                )
+        )
+    }
+
+    private func metaStat(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label.uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Color.kineticsSubtext)
+                .tracking(0.8)
+
+            Text(value)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+        }
+    }
+
+    private var progressChartSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("PROGRESSION")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color.kineticsSubtext)
+                .tracking(1.2)
+
+            if historyRecords.count < 2 {
+                insufficientDataState
+            } else {
+                PRHistoryChart(records: historyRecords)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.kineticsDark)
+        )
+    }
+
+    private var insufficientDataState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .font(.system(size: 32, weight: .light))
+                .foregroundStyle(Color.kineticsAmber.opacity(0.35))
+
+            Text("Log more sessions to see progress")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.kineticsSubtext)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 160)
+    }
+
+    private var historyListSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("HISTORY")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color.kineticsSubtext)
+                .tracking(1.2)
+
+            if historyRecords.isEmpty {
+                Text("No history available.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.kineticsSubtext)
+                    .padding(.top, 4)
+            } else {
+                LazyVStack(spacing: 8) {
+                    ForEach(historyRecords.reversed(), id: \.id) { entry in
+                        PRHistoryRow(entry: entry, isCurrent: entry.id == record.id)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: Helpers
 
-    private func weightFormatted(_ weight: Double) -> String {
-        weight.truncatingRemainder(dividingBy: 1) == 0
-            ? String(format: "%.0f", weight)
-            : String(format: "%.1f", weight)
+    private var weightDisplay: String {
+        record.weight.truncatingRemainder(dividingBy: 1) == 0
+            ? String(format: "%.0f", record.weight)
+            : String(format: "%.1f", record.weight)
+    }
+
+    private var estimated1RM: String {
+        guard record.reps > 0 else { return "--" }
+        let oneRM = record.weight * (1 + Double(record.reps) / 30.0)
+        return oneRM.truncatingRemainder(dividingBy: 1) == 0
+            ? "\(Int(oneRM)) kg"
+            : String(format: "%.1f kg", oneRM)
+    }
+}
+
+// MARK: - PRHistoryChart
+
+private struct PRHistoryChart: View {
+
+    let records: [PersonalRecord]
+
+    var body: some View {
+        Chart(records, id: \.id) { record in
+            // Area fill
+            AreaMark(
+                x: .value("Date", record.achievedAt),
+                y: .value("Weight (kg)", record.weight)
+            )
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [
+                        Color.kineticsAmber.opacity(0.22),
+                        Color.kineticsAmber.opacity(0.03)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .interpolationMethod(.catmullRom)
+
+            // Line
+            LineMark(
+                x: .value("Date", record.achievedAt),
+                y: .value("Weight (kg)", record.weight)
+            )
+            .foregroundStyle(Color.kineticsAmber)
+            .lineStyle(StrokeStyle(lineWidth: 2.5))
+            .interpolationMethod(.catmullRom)
+
+            // Data point circle
+            PointMark(
+                x: .value("Date", record.achievedAt),
+                y: .value("Weight (kg)", record.weight)
+            )
+            .foregroundStyle(Color.kineticsAmber)
+            .symbolSize(60)
+
+            PointMark(
+                x: .value("Date", record.achievedAt),
+                y: .value("Weight (kg)", record.weight)
+            )
+            .foregroundStyle(Color.kineticsDark)
+            .symbolSize(18)
+        }
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
+                    .foregroundStyle(Color.kineticsSubtext.opacity(0.2))
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(date, format: .dateTime.month(.abbreviated).day())
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.kineticsSubtext)
+                    }
+                }
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
+                    .foregroundStyle(Color.kineticsSubtext.opacity(0.2))
+                AxisValueLabel {
+                    if let kg = value.as(Double.self) {
+                        Text("\(Int(kg)) kg")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.kineticsSubtext)
+                    }
+                }
+            }
+        }
+        .chartPlotStyle { plot in
+            plot.background(Color.clear)
+        }
+        .frame(height: 200)
+    }
+}
+
+// MARK: - PRHistoryRow
+
+private struct PRHistoryRow: View {
+
+    let entry: PersonalRecord
+    let isCurrent: Bool
+
+    private var weightText: String {
+        entry.weight.truncatingRemainder(dividingBy: 1) == 0
+            ? "\(Int(entry.weight)) kg"
+            : String(format: "%.1f kg", entry.weight)
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Date
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.achievedAt, format: .dateTime.month(.abbreviated).day().year())
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+
+                if isCurrent {
+                    Text("Current PR")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.kineticsAmber)
+                }
+            }
+
+            Spacer()
+
+            // Weight
+            Text(weightText)
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundStyle(isCurrent ? Color.kineticsAmber : .white)
+                .monospacedDigit()
+
+            // Reps
+            Text("× \(entry.reps)")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.kineticsSubtext)
+                .frame(width: 40, alignment: .leading)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(isCurrent
+                      ? Color.kineticsAmber.opacity(0.08)
+                      : Color.kineticsMidGray)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(
+                            isCurrent ? Color.kineticsAmber.opacity(0.25) : Color.clear,
+                            lineWidth: 1
+                        )
+                )
+        )
     }
 }
 
@@ -208,7 +704,6 @@ struct BodyMeasurementView: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    // Unit toggle: kg ↔ lbs
                     let unitLabel = showImperial ? "lbs" : "kg"
                     Button {
                         showImperial.toggle()
@@ -266,7 +761,6 @@ struct BodyMeasurementView: View {
 
     // MARK: - Unit Helpers
 
-    /// Converts kg → lbs when `showImperial` is true, then formats.
     private func displayWeight(_ kg: Double) -> String {
         if showImperial {
             let lbs = kg * 2.20462
@@ -314,7 +808,7 @@ struct BodyMeasurementView: View {
     private var measurementList: some View {
         LazyVStack(spacing: 0) {
             ForEach(measurements) { measurement in
-                MeasurementRow(measurement: measurement)
+                BMeasurementRow(measurement: measurement)
                     .background(Color.kineticsDark)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) {
@@ -382,15 +876,14 @@ private struct MeasurementStatCard: View {
     }
 }
 
-// MARK: - MeasurementRow
+// MARK: - BMeasurementRow (renamed to avoid conflict with GymProgressView private struct)
 
-private struct MeasurementRow: View {
+private struct BMeasurementRow: View {
 
     let measurement: BodyMeasurement
 
     var body: some View {
         HStack(spacing: 12) {
-            // Date column
             VStack(alignment: .leading, spacing: 3) {
                 Text(measurement.recordedAt, format: .dateTime.month(.abbreviated).day().year())
                     .font(.subheadline.weight(.semibold))
@@ -406,7 +899,6 @@ private struct MeasurementRow: View {
 
             Spacer()
 
-            // Metrics column
             HStack(spacing: 16) {
                 if measurement.weightKg > 0 {
                     MetricPill(
@@ -463,7 +955,6 @@ private struct MetricPill: View {
 private struct AddMeasurementSheet: View {
 
     let userId: String
-    /// Inherited from parent — determines whether the input label says kg or lbs.
     let showImperial: Bool
     let onSave: () -> Void
 
@@ -498,7 +989,6 @@ private struct AddMeasurementSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    // Unit toggle inside the form
                     HStack {
                         Text("Unit")
                             .foregroundStyle(.white)
@@ -585,8 +1075,6 @@ private struct AddMeasurementSheet: View {
     private func saveMeasurement() {
         let rawWeight = Double(weightText.replacingOccurrences(of: ",", with: ".")) ?? 0
         let parsedBodyFat = Double(bodyFatText.replacingOccurrences(of: ",", with: ".")) ?? 0
-
-        // Always store in kg; convert from lbs if the user entered in imperial.
         let weightKg = useImperial ? rawWeight / 2.20462 : rawWeight
 
         let measurement = BodyMeasurement(

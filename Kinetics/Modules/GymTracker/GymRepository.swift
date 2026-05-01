@@ -172,11 +172,18 @@ extension GymRepository {
     /// Marks a session complete, stamps `endedAt`, and kicks off a background
     /// Firestore sync. The sync failure does not propagate to the caller.
     func completeSession(_ session: WorkoutSession) throws {
-        let ctx = try context
         session.isCompleted = true
         session.endedAt = Date()
-        ctx.insert(session)
-        try saveContext(ctx)
+        // Use the session's own ModelContext so the save reaches the same store
+        // that owns the object. Creating a new context and calling ctx.insert(session)
+        // on an already-tracked object silently fails in SwiftData.
+        if let ctx = session.modelContext {
+            try saveContext(ctx)
+        } else {
+            let ctx = try context
+            ctx.insert(session)
+            try saveContext(ctx)
+        }
 
         // Fire-and-forget — local data is already persisted at this point.
         Task { await syncSessionToFirestore(session, userId: session.userId) }
@@ -764,6 +771,146 @@ private extension GymRepository {
             sortBy: [SortDescriptor(\.achievedAt, order: .reverse)]
         )
         return try ctx.fetch(descriptor)
+    }
+}
+
+// MARK: - Routine Seeding
+
+extension GymRepository {
+
+    /// Seeds 5 test routines for `userId` on first run.
+    /// Idempotent — returns immediately if any routine already exists for this user.
+    func seedTestRoutinesIfNeeded(userId: String) throws {
+        let ctx = try context
+        var checkDescriptor = FetchDescriptor<Routine>(
+            predicate: #Predicate { $0.userId == userId }
+        )
+        checkDescriptor.fetchLimit = 1
+        let existing = try ctx.fetch(checkDescriptor)
+        guard existing.isEmpty else { return }
+
+        // Convenience slot builder
+        func slot(
+            name: String,
+            muscle: String,
+            order: Int,
+            sets: Int,
+            reps: Int,
+            compound: Bool
+        ) -> RoutineExerciseSlot {
+            RoutineExerciseSlot(
+                exerciseId: name.lowercased().replacingOccurrences(of: " ", with: "_"),
+                exerciseName: name,
+                primaryMuscle: muscle,
+                orderIndex: order,
+                targetSets: sets,
+                targetReps: reps,
+                restSeconds: compound ? 120 : 60
+            )
+        }
+
+        let desc = "Test routine — editable"
+
+        // Routine 1: Push Day A
+        let pushDayASlots: [RoutineExerciseSlot] = [
+            slot(name: "Bench Press",            muscle: "Chest",     order: 0, sets: 4, reps: 8,  compound: true),
+            slot(name: "Incline Dumbbell Press", muscle: "Chest",     order: 1, sets: 3, reps: 10, compound: true),
+            slot(name: "Overhead Press",         muscle: "Shoulders", order: 2, sets: 3, reps: 8,  compound: true),
+            slot(name: "Lateral Raises",         muscle: "Shoulders", order: 3, sets: 4, reps: 15, compound: false),
+            slot(name: "Tricep Pushdown",        muscle: "Triceps",   order: 4, sets: 3, reps: 12, compound: false),
+        ]
+        let pushDayA = Routine(
+            userId: userId,
+            name: "Push Day A",
+            routineDescription: desc,
+            exerciseIds: pushDayASlots.map(\.exerciseId),
+            exerciseNames: pushDayASlots.map(\.exerciseName),
+            slots: pushDayASlots,
+            scheduledDays: [],
+            notes: nil
+        )
+        ctx.insert(pushDayA)
+
+        // Routine 2: Pull Day B
+        let pullDayBSlots: [RoutineExerciseSlot] = [
+            slot(name: "Deadlift",       muscle: "Back",      order: 0, sets: 4, reps: 5,  compound: true),
+            slot(name: "Pull-Ups",       muscle: "Back",      order: 1, sets: 3, reps: 8,  compound: true),
+            slot(name: "Barbell Row",    muscle: "Back",      order: 2, sets: 3, reps: 10, compound: true),
+            slot(name: "Face Pulls",     muscle: "Shoulders", order: 3, sets: 3, reps: 15, compound: false),
+            slot(name: "Barbell Curl",   muscle: "Biceps",    order: 4, sets: 3, reps: 10, compound: false),
+        ]
+        let pullDayB = Routine(
+            userId: userId,
+            name: "Pull Day B",
+            routineDescription: desc,
+            exerciseIds: pullDayBSlots.map(\.exerciseId),
+            exerciseNames: pullDayBSlots.map(\.exerciseName),
+            slots: pullDayBSlots,
+            scheduledDays: [],
+            notes: nil
+        )
+        ctx.insert(pullDayB)
+
+        // Routine 3: Leg Day C
+        let legDayCSlots: [RoutineExerciseSlot] = [
+            slot(name: "Squat",              muscle: "Quadriceps", order: 0, sets: 4, reps: 6,  compound: true),
+            slot(name: "Romanian Deadlift",  muscle: "Hamstrings", order: 1, sets: 3, reps: 10, compound: true),
+            slot(name: "Leg Press",          muscle: "Quadriceps", order: 2, sets: 3, reps: 12, compound: true),
+            slot(name: "Leg Curl",           muscle: "Hamstrings", order: 3, sets: 4, reps: 12, compound: false),
+            slot(name: "Calf Raises",        muscle: "Calves",     order: 4, sets: 4, reps: 20, compound: false),
+        ]
+        let legDayC = Routine(
+            userId: userId,
+            name: "Leg Day C",
+            routineDescription: desc,
+            exerciseIds: legDayCSlots.map(\.exerciseId),
+            exerciseNames: legDayCSlots.map(\.exerciseName),
+            slots: legDayCSlots,
+            scheduledDays: [],
+            notes: nil
+        )
+        ctx.insert(legDayC)
+
+        // Routine 4: Upper Power
+        let upperPowerSlots: [RoutineExerciseSlot] = [
+            slot(name: "Bench Press",    muscle: "Chest",     order: 0, sets: 5, reps: 5, compound: true),
+            slot(name: "Pull-Ups",       muscle: "Back",      order: 1, sets: 5, reps: 5, compound: true),
+            slot(name: "Overhead Press", muscle: "Shoulders", order: 2, sets: 5, reps: 5, compound: true),
+            slot(name: "Barbell Row",    muscle: "Back",      order: 3, sets: 4, reps: 6, compound: true),
+        ]
+        let upperPower = Routine(
+            userId: userId,
+            name: "Upper Power",
+            routineDescription: desc,
+            exerciseIds: upperPowerSlots.map(\.exerciseId),
+            exerciseNames: upperPowerSlots.map(\.exerciseName),
+            slots: upperPowerSlots,
+            scheduledDays: [],
+            notes: nil
+        )
+        ctx.insert(upperPower)
+
+        // Routine 5: Full Body
+        let fullBodySlots: [RoutineExerciseSlot] = [
+            slot(name: "Squat",          muscle: "Quadriceps", order: 0, sets: 3, reps: 8, compound: true),
+            slot(name: "Bench Press",    muscle: "Chest",      order: 1, sets: 3, reps: 8, compound: true),
+            slot(name: "Deadlift",       muscle: "Back",       order: 2, sets: 3, reps: 5, compound: true),
+            slot(name: "Pull-Ups",       muscle: "Back",       order: 3, sets: 3, reps: 8, compound: true),
+            slot(name: "Overhead Press", muscle: "Shoulders",  order: 4, sets: 3, reps: 8, compound: true),
+        ]
+        let fullBody = Routine(
+            userId: userId,
+            name: "Full Body",
+            routineDescription: desc,
+            exerciseIds: fullBodySlots.map(\.exerciseId),
+            exerciseNames: fullBodySlots.map(\.exerciseName),
+            slots: fullBodySlots,
+            scheduledDays: [],
+            notes: nil
+        )
+        ctx.insert(fullBody)
+
+        try saveContext(ctx)
     }
 }
 

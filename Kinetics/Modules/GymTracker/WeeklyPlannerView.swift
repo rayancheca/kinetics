@@ -101,9 +101,11 @@ struct WeeklyPlanListView: View {
                     Spacer()
                     createButton
                         .padding(.trailing, 20)
-                        .padding(.bottom, 28)
+                        // 34pt home indicator + extra breathing room
+                        .padding(.bottom, 34)
                 }
             }
+            .ignoresSafeArea(edges: .bottom)
         }
         .onAppear { viewModel.load(userId: uid) }
         .sheet(isPresented: $showCreatePlan, onDismiss: { viewModel.load(userId: uid) }) {
@@ -140,10 +142,14 @@ struct WeeklyPlanListView: View {
                         onDelete: { viewModel.delete(plan: plan, userId: uid) }
                     )
                 }
-                // Bottom space for FAB
-                Spacer().frame(height: 80)
             }
             .padding(.horizontal, 16)
+            // Bottom padding so the last card clears the FAB + home indicator
+            .padding(.bottom, 100)
+        }
+        // Ensures the scroll view's content area stops above the FAB overlay
+        .safeAreaInset(edge: .bottom) {
+            Color.clear.frame(height: 80)
         }
     }
 
@@ -443,10 +449,11 @@ struct WeeklyPlanEditorView: View {
                         startDateField
                         repeatPicker
                         daySlotsSection
-                        Spacer().frame(height: 40)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
+                    // Bottom padding to clear home indicator and keyboard
+                    .padding(.bottom, 40)
                 }
             }
             .navigationTitle(existingPlan == nil ? "New Split" : "Edit Split")
@@ -795,10 +802,15 @@ struct DayAssignmentSheet: View {
                         if selectedRoutineId != nil {
                             muscleGroupDisplay
                         }
-                        Spacer().frame(height: 40)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
+                    // Bottom padding to clear home indicator inside a sheet
+                    .padding(.bottom, 34)
+                }
+                // Reserve space at the bottom so the last item is always scrollable into view
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: 0)
                 }
             }
             .navigationTitle("Assign Day")
@@ -1155,8 +1167,11 @@ struct StartWorkoutSheet: View {
     let activePlan: WeeklyPlan?
     let routines: [Routine]
     let onStart: (Routine?) -> Void
+    /// Optional — pass the user's UID to enable "Create a Routine First" navigation in the empty state.
+    var userId: String = ""
 
     @State private var selectedRoutineId: String?
+    @State private var showRoutineBuilder = false
 
     private var todaySlot: WeeklyDaySlot? {
         let dow = Calendar.current.component(.weekday, from: Date()) - 1
@@ -1169,18 +1184,27 @@ struct StartWorkoutSheet: View {
                 Color.black.ignoresSafeArea()
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 20) {
-                        // Today's planned workout
-                        if let slot = todaySlot, slot.routineId != nil {
-                            todaySection(slot: slot)
+                        if routines.isEmpty {
+                            // Empty state: two clear options
+                            emptyStateSection
+                        } else {
+                            // Today's planned workout
+                            if let slot = todaySlot, slot.routineId != nil {
+                                todaySection(slot: slot)
+                            }
+
+                            // All routines
+                            allRoutinesSection
                         }
-
-                        // All routines
-                        allRoutinesSection
-
-                        Spacer().frame(height: 20)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
+                    // Bottom padding so the last routine row clears the sticky start button
+                    .padding(.bottom, 20)
+                }
+                // Push scroll content above the sticky start button
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: routines.isEmpty ? 20 : 88)
                 }
             }
             .navigationTitle("Start Workout")
@@ -1194,7 +1218,17 @@ struct StartWorkoutSheet: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                startButton
+                if !routines.isEmpty {
+                    startButton
+                }
+            }
+            .navigationDestination(isPresented: $showRoutineBuilder) {
+                if !userId.isEmpty {
+                    RoutineBuilderView(userId: userId) {
+                        showRoutineBuilder = false
+                        dismiss()
+                    }
+                }
             }
         }
         .presentationDetents([.medium, .large])
@@ -1204,6 +1238,105 @@ struct StartWorkoutSheet: View {
             if let slot = todaySlot, let rid = slot.routineId {
                 selectedRoutineId = rid
             }
+        }
+    }
+
+    // MARK: - Empty State
+
+    private var emptyStateSection: some View {
+        VStack(spacing: 14) {
+            Text("How do you want to train?")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 4)
+
+            // Option 1: Quick Start (Empty)
+            Button {
+                onStart(nil)
+                dismiss()
+            } label: {
+                HStack(spacing: 14) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.kineticsBlue.opacity(0.15))
+                            .frame(width: 50, height: 50)
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(Color.kineticsBlue)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Quick Start (Empty)")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text("No plan, just lift. Add exercises as you go.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.kineticsSubtext)
+                            .lineLimit(2)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.kineticsBlue)
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color(white: 0.09))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .strokeBorder(Color.kineticsBlue.opacity(0.3), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+
+            // Option 2: Create a Routine First
+            Button {
+                if !userId.isEmpty {
+                    showRoutineBuilder = true
+                }
+            } label: {
+                HStack(spacing: 14) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.kineticsPurple.opacity(0.15))
+                            .frame(width: 50, height: 50)
+                        Image(systemName: "list.bullet.clipboard")
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(Color.kineticsPurple)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Create a Routine First")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text("Build a template to reuse. Takes 2 minutes.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.kineticsSubtext)
+                            .lineLimit(2)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.kineticsPurple)
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color(white: 0.09))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .strokeBorder(Color.kineticsPurple.opacity(0.3), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -1397,7 +1530,12 @@ struct StartWorkoutSheet: View {
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 20)
-        .padding(.bottom, 12)
+        // 34pt home indicator + 8pt visual breathing room
+        .padding(.bottom, 34)
+        .background(
+            Color.black
+                .ignoresSafeArea(edges: .bottom)
+        )
     }
 }
 

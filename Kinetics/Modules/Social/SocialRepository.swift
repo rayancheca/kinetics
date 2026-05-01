@@ -47,22 +47,43 @@ final class SocialRepository {
     /// Fetches the most recent `limit` feed items from the global `activity`
     /// collection, ordered by `postedAt` descending.
     ///
+    /// When `after` is provided, the query returns only items with a `postedAt`
+    /// timestamp (milliseconds since epoch) strictly less than that value,
+    /// enabling cursor-based pagination.
+    ///
     /// Documents that fail to decode are silently skipped so a single corrupt
     /// document cannot surface an error to the UI.
     ///
     /// Returns an empty array when Firebase is not configured.
-    func fetchFeed(limit: Int = 30) async throws -> [FeedItem] {
+    func fetchFeed(after lastPostedAt: Double? = nil, limit: Int = 15) async throws -> [FeedItem] {
         guard isFirebaseReady else { return [] }
 
-        let snapshot = try await db
+        var query = db
             .collection("activity")
             .order(by: "postedAt", descending: true)
             .limit(to: limit)
-            .getDocuments()
+
+        if let cursor = lastPostedAt {
+            query = query.whereField("postedAt", isLessThan: cursor)
+        }
+
+        let snapshot = try await query.getDocuments()
 
         return snapshot.documents.compactMap { document in
             try? decodeFeedItem(from: document.data())
         }
+    }
+
+    /// Fetches the user IDs that `userId` is following.
+    ///
+    /// Returns an empty array when Firebase is not configured.
+    func fetchFollowingIds(for userId: String) async throws -> [String] {
+        guard isFirebaseReady else { return [] }
+        let snap = try await db
+            .collection("users").document(userId)
+            .collection("following")
+            .getDocuments()
+        return snap.documents.compactMap { $0.data()["userId"] as? String }
     }
 
     // MARK: - User Activities
@@ -297,6 +318,82 @@ final class SocialRepository {
                   let jsonData = try? JSONSerialization.data(withJSONObject: dict) else { return nil }
             return try? decoder.decode(CommentModel.self, from: jsonData)
         }
+    }
+
+    // MARK: - Reactions
+
+    /// Adds a typed reaction from `userId` to `activityId`.
+    ///
+    /// Firestore path: `kudos/{activityId}/reactions/{userId}`
+    /// Document: `{"type": reactionType, "addedAt": millisecondTimestamp}`
+    ///
+    /// No-ops when Firebase is not configured.
+    func addReaction(_ type: String, to activityId: String, userId: String) async throws {
+        guard isFirebaseReady else { return }
+
+        try await db
+            .collection("kudos")
+            .document(activityId)
+            .collection("reactions")
+            .document(userId)
+            .setData([
+                "type": type,
+                "addedAt": Date().timeIntervalSince1970 * 1_000
+            ])
+
+        logActivity(event: "reaction_added", parameters: [
+            "activity_id": activityId as NSString,
+            "reaction_type": type as NSString
+        ])
+    }
+
+    /// Removes a typed reaction from `userId` on `activityId`.
+    ///
+    /// No-ops when Firebase is not configured.
+    func removeReaction(_ type: String, from activityId: String, userId: String) async throws {
+        guard isFirebaseReady else { return }
+
+        try await db
+            .collection("kudos")
+            .document(activityId)
+            .collection("reactions")
+            .document(userId)
+            .delete()
+
+        logActivity(event: "reaction_removed", parameters: [
+            "activity_id": activityId as NSString,
+            "reaction_type": type as NSString
+        ])
+    }
+
+    // MARK: - postComment convenience (CommentSheetView)
+
+    /// Posts a comment using individual fields — convenience wrapper for `CommentSheetView`.
+    ///
+    /// No-ops when Firebase is not configured.
+    func postComment(
+        activityId: String,
+        userId: String,
+        displayName: String,
+        username: String,
+        text: String
+    ) async throws {
+        let comment = ActivityComment(
+            id: UUID().uuidString,
+            userId: userId,
+            displayName: displayName,
+            avatarURL: "",
+            text: text,
+            postedAt: Date()
+        )
+        try await postComment(comment, activityId: activityId)
+    }
+
+    /// Fetches comments for the given activity ID (alias matching `CommentSheetView` call-site).
+    ///
+    /// Returns an empty array when Firebase is not configured.
+    func fetchComments(for activityId: String) async throws -> [ActivityComment] {
+        try await fetchComments(activityId: activityId)
     }
 
     // MARK: - Stories
@@ -551,6 +648,103 @@ final class SocialRepository {
         }
     }
 
+    // MARK: - Search & Discover
+
+    /// Searches for users whose username starts with the lowercased `query` string.
+    ///
+    /// Uses Firestore prefix matching: `startAt(query) endAt(query + "\u{f8ff}")`.
+    /// Returns an empty array when Firebase is not configured.
+    func searchUsers(query: String) async throws -> [UserProfile] {
+        guard isFirebaseReady else { return [] }
+        let lower = query.lowercased()
+        let snapshot = try await db
+            .collection("users")
+            .order(by: "data.username")
+            .start(at: [lower])
+            .end(at: [lower + "\u{f8ff}"])
+            .limit(to: 20)
+            .getDocuments()
+        return snapshot.documents.compactMap { doc -> UserProfile? in
+            guard let raw = doc.data()["data"] as? [String: Any] else { return nil }
+            return try? decodeProfile(from: raw)
+        }
+    }
+
+    /// Fetches a `UserProfile` for `userId` or returns `nil` when not found.
+    ///
+    /// Returns `nil` when Firebase is not configured.
+    func fetchUserProfile(userId: String) async throws -> UserProfile? {
+        guard isFirebaseReady else { return nil }
+        let doc = try await db.collection("users").document(userId).getDocument()
+        guard doc.exists, let raw = doc.data()?["data"] as? [String: Any] else { return nil }
+        return try? decodeProfile(from: raw)
+    }
+
+    /// Returns the number of activity documents posted by `userId`.
+    ///
+    /// Returns `0` when Firebase is not configured.
+    func fetchUserPostCount(userId: String) async throws -> Int {
+        guard isFirebaseReady else { return 0 }
+        let snap = try await db
+            .collection("activity")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments()
+        return snap.documents.count
+    }
+
+    /// Returns up to `limit` user profiles sorted by `totalWorkouts` descending.
+    ///
+    /// Returns an empty array when Firebase is not configured.
+    func fetchTopAthletes(limit: Int = 8) async throws -> [UserProfile] {
+        guard isFirebaseReady else { return [] }
+        let snapshot = try await db
+            .collection("users")
+            .order(by: "data.totalWorkouts", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+        return snapshot.documents.compactMap { doc -> UserProfile? in
+            guard let raw = doc.data()["data"] as? [String: Any] else { return nil }
+            return try? decodeProfile(from: raw)
+        }
+    }
+
+    /// Returns up to `limit` feed items with the highest kudos count posted in the last 7 days.
+    ///
+    /// Returns an empty array when Firebase is not configured.
+    func fetchTrendingWorkouts(limit: Int = 3) async throws -> [FeedItem] {
+        guard isFirebaseReady else { return [] }
+        let since = Date(timeIntervalSinceNow: -7 * 86_400).timeIntervalSince1970 * 1_000
+        let snapshot = try await db
+            .collection("activity")
+            .whereField("postedAt", isGreaterThan: since)
+            .order(by: "postedAt", descending: true)
+            .limit(to: 50)
+            .getDocuments()
+        let items = snapshot.documents.compactMap { try? decodeFeedItem(from: $0.data()) }
+        return Array(items.sorted { $0.kudosCount > $1.kudosCount }.prefix(limit))
+    }
+
+    /// Fetches users that `currentUserId` is not yet following, up to `limit`.
+    ///
+    /// Returns an empty array when Firebase is not configured.
+    func fetchSuggestedAthletes(currentUserId: String, limit: Int = 10) async throws -> [UserProfile] {
+        guard isFirebaseReady else { return [] }
+        let followingIds = (try? await fetchFollowingIds(for: currentUserId)) ?? []
+        var excluded = Set(followingIds)
+        excluded.insert(currentUserId)
+
+        let snapshot = try await db
+            .collection("users")
+            .limit(to: limit + excluded.count)
+            .getDocuments()
+
+        let profiles = snapshot.documents.compactMap { doc -> UserProfile? in
+            guard let raw = doc.data()["data"] as? [String: Any] else { return nil }
+            return try? decodeProfile(from: raw)
+        }
+        return Array(profiles.filter { !excluded.contains($0.id) }.prefix(limit))
+    }
+
     // MARK: - User Profile
 
     /// Fetches the `UserProfile` stored at `users/{userId}`.
@@ -597,15 +791,26 @@ final class SocialRepository {
 
         let data = try encoder.encode(item)
 
-        guard let dict = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        guard var dict = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw SocialRepositoryError.encodingFailed
+        }
+        // Firestore rejects nested arrays ([[Double]]). Serialize routeCoordinates as a JSON string.
+        if let coords = dict["routeCoordinates"],
+           let coordData = try? JSONSerialization.data(withJSONObject: coords) {
+            dict["routeCoordinates"] = String(data: coordData, encoding: .utf8)
         }
         return dict
     }
 
     private func decodeFeedItem(from wrapper: [String: Any]) throws -> FeedItem {
-        guard let dict = wrapper["data"] as? [String: Any] else {
+        guard var dict = wrapper["data"] as? [String: Any] else {
             throw SocialRepositoryError.decodingFailed
+        }
+        // Deserialize routeCoordinates back from JSON string to [[Double]].
+        if let coordString = dict["routeCoordinates"] as? String,
+           let coordData = coordString.data(using: .utf8),
+           let coords = try? JSONSerialization.jsonObject(with: coordData) {
+            dict["routeCoordinates"] = coords
         }
 
         let jsonData = try JSONSerialization.data(withJSONObject: dict)

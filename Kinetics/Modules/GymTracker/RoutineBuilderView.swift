@@ -993,6 +993,154 @@ struct SlotEditSheet: View {
     }
 }
 
+// MARK: - RoutineTemplate
+
+struct RoutineTemplate: Identifiable, Sendable {
+    struct ExerciseSpec: Sendable {
+        let name: String
+        let primaryMuscle: String
+    }
+
+    let id: String
+    let name: String
+    let muscleFocus: String
+    let gradientColors: [Color]
+    let exercises: [ExerciseSpec]
+
+    var exerciseCount: Int { exercises.count }
+
+    func makeSlots() -> [RoutineExerciseSlot] {
+        exercises.enumerated().map { index, spec in
+            RoutineExerciseSlot(
+                exerciseId: UUID().uuidString,
+                exerciseName: spec.name,
+                primaryMuscle: spec.primaryMuscle,
+                orderIndex: index,
+                targetSets: 3,
+                targetReps: 10,
+                restSeconds: 90
+            )
+        }
+    }
+
+    // MARK: - Built-in presets
+
+    static let all: [RoutineTemplate] = [
+        RoutineTemplate(
+            id: "push-day",
+            name: "Push Day",
+            muscleFocus: "Chest · Shoulders · Triceps",
+            gradientColors: [Color(red: 0.25, green: 0.72, blue: 1.0), Color(red: 0.55, green: 0.35, blue: 1.0)],
+            exercises: [
+                .init(name: "Bench Press", primaryMuscle: "Chest"),
+                .init(name: "Incline Dumbbell Press", primaryMuscle: "Chest"),
+                .init(name: "Overhead Press", primaryMuscle: "Shoulders"),
+                .init(name: "Lateral Raises", primaryMuscle: "Shoulders"),
+                .init(name: "Tricep Pushdown", primaryMuscle: "Triceps"),
+                .init(name: "Skull Crushers", primaryMuscle: "Triceps")
+            ]
+        ),
+        RoutineTemplate(
+            id: "pull-day",
+            name: "Pull Day",
+            muscleFocus: "Back · Biceps",
+            gradientColors: [Color(red: 0.22, green: 1.0, blue: 0.69), Color(red: 0.20, green: 0.85, blue: 1.0)],
+            exercises: [
+                .init(name: "Deadlift", primaryMuscle: "Back"),
+                .init(name: "Pull-Ups", primaryMuscle: "Back"),
+                .init(name: "Barbell Row", primaryMuscle: "Back"),
+                .init(name: "Seated Cable Row", primaryMuscle: "Back"),
+                .init(name: "Face Pulls", primaryMuscle: "Shoulders"),
+                .init(name: "Barbell Curl", primaryMuscle: "Biceps"),
+                .init(name: "Hammer Curl", primaryMuscle: "Biceps")
+            ]
+        ),
+        RoutineTemplate(
+            id: "leg-day",
+            name: "Leg Day",
+            muscleFocus: "Quads · Hamstrings · Glutes",
+            gradientColors: [Color(red: 0.95, green: 0.35, blue: 0.45), Color(red: 1.0, green: 0.55, blue: 0.70)],
+            exercises: [
+                .init(name: "Squat", primaryMuscle: "Quadriceps"),
+                .init(name: "Romanian Deadlift", primaryMuscle: "Hamstrings"),
+                .init(name: "Leg Press", primaryMuscle: "Quadriceps"),
+                .init(name: "Lunges", primaryMuscle: "Quadriceps"),
+                .init(name: "Leg Curl", primaryMuscle: "Hamstrings"),
+                .init(name: "Calf Raises", primaryMuscle: "Calves")
+            ]
+        ),
+        RoutineTemplate(
+            id: "upper-body",
+            name: "Upper Body",
+            muscleFocus: "Chest · Back · Shoulders",
+            gradientColors: [Color(red: 1.0, green: 0.80, blue: 0.20), Color(red: 1.0, green: 0.45, blue: 0.20)],
+            exercises: [
+                .init(name: "Bench Press", primaryMuscle: "Chest"),
+                .init(name: "Pull-Ups", primaryMuscle: "Back"),
+                .init(name: "Overhead Press", primaryMuscle: "Shoulders"),
+                .init(name: "Barbell Row", primaryMuscle: "Back"),
+                .init(name: "Dips", primaryMuscle: "Triceps"),
+                .init(name: "Cable Fly", primaryMuscle: "Chest")
+            ]
+        ),
+        RoutineTemplate(
+            id: "full-body",
+            name: "Full Body",
+            muscleFocus: "Full Body",
+            gradientColors: [Color.white.opacity(0.7), Color(red: 0.55, green: 0.55, blue: 0.60)],
+            exercises: [
+                .init(name: "Squat", primaryMuscle: "Quadriceps"),
+                .init(name: "Bench Press", primaryMuscle: "Chest"),
+                .init(name: "Deadlift", primaryMuscle: "Back"),
+                .init(name: "Pull-Ups", primaryMuscle: "Back"),
+                .init(name: "Overhead Press", primaryMuscle: "Shoulders")
+            ]
+        ),
+        RoutineTemplate(
+            id: "chest-triceps",
+            name: "Chest & Triceps",
+            muscleFocus: "Chest · Triceps",
+            gradientColors: [Color(red: 0.25, green: 0.72, blue: 1.0), Color(red: 0.90, green: 0.35, blue: 0.90)],
+            exercises: [
+                .init(name: "Bench Press", primaryMuscle: "Chest"),
+                .init(name: "Incline Press", primaryMuscle: "Chest"),
+                .init(name: "Cable Fly", primaryMuscle: "Chest"),
+                .init(name: "Chest Dips", primaryMuscle: "Chest"),
+                .init(name: "Tricep Pushdown", primaryMuscle: "Triceps"),
+                .init(name: "Close Grip Bench", primaryMuscle: "Triceps")
+            ]
+        ),
+        RoutineTemplate(
+            id: "back-biceps",
+            name: "Back & Biceps",
+            muscleFocus: "Back · Biceps",
+            gradientColors: [Color(red: 0.22, green: 1.0, blue: 0.69), Color(red: 0.55, green: 0.35, blue: 1.0)],
+            exercises: [
+                .init(name: "Deadlift", primaryMuscle: "Back"),
+                .init(name: "Pull-Ups", primaryMuscle: "Back"),
+                .init(name: "Seated Row", primaryMuscle: "Back"),
+                .init(name: "Lat Pulldown", primaryMuscle: "Back"),
+                .init(name: "Barbell Curl", primaryMuscle: "Biceps"),
+                .init(name: "Incline Curl", primaryMuscle: "Biceps")
+            ]
+        ),
+        RoutineTemplate(
+            id: "bro-shoulders",
+            name: "Bro Split Shoulders",
+            muscleFocus: "Shoulders",
+            gradientColors: [Color(red: 1.0, green: 0.80, blue: 0.20), Color(red: 0.22, green: 1.0, blue: 0.69)],
+            exercises: [
+                .init(name: "Overhead Press", primaryMuscle: "Shoulders"),
+                .init(name: "Lateral Raises", primaryMuscle: "Shoulders"),
+                .init(name: "Front Raises", primaryMuscle: "Shoulders"),
+                .init(name: "Rear Delt Fly", primaryMuscle: "Shoulders"),
+                .init(name: "Upright Row", primaryMuscle: "Shoulders"),
+                .init(name: "Shrugs", primaryMuscle: "Trapezius")
+            ]
+        )
+    ]
+}
+
 // MARK: - RoutineBuilderViewModel
 
 @Observable
@@ -1005,6 +1153,7 @@ final class RoutineBuilderViewModel {
     var selectedSlots: [RoutineExerciseSlot] = []
     var scheduledDays = Set<Int>()
     var showExercisePicker = false
+    var showTemplatePicker = false
     var editingSlot: RoutineExerciseSlot?
     var isSaving = false
 
@@ -1032,6 +1181,13 @@ final class RoutineBuilderViewModel {
             orderIndex: selectedSlots.count
         )
         selectedSlots.append(slot)
+    }
+
+    func applyTemplate(_ template: RoutineTemplate) {
+        selectedSlots = template.makeSlots()
+        if routineName.trimmingCharacters(in: .whitespaces).isEmpty {
+            routineName = template.name
+        }
     }
 
     func removeSlot(at offsets: IndexSet) {
@@ -1084,8 +1240,10 @@ struct RoutineBuilderView: View {
                 VStack(spacing: 0) {
                     progressBar
                     stepContent
-                    bottomBar
                 }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                bottomBar
             }
             .navigationTitle("New Routine")
             .navigationBarTitleDisplayMode(.inline)
@@ -1101,6 +1259,11 @@ struct RoutineBuilderView: View {
             .sheet(isPresented: $viewModel.showExercisePicker) {
                 ExercisePickerView { exercise in
                     viewModel.addExercise(exercise)
+                }
+            }
+            .sheet(isPresented: $viewModel.showTemplatePicker) {
+                TemplatePickerSheet { template in
+                    viewModel.applyTemplate(template)
                 }
             }
             .sheet(item: $viewModel.editingSlot) { slot in
@@ -1160,25 +1323,37 @@ struct RoutineBuilderView: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
 
-            TextField("e.g. Upper Body Push", text: $viewModel.routineName)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.white)
-                .tint(Color.kineticsPurple)
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.kineticsDark)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(
-                                    viewModel.routineName.isEmpty
-                                        ? Color.clear
-                                        : Color.kineticsPurple.opacity(0.4),
-                                    lineWidth: 1.5
-                                )
-                        )
-                )
-                .padding(.horizontal, 20)
+            VStack(alignment: .leading, spacing: 10) {
+                TextField("e.g. Upper Body Push", text: $viewModel.routineName)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .tint(Color.kineticsPurple)
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.kineticsDark)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .strokeBorder(
+                                        viewModel.routineName.isEmpty
+                                            ? Color.clear
+                                            : Color.kineticsPurple.opacity(0.4),
+                                        lineWidth: 1.5
+                                    )
+                            )
+                    )
+
+                HStack(spacing: 6) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.kineticsSubtext.opacity(0.6))
+                    Text("Name your routine, add exercises, then save. You can start it anytime from the home screen.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.kineticsSubtext.opacity(0.6))
+                }
+                .padding(.horizontal, 4)
+            }
+            .padding(.horizontal, 20)
 
             Spacer()
         }
@@ -1209,17 +1384,61 @@ struct RoutineBuilderView: View {
     }
 
     private var addFirstExercisePrompt: some View {
-        VStack(spacing: 20) {
-            Spacer()
+        VStack(spacing: 16) {
+            // Template banner — prominent when list is empty
+            Button {
+                viewModel.showTemplatePicker = true
+            } label: {
+                HStack(spacing: 14) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color.kineticsPurple.opacity(0.18))
+                            .frame(width: 44, height: 44)
+                        Image(systemName: "rectangle.stack.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(Color.kineticsPurple)
+                    }
 
-            Image(systemName: "dumbbell.fill")
-                .font(.system(size: 44, weight: .light))
-                .foregroundStyle(Color.kineticsPurple.opacity(0.5))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Start from a template")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text("8 ready-made routines to get you going")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.kineticsSubtext)
+                    }
 
-            Text("Tap \"Add Exercise\" to build your routine")
-                .font(.subheadline)
-                .foregroundStyle(Color.kineticsSubtext)
-                .multilineTextAlignment(.center)
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.kineticsSubtext.opacity(0.5))
+                }
+                .padding(14)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.kineticsDark)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(Color.kineticsPurple.opacity(0.35), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
+
+            HStack {
+                Rectangle()
+                    .fill(Color.kineticsSubtext.opacity(0.15))
+                    .frame(height: 1)
+                Text("or build from scratch")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.kineticsSubtext.opacity(0.5))
+                Rectangle()
+                    .fill(Color.kineticsSubtext.opacity(0.15))
+                    .frame(height: 1)
+            }
+            .padding(.horizontal, 20)
 
             Button {
                 viewModel.showExercisePicker = true
@@ -1238,53 +1457,92 @@ struct RoutineBuilderView: View {
 
             Spacer()
         }
+        .padding(.top, 4)
         .frame(maxWidth: .infinity)
     }
 
-    private var exerciseBuilderList: some View {
-        List {
-            ForEach($viewModel.selectedSlots, id: \.id) { $slot in
-                BuilderExerciseRow(slot: slot) {
-                    viewModel.editingSlot = slot
+    private var exerciseListSummary: some View {
+        HStack(spacing: 6) {
+            let count = viewModel.selectedSlots.count
+            let mins = builderEstimatedMinutes
+            Text("\(count) exercise\(count == 1 ? "" : "s") · ~\(mins) min estimated")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.kineticsSubtext)
+
+            Spacer()
+
+            // Template shortcut when list already has exercises
+            Button {
+                viewModel.showTemplatePicker = true
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "rectangle.stack")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("Templates")
+                        .font(.system(size: 11, weight: .semibold))
                 }
-                .listRowBackground(Color.kineticsDark)
-                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-                .listRowSeparator(.hidden)
-                .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) {
-                        if let idx = viewModel.selectedSlots.firstIndex(where: { $0.id == slot.id }) {
-                            viewModel.removeSlot(at: IndexSet(integer: idx))
+                .foregroundStyle(Color.kineticsPurple.opacity(0.85))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule()
+                        .fill(Color.kineticsPurple.opacity(0.12))
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 8)
+    }
+
+    private var exerciseBuilderList: some View {
+        VStack(spacing: 0) {
+            exerciseListSummary
+
+            List {
+                ForEach($viewModel.selectedSlots, id: \.id) { $slot in
+                    BuilderExerciseRow(slot: slot) {
+                        viewModel.editingSlot = slot
+                    }
+                    .listRowBackground(Color.kineticsDark)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                    .listRowSeparator(.hidden)
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) {
+                            if let idx = viewModel.selectedSlots.firstIndex(where: { $0.id == slot.id }) {
+                                viewModel.removeSlot(at: IndexSet(integer: idx))
+                            }
+                        } label: {
+                            Label("Remove", systemImage: "minus.circle.fill")
                         }
-                    } label: {
-                        Label("Remove", systemImage: "minus.circle.fill")
                     }
                 }
-            }
-            .onMove { source, dest in
-                viewModel.moveSlot(from: source, to: dest)
-            }
-            .onDelete { offsets in
-                viewModel.removeSlot(at: offsets)
-            }
-
-            Button {
-                viewModel.showExercisePicker = true
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 16))
-                    Text("Add Exercise")
-                        .font(.system(size: 15, weight: .medium))
+                .onMove { source, dest in
+                    viewModel.moveSlot(from: source, to: dest)
                 }
-                .foregroundStyle(Color.kineticsPurple)
-                .padding(.vertical, 4)
+                .onDelete { offsets in
+                    viewModel.removeSlot(at: offsets)
+                }
+
+                Button {
+                    viewModel.showExercisePicker = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 16))
+                        Text("Add Exercise")
+                            .font(.system(size: 15, weight: .medium))
+                    }
+                    .foregroundStyle(Color.kineticsPurple)
+                    .padding(.vertical, 4)
+                }
+                .listRowBackground(Color.kineticsDark)
+                .listRowInsets(EdgeInsets(top: 4, leading: 14, bottom: 4, trailing: 14))
             }
-            .listRowBackground(Color.kineticsDark)
-            .listRowInsets(EdgeInsets(top: 4, leading: 14, bottom: 4, trailing: 14))
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .environment(\.editMode, .constant(.active))
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .environment(\.editMode, .constant(.active))
     }
 
     // MARK: - Step 3: Schedule
@@ -1424,7 +1682,7 @@ struct RoutineBuilderView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
-            .padding(.bottom, 24)
+            .padding(.bottom, 16)
         }
         .background(Color.kineticsBackground)
     }
@@ -1454,6 +1712,118 @@ struct RoutineBuilderView: View {
             return acc + setTime + restTime
         }
         return max(1, Int(ceil(Double(totalSeconds) / 60.0)))
+    }
+}
+
+// MARK: - TemplatePickerSheet
+
+@MainActor
+private struct TemplatePickerSheet: View {
+
+    let onSelect: (RoutineTemplate) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.kineticsBackground.ignoresSafeArea()
+
+                ScrollView(.vertical, showsIndicators: false) {
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ForEach(RoutineTemplate.all) { template in
+                            TemplateCard(template: template) {
+                                onSelect(template)
+                                dismiss()
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 32)
+                }
+            }
+            .navigationTitle("Choose a Template")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.kineticsBackground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundStyle(Color.kineticsSubtext)
+                }
+            }
+        }
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Color.kineticsBackground)
+    }
+}
+
+// MARK: - TemplateCard
+
+@MainActor
+private struct TemplateCard: View {
+
+    let template: RoutineTemplate
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 10) {
+                // Gradient accent bar
+                LinearGradient(
+                    colors: template.gradientColors,
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(height: 3)
+                .clipShape(Capsule())
+
+                Text(template.name)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(template.muscleFocus)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(template.gradientColors.first ?? Color.kineticsPurple)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer(minLength: 0)
+
+                HStack(spacing: 4) {
+                    Image(systemName: "dumbbell.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Color.kineticsSubtext.opacity(0.6))
+                    Text("\(template.exerciseCount) exercises")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.kineticsSubtext.opacity(0.6))
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.kineticsDark)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: template.gradientColors.map { $0.opacity(0.3) },
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

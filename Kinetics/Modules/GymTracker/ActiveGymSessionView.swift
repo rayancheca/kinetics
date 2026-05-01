@@ -388,6 +388,7 @@ struct ActiveGymSessionView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: ActiveGymSessionViewModel
     @State private var isEditingName = false
+    @State private var showExitConfirm = false
     @FocusState private var nameFieldFocused: Bool
 
     init(session: WorkoutSession) {
@@ -446,11 +447,13 @@ struct ActiveGymSessionView: View {
             FinishWorkoutSheet(viewModel: viewModel, onSave: {
                 do {
                     try viewModel.completeSession(userId: session.userId)
-                    dismiss()
+                    // Don't dismiss yet — sheet stays open for "Share to Feed" / "Done" choice.
                 } catch {
                     viewModel.errorMessage = error.localizedDescription
                     viewModel.showFinishSheet = false
                 }
+            }, onComplete: {
+                dismiss()
             }, onDiscard: {
                 dismiss()
             })
@@ -463,6 +466,25 @@ struct ActiveGymSessionView: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
+        .confirmationDialog(
+            "End this workout?",
+            isPresented: $showExitConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Save & Finish", role: .destructive) {
+                // Mark complete so the timer stops and the resume banner disappears.
+                try? viewModel.completeSession(userId: session.userId)
+                dismiss()
+            }
+            Button("Pause — Resume Later", role: .none) {
+                // Dismiss without completing — banner will let user resume.
+                dismiss()
+            }
+            Button("Keep Going", role: .cancel) {}
+        } message: {
+            Text("Save & Finish records your session. Pause lets you resume from the home screen.")
+        }
+        .interactiveDismissDisabled(true)
         .animation(.spring(duration: 0.3), value: viewModel.showRestTimer)
         .animation(.spring(duration: 0.25), value: viewModel.exerciseCount)
     }
@@ -471,6 +493,18 @@ struct ActiveGymSessionView: View {
 
     private var headerBar: some View {
         HStack(spacing: 12) {
+            // Exit button — shows confirmation before dismissing
+            Button {
+                showExitConfirm = true
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.kineticsSubtext)
+                    .padding(8)
+                    .background(Circle().fill(Color(white: 0.13)))
+            }
+            .buttonStyle(.plain)
+
             Group {
                 if isEditingName {
                     TextField("Workout name", text: $viewModel.workoutName)
@@ -821,34 +855,45 @@ private struct ExerciseCard: View {
     // MARK: Card Header
 
     private var cardHeader: some View {
-        Button(action: onToggleExpand) {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(entry.exerciseName)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
+        // Two independent tap targets: expand (name/left) and info flip (right icons).
+        // Previously nested inside one Button, which caused SwiftUI to route all taps
+        // to onToggleExpand and never reach the flip button.
+        HStack(spacing: 0) {
+            Button(action: onToggleExpand) {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(entry.exerciseName)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
 
-                    HStack(spacing: 8) {
-                        HStack(spacing: 3) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 10))
-                                .foregroundStyle(completedSets > 0 ? Color.kineticsGreen : Color.kineticsSubtext)
-                            Text("\(completedSets)/\(totalSets) sets")
-                                .font(.system(size: 12))
-                                .foregroundStyle(Color.kineticsSubtext)
-                        }
-                        if entryVolume > 0 {
-                            Text("·").foregroundStyle(Color.kineticsSubtext.opacity(0.5))
-                            Text(formattedEntryVolume)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color.kineticsGreen)
+                        HStack(spacing: 8) {
+                            HStack(spacing: 3) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(completedSets > 0 ? Color.kineticsGreen : Color.kineticsSubtext)
+                                Text("\(completedSets)/\(totalSets) sets")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.kineticsSubtext)
+                            }
+                            if entryVolume > 0 {
+                                Text("·").foregroundStyle(Color.kineticsSubtext.opacity(0.5))
+                                Text(formattedEntryVolume)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(Color.kineticsGreen)
+                            }
                         }
                     }
+                    Spacer()
                 }
-                Spacer()
+                .padding(.leading, 14)
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
-                // Info flip button
+            // Info flip + chevron — separate from the expand button
+            HStack(spacing: 10) {
                 Button {
                     withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
                         isFlipped.toggle()
@@ -863,11 +908,11 @@ private struct ExerciseCard: View {
                 Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Color.kineticsSubtext)
+                    .onTapGesture { onToggleExpand() }
             }
-            .padding(.horizontal, 14)
+            .padding(.trailing, 14)
             .padding(.vertical, 12)
         }
-        .buttonStyle(.plain)
     }
 
     // MARK: Column Headers
@@ -1457,11 +1502,45 @@ private struct RestTimerOverlay: View {
 private struct FinishWorkoutSheet: View {
 
     let viewModel: ActiveGymSessionViewModel
+    /// Called when the user taps "Save Workout". Does NOT dismiss the outer view.
     let onSave: () -> Void
+    /// Called after save when the user taps "Done" or dismisses — dismisses the outer view.
+    let onComplete: () -> Void
     let onDiscard: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var notes: String = ""
+    @State private var showShareComposer = false
+    /// Set to true once the user has saved the workout so the post-save row appears.
+    @State private var sessionSaved = false
+
+    // MARK: - Share helpers
+
+    private func buildActivity() -> PostComposerActivity {
+        let exercises: [ExerciseSummary] = viewModel.session.entries.map { entry in
+            let completedSets = entry.sets.filter { $0.isCompleted }
+            let topWeight = completedSets.map(\.weight).max() ?? 0
+            return ExerciseSummary(
+                name: entry.exerciseName,
+                sets: completedSets.count,
+                topWeightKg: topWeight,
+                totalReps: completedSets.reduce(0) { $0 + $1.reps },
+                muscleGroup: ""
+            )
+        }
+        let totalVolume = viewModel.totalVolumeKg
+        let durationMinutes = Int(viewModel.elapsedTime) / 60
+        return PostComposerActivity(
+            kind: .gym(exercises: exercises, totalVolume: totalVolume, durationMinutes: durationMinutes),
+            sessionTitle: viewModel.workoutName
+        )
+    }
+
+    private var composerCaption: String {
+        "Just finished \(viewModel.workoutName)! 💪"
+    }
+
+    private var userId: String { viewModel.session.userId }
 
     var body: some View {
         NavigationStack {
@@ -1625,28 +1704,67 @@ private struct FinishWorkoutSheet: View {
                                              in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                         }
 
-                        Button {
-                            if !notes.isEmpty { viewModel.session.notes = notes }
-                            onSave()
-                        } label: {
-                            Text("Save Workout")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(.black)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color.kineticsGreen,
-                                             in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        }
+                        if sessionSaved {
+                            // Post-save action row: share or dismiss
+                            VStack(spacing: 12) {
+                                Button {
+                                    showShareComposer = true
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "square.and.arrow.up")
+                                            .font(.system(size: 15, weight: .semibold))
+                                        Text("Share to Feed")
+                                            .font(.system(size: 16, weight: .bold))
+                                    }
+                                    .foregroundStyle(.black)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(Color.kineticsBlue,
+                                                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                }
 
-                        Button {
-                            dismiss()
-                            onDiscard()
-                        } label: {
-                            Text("Discard Workout")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(Color.kineticsRed.opacity(0.85))
+                                Button {
+                                    dismiss()
+                                    onComplete()
+                                } label: {
+                                    Text("Done")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundStyle(Color.kineticsSubtext)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 14)
+                                        .background(Color.kineticsDark,
+                                                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                }
+                            }
+                            .padding(.bottom, 24)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        } else {
+                            Button {
+                                if !notes.isEmpty { viewModel.session.notes = notes }
+                                onSave()
+                                withAnimation(.spring(duration: 0.3)) {
+                                    sessionSaved = true
+                                }
+                            } label: {
+                                Text("Save Workout")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(.black)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(Color.kineticsGreen,
+                                                 in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            }
+
+                            Button {
+                                dismiss()
+                                onDiscard()
+                            } label: {
+                                Text("Discard Workout")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(Color.kineticsRed.opacity(0.85))
+                            }
+                            .padding(.bottom, 24)
                         }
-                        .padding(.bottom, 24)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
@@ -1666,6 +1784,16 @@ private struct FinishWorkoutSheet: View {
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationBackground(Color.kineticsBackground)
+        .sheet(isPresented: $showShareComposer) {
+            PostComposerView(
+                currentUserId: userId,
+                currentDisplayName: viewModel.workoutName,
+                username: "",
+                initialCaption: composerCaption,
+                initialActivity: buildActivity(),
+                onPost: { _ in }
+            )
+        }
     }
 
     private func bestSetsPerExercise() -> [(exerciseName: String, weight: Double, reps: Int)] {

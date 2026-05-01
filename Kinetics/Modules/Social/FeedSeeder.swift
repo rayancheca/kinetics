@@ -22,21 +22,25 @@ final class FeedSeeder {
 
     // MARK: - Public API
 
-    /// Checks the `_meta/feed_seeded` flag and seeds only if absent.
+    /// Checks the `_meta/feed_seeded_v3` flag and seeds only if absent.
+    /// Uses v3 to force a fresh seed that includes comments, follows, and kudos.
     func seedIfNeeded() async {
         guard FirebaseApp.app() != nil else { return }
-        let flagDoc = try? await db.collection("_meta").document("feed_seeded").getDocument()
+        let flagDoc = try? await db.collection("_meta").document("feed_seeded_v3").getDocument()
         if flagDoc?.exists == true { return }
         await seed()
-        try? await db.collection("_meta").document("feed_seeded")
+        try? await db.collection("_meta").document("feed_seeded_v3")
             .setData(["seededAt": Date().timeIntervalSince1970])
     }
 
-    /// Unconditionally writes all demo users and posts to Firestore.
+    /// Unconditionally writes all demo users, posts, follows, comments, and kudos to Firestore.
     func seed() async {
         guard FirebaseApp.app() != nil else { return }
         await seedUsers()
         await seedPosts()
+        await seedFollows()
+        await seedComments()
+        await seedKudos()
     }
 
     // MARK: - Demo User Data
@@ -759,14 +763,259 @@ final class FeedSeeder {
         }
     }
 
+    // MARK: - Seed Follows
+
+    private func seedFollows() async {
+        // Maps each follower to the list of users they follow.
+        let followGraph: [String: [String]] = [
+            "demo_001": ["demo_002", "demo_003", "demo_005", "demo_007"],
+            "demo_002": ["demo_001", "demo_006", "demo_004"],
+            "demo_003": ["demo_001", "demo_004", "demo_005", "demo_008"],
+            "demo_004": ["demo_003", "demo_001", "demo_009"],
+            "demo_005": ["demo_001", "demo_002", "demo_006", "demo_007"],
+            "demo_006": ["demo_002", "demo_005", "demo_010"],
+            "demo_007": ["demo_001", "demo_003", "demo_005"],
+            "demo_008": ["demo_003", "demo_004", "demo_009"],
+            "demo_009": ["demo_004", "demo_008", "demo_010"],
+            "demo_010": ["demo_001", "demo_002", "demo_005"],
+        ]
+
+        let now = Date().timeIntervalSince1970
+
+        for (followerId, followingIds) in followGraph {
+            for followingId in followingIds {
+                await writeFollow(
+                    followerId: followerId,
+                    followingId: followingId,
+                    createdAt: now
+                )
+            }
+        }
+    }
+
+    private func writeFollow(followerId: String, followingId: String, createdAt: Double) async {
+        let docId = "\(followerId)_\(followingId)"
+        let data: [String: Any] = [
+            "followerId": followerId,
+            "followingId": followingId,
+            "status": "accepted",
+            "createdAt": createdAt,
+        ]
+        try? await db.collection("follows")
+            .document(docId)
+            .setData(data)
+    }
+
+    // MARK: - Seed Comments
+
+    private func seedComments() async {
+        // Comment pool keyed by activity type, used to pick realistic text.
+        let ironComments = [
+            "Bro that lift is filthy 🔥",
+            "What program are you running?",
+            "Goals 💪",
+            "That's insane volume for one session",
+            "How long did this take you?",
+            "Numbers don't lie. Solid work.",
+            "That top set looks smooth",
+            "What's the diet looking like rn?",
+            "When's the next comp?",
+        ]
+        let strikingComments = [
+            "Those combos looked clean",
+            "Hip rotation on that cross was 🔑",
+            "When's the fight?",
+            "Flow state right there",
+            "Velocity numbers are insane 😤",
+            "That guard recovery is elite",
+            "Footwork is next level",
+            "Chin down, hands up 💪",
+        ]
+        let grapplingComments = [
+            "That kuzushi score is crazy",
+            "How's comp prep going?",
+            "Base looks rock solid",
+            "Drilling or live rounds?",
+            "Those hip entries are clean",
+            "Your timing is getting sharper every week",
+            "Tournament when?",
+            "Entry speed is 🔥",
+        ]
+        let wallComments = [
+            "V9 is next 👀",
+            "How long did that project take?",
+            "That footwork is insane",
+            "Hip proximity numbers are great",
+            "Send it!!! 🧗",
+            "Beta looks dialled in",
+            "That dyno arc is massive",
+            "Slab always humbles everyone lol",
+        ]
+        let runComments = [
+            "Marathon pace? 😤",
+            "What GPS watch are you using?",
+            "Splits look great!",
+            "Aerobic base looking strong",
+            "That's some serious mileage",
+            "Recovery run goals 🏃",
+            "Hills are no joke, respect",
+            "Intervals looking sharp",
+        ]
+
+        // Lookup helper: user id → (displayName, username)
+        let userInfo: [String: (String, String)] = [
+            "demo_001": ("Alex Rivera",    "@alex_r"),
+            "demo_002": ("Jordan Kim",     "@jkim_lifts"),
+            "demo_003": ("Sam Torres",     "@samtorres"),
+            "demo_004": ("Casey Nguyen",   "@casey_wall"),
+            "demo_005": ("Morgan Davies",  "@morg_fit"),
+            "demo_006": ("Riley Chen",     "@rileyfit"),
+            "demo_007": ("Taylor Brooks",  "@tbrooks"),
+            "demo_008": ("Drew Martinez",  "@drewruns"),
+            "demo_009": ("Quinn Anderson", "@quinn_bjj"),
+            "demo_010": ("Blake Foster",   "@bfoster"),
+        ]
+
+        // First 15 posts — (postId, authorId, activityType)
+        let targetPosts: [(String, String, String)] = [
+            ("demo_post_001", "demo_002", "iron"),
+            ("demo_post_002", "demo_002", "iron"),
+            ("demo_post_003", "demo_006", "iron"),
+            ("demo_post_004", "demo_003", "run"),
+            ("demo_post_005", "demo_003", "run"),
+            ("demo_post_006", "demo_008", "run"),
+            ("demo_post_007", "demo_008", "run"),
+            ("demo_post_008", "demo_001", "striking"),
+            ("demo_post_009", "demo_001", "striking"),
+            ("demo_post_010", "demo_007", "striking"),
+            ("demo_post_011", "demo_007", "striking"),
+            ("demo_post_012", "demo_005", "grappling"),
+            ("demo_post_013", "demo_005", "grappling"),
+            ("demo_post_014", "demo_009", "grappling"),
+            ("demo_post_015", "demo_009", "grappling"),
+        ]
+
+        let allUserIds = Array(userInfo.keys)
+
+        for (postId, authorId, activityType) in targetPosts {
+            // Pick comment pool by type
+            let pool: [String]
+            switch activityType {
+            case "iron":       pool = ironComments
+            case "striking":   pool = strikingComments
+            case "grappling":  pool = grapplingComments
+            case "wall":       pool = wallComments
+            default:           pool = runComments
+            }
+
+            // Pick 2-4 commenters that are not the post author, no duplicates
+            let candidates = allUserIds.filter { $0 != authorId }.shuffled()
+            let commentCount = 2 + (candidates.hashValue % 3 < 2 ? candidates.hashValue % 3 : 2) // 2–4
+            let commenters = Array(candidates.prefix(max(2, min(4, candidates.count))))
+            let commentTexts = pool.shuffled()
+
+            var count = 0
+            for (index, commenterId) in commenters.enumerated() {
+                guard let commenterInfo = userInfo[commenterId] else { continue }
+                let commentId = UUID().uuidString
+                let offsetSeconds = Double(index + 1) * 1_800 // 30-min gaps
+                let ts = Date(timeIntervalSinceNow: -86_400 + offsetSeconds).timeIntervalSince1970 * 1_000
+                let text = commentTexts[index % commentTexts.count]
+
+                let commentData: [String: Any] = [
+                    "data": [
+                        "id": commentId,
+                        "activityId": postId,
+                        "userId": commenterId,
+                        "displayName": commenterInfo.0,
+                        "username": commenterInfo.1,
+                        "text": text,
+                        "createdAt": ts,
+                    ] as [String: Any],
+                ]
+
+                try? await db.collection("comments")
+                    .document(postId)
+                    .collection("entries")
+                    .document(commentId)
+                    .setData(commentData)
+                count += 1
+            }
+
+            // Update commentCount on the post document
+            if count > 0 {
+                try? await db.collection("activity")
+                    .document(postId)
+                    .updateData(["data.commentCount": count])
+            }
+        }
+    }
+
+    // MARK: - Seed Kudos
+
+    private func seedKudos() async {
+        // All 25 posts — (postId, authorId) pairs
+        let allPosts: [(String, String)] = [
+            ("demo_post_001", "demo_002"), ("demo_post_002", "demo_002"),
+            ("demo_post_003", "demo_006"), ("demo_post_004", "demo_003"),
+            ("demo_post_005", "demo_003"), ("demo_post_006", "demo_008"),
+            ("demo_post_007", "demo_008"), ("demo_post_008", "demo_001"),
+            ("demo_post_009", "demo_001"), ("demo_post_010", "demo_007"),
+            ("demo_post_011", "demo_007"), ("demo_post_012", "demo_005"),
+            ("demo_post_013", "demo_005"), ("demo_post_014", "demo_009"),
+            ("demo_post_015", "demo_009"), ("demo_post_016", "demo_004"),
+            ("demo_post_017", "demo_004"), ("demo_post_018", "demo_010"),
+            ("demo_post_019", "demo_010"), ("demo_post_020", "demo_006"),
+            ("demo_post_021", "demo_003"), ("demo_post_022", "demo_001"),
+            ("demo_post_023", "demo_009"), ("demo_post_024", "demo_004"),
+            ("demo_post_025", "demo_008"),
+        ]
+
+        let allUserIds = [
+            "demo_001", "demo_002", "demo_003", "demo_004", "demo_005",
+            "demo_006", "demo_007", "demo_008", "demo_009", "demo_010",
+        ]
+
+        for (postId, authorId) in allPosts {
+            let candidates = allUserIds.filter { $0 != authorId }.shuffled()
+            // 3–8 kudos per post
+            let kudosCountSeed = abs(postId.hashValue) % 6
+            let kudosCount = 3 + kudosCountSeed  // 3 to 8
+            let likers = Array(candidates.prefix(kudosCount))
+            let now = Date().timeIntervalSince1970
+
+            for likerId in likers {
+                await writeKudo(postId: postId, userId: likerId, likedAt: now)
+            }
+
+            // Update kudosCount on the post document
+            try? await db.collection("activity")
+                .document(postId)
+                .updateData(["data.kudosCount": likers.count])
+        }
+    }
+
+    private func writeKudo(postId: String, userId: String, likedAt: Double) async {
+        try? await db.collection("kudos")
+            .document(postId)
+            .collection("likes")
+            .document(userId)
+            .setData(["likedAt": likedAt])
+    }
+
     // MARK: - Private Write Helpers
 
     private func writeFeedItem(_ item: FeedItem) async {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .millisecondsSince1970
         guard let data = try? encoder.encode(item),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+              var json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else { return }
+        // Firestore rejects nested arrays ([[Double]]). Serialize routeCoordinates as JSON string.
+        if let coords = json["routeCoordinates"],
+           let coordData = try? JSONSerialization.data(withJSONObject: coords) {
+            json["routeCoordinates"] = String(data: coordData, encoding: .utf8)
+        }
         try? await db.collection("activity")
             .document(item.id)
             .setData([

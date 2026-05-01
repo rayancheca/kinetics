@@ -194,6 +194,10 @@ struct FeedItem: Codable, Identifiable, Sendable, Hashable {
 
     var kudosCount: Int
     var commentCount: Int
+    /// Per-type reaction counts, e.g. `["strong": 5, "fire": 3]`.
+    /// Populated client-side from the reactions sub-collection; not stored
+    /// directly on the activity document.
+    var reactions: [String: Int]
 
     // MARK: Transient Client State (not stored in Firestore)
 
@@ -212,8 +216,8 @@ struct FeedItem: Codable, Identifiable, Sendable, Hashable {
 
     // MARK: CodingKeys
 
-    /// Exclude `isLikedByCurrentUser` from Firestore serialisation — it is a
-    /// computed client state value resolved after each fetch.
+    /// Exclude `isLikedByCurrentUser` and `reactions` from Firestore
+    /// serialisation — both are transient client state resolved after each fetch.
     enum CodingKeys: String, CodingKey {
         case id, userId, displayName, username, avatarURL
         case itemType, title, subtitle, caption, metrics
@@ -244,8 +248,9 @@ struct FeedItem: Codable, Identifiable, Sendable, Hashable {
         commentCount = try c.decode(Int.self, forKey: .commentCount)
         workoutId = try c.decode(String.self, forKey: .workoutId)
         activityType = try c.decode(String.self, forKey: .activityType)
-        // Resolved client-side after fetch; default to false on decode.
+        // Resolved client-side after fetch; defaults set here.
         isLikedByCurrentUser = false
+        reactions = [:]
     }
 
     // MARK: Memberwise Init
@@ -268,6 +273,7 @@ struct FeedItem: Codable, Identifiable, Sendable, Hashable {
         kudosCount: Int,
         commentCount: Int,
         isLikedByCurrentUser: Bool,
+        reactions: [String: Int] = [:],
         workoutId: String,
         activityType: String
     ) {
@@ -288,6 +294,7 @@ struct FeedItem: Codable, Identifiable, Sendable, Hashable {
         self.kudosCount = kudosCount
         self.commentCount = commentCount
         self.isLikedByCurrentUser = isLikedByCurrentUser
+        self.reactions = reactions
         self.workoutId = workoutId
         self.activityType = activityType
     }

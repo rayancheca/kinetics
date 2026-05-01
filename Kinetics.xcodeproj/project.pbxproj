@@ -7,9 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BB33CC44DD55EE66FF0012AA /* SearchDiscoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB33CC44DD55EE66FF0011AA /* SearchDiscoverView.swift */; };
+		BB33CC44DD55EE66FF0014AA /* UserProfilePreviewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB33CC44DD55EE66FF0013AA /* UserProfilePreviewSheet.swift */; };
+		AA22BB33CC44DD55EE66FF02 /* CommentSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA22BB33CC44DD55EE66FF01 /* CommentSheetView.swift */; };
 		09F67684245B876B24959826 /* ActiveGymSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19FEB8C998F1CF53FF5240E /* ActiveGymSessionView.swift */; };
 		0C296E87D17F3ABEF24D62CD /* SocialModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0EA76A613EE66A3CFB9842 /* SocialModels.swift */; };
-		AA11BB22CC33DD44EE55FF66 /* FeedSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF66EE55DD44CC33BB22AA11 /* FeedSeeder.swift */; };
 		0FC3C27122B7C7C1C81A087B /* Color+Kinetics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */; };
 		0FEB7175E23B33B615E506B0 /* UserProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E64295A75846A5227141320D /* UserProfileView.swift */; };
 		1088DCBF512BA3FBC2F0C253 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CF8E2F952DD6ED295C43EA /* HomeView.swift */; };
@@ -78,6 +80,7 @@
 		A4E9C776BB171B6613E9ED20 /* SessionHistoryRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */; };
 		A70F65FBDE4CF6DAE811721F /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B1FF2C59121834922C934E /* LocationService.swift */; };
 		A7EB212670DDD460DB8E7437 /* WorkoutHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FEEAE8C16C0B711D260D1FF /* WorkoutHistoryView.swift */; };
+		AA11BB22CC33DD44EE55FF66 /* FeedSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF66EE55DD44CC33BB22AA11 /* FeedSeeder.swift */; };
 		AA6BC3F080A242F41C7D41AE /* VideoLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C373127039F43C920BEF03AB /* VideoLibraryView.swift */; };
 		AD1940CAB68916B38A79570F /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9EC3A501E98D2D04B904ABB /* MainTabView.swift */; };
 		ADDD4F6B55D3F9E1E5611FED /* PermissionsGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514D783F0279F09D15F268E7 /* PermissionsGateView.swift */; };
@@ -111,6 +114,7 @@
 		F78FC26BC5B4F42C0099A839 /* KineticsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3648047108B6B4CA0E33C4CF /* KineticsApp.swift */; };
 		F90A5D952B85707BC02B18C8 /* ProfileCharts.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC54442084B6FB301EA5443D /* ProfileCharts.swift */; };
 		FDBD12D7A1E09F769C5884E1 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC032562411DDDC1ED7D376 /* HistoryView.swift */; };
+		FF00AA11BB22CC33DD44EE02 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FF00AA11BB22CC33DD44EE01 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -138,6 +142,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		BB33CC44DD55EE66FF0011AA /* SearchDiscoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchDiscoverView.swift; sourceTree = "<group>"; };
+		BB33CC44DD55EE66FF0013AA /* UserProfilePreviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfilePreviewSheet.swift; sourceTree = "<group>"; };
+		AA22BB33CC44DD55EE66FF01 /* CommentSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentSheetView.swift; sourceTree = "<group>"; };
 		04CF8E2F952DD6ED295C43EA /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		05FB80A5C42F07AC82B0487B /* StrikingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingView.swift; sourceTree = "<group>"; };
 		099853C55F62679C9537A8A4 /* SocialRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialRepository.swift; sourceTree = "<group>"; };
@@ -146,8 +153,7 @@
 		0DC032562411DDDC1ED7D376 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		121AC521FEFB5BC065773CAB /* InjuryRiskDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjuryRiskDetector.swift; sourceTree = "<group>"; };
 		13DBF71E832EBFB691D3BFC4 /* FeedCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedCards.swift; sourceTree = "<group>"; };
-		FF66EE55DD44CC33BB22AA11 /* FeedSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedSeeder.swift; sourceTree = "<group>"; };
-		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerViewModel.swift; sourceTree = "<group>"; };
 		17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
 		17CCE96B7C847EF00BEF33CE /* GymRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymRootView.swift; sourceTree = "<group>"; };
@@ -209,7 +215,7 @@
 		BDB11B92F27E39BC17FD0099 /* SessionFeedPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionFeedPublisher.swift; sourceTree = "<group>"; };
 		C18D64B47167CC6B91712D56 /* KineticsWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KineticsWidget.entitlements; sourceTree = "<group>"; };
 		C19FEB8C998F1CF53FF5240E /* ActiveGymSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveGymSessionView.swift; sourceTree = "<group>"; };
-		C302C404B5BD0B3928CB0E8C /* KineticsWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KineticsWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C302C404B5BD0B3928CB0E8C /* KineticsWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = KineticsWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingView.swift; sourceTree = "<group>"; };
 		C373127039F43C920BEF03AB /* VideoLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoLibraryView.swift; sourceTree = "<group>"; };
 		C47432F57057C58AB5AF1802 /* GrapplingSessionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingSessionReportView.swift; sourceTree = "<group>"; };
@@ -240,7 +246,9 @@
 		F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseOverlayView.swift; sourceTree = "<group>"; };
 		FC54442084B6FB301EA5443D /* ProfileCharts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileCharts.swift; sourceTree = "<group>"; };
 		FC7934535B95DCFCD9079D79 /* TrackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackView.swift; sourceTree = "<group>"; };
+		FF00AA11BB22CC33DD44EE01 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		FF26AF759C2CAF15557EA802 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
+		FF66EE55DD44CC33BB22AA11 /* FeedSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedSeeder.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -352,6 +360,7 @@
 				D49473F70C3A0FC347D9C256 /* Firebase */,
 				FE8C116C97DB23818D059A1C /* Home */,
 				1DBBE7E53ECFD6CF81AC88E6 /* Modules */,
+				FF00AA11BB22CC33DD44EE04 /* Resources */,
 				BA34FFB5D046EAD7A03EBC9B /* Shared */,
 			);
 			path = Kinetics;
@@ -514,15 +523,18 @@
 		DE4D16577BA0BA14DBAFE8F4 /* Social */ = {
 			isa = PBXGroup;
 			children = (
+				AA22BB33CC44DD55EE66FF01 /* CommentSheetView.swift */,
 				13DBF71E832EBFB691D3BFC4 /* FeedCards.swift */,
 				FF66EE55DD44CC33BB22AA11 /* FeedSeeder.swift */,
 				6E248662A4970A12F5F6FAD9 /* FeedView.swift */,
 				2CBFCFDE32BD99B33A071261 /* FollowListView.swift */,
 				33F4AFAEB7790E70D530C73E /* PostComposerView.swift */,
 				FC54442084B6FB301EA5443D /* ProfileCharts.swift */,
+				BB33CC44DD55EE66FF0011AA /* SearchDiscoverView.swift */,
 				BDB11B92F27E39BC17FD0099 /* SessionFeedPublisher.swift */,
 				7F0EA76A613EE66A3CFB9842 /* SocialModels.swift */,
 				099853C55F62679C9537A8A4 /* SocialRepository.swift */,
+				BB33CC44DD55EE66FF0013AA /* UserProfilePreviewSheet.swift */,
 				E64295A75846A5227141320D /* UserProfileView.swift */,
 			);
 			path = Social;
@@ -559,6 +571,14 @@
 			path = Home;
 			sourceTree = "<group>";
 		};
+		FF00AA11BB22CC33DD44EE04 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				FF00AA11BB22CC33DD44EE01 /* GoogleService-Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -585,6 +605,7 @@
 			buildPhases = (
 				FC13FF98C07B93D6D17F9E25 /* Sources */,
 				38910400C9BF7C3AF1620A86 /* Frameworks */,
+				FF00AA11BB22CC33DD44EE03 /* Resources */,
 				2D1C6D9D10D5F2C7AAA38263 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -613,11 +634,9 @@
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					4E104892220093A4B2F8B724 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					9BB8A80AA6448CB87A29DDBD = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -645,6 +664,17 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		FF00AA11BB22CC33DD44EE03 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FF00AA11BB22CC33DD44EE02 /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		EEF2820FAE98973E1AA6A8AC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -658,6 +688,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA22BB33CC44DD55EE66FF02 /* CommentSheetView.swift in Sources */,
+				BB33CC44DD55EE66FF0012AA /* SearchDiscoverView.swift in Sources */,
+				BB33CC44DD55EE66FF0014AA /* UserProfilePreviewSheet.swift in Sources */,
 				09F67684245B876B24959826 /* ActiveGymSessionView.swift in Sources */,
 				756D56E0ED10FC641E17194E /* ActiveWorkoutView.swift in Sources */,
 				2AD660E8DBBF5FFCB432177C /* AppState.swift in Sources */,
@@ -842,7 +875,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = Kinetics/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -922,7 +955,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = Kinetics/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -942,7 +975,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = KineticsWidget/KineticsWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = KineticsWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -962,7 +995,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = KineticsWidget/KineticsWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = KineticsWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -11,37 +11,69 @@ struct ActivityFeedCard: View {
     let onKudos: () async -> Void
     let onComment: () -> Void
     var onDelete: (() async -> Void)? = nil
+    var onAvatarTap: (() -> Void)? = nil
 
     @State private var showDeleteConfirm = false
     @State private var heartScale: CGFloat = 1.0
     @State private var floatOffset: CGFloat = 0
     @State private var floatOpacity: Double = 0
+    @State private var burstParticles: [BurstParticle] = []
+    @State private var showReactionPicker = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sportHeaderBand
-            VStack(alignment: .leading, spacing: 14) {
-                headerRow
-                titleBlock
-                metricsRow
+            // 1. Header row (avatar + name + sport badge)
+            cardHeader
+            // 2. Sport gradient banner strip
+            sportBannerStrip
+            // 3. Body content with padding
+            VStack(alignment: .leading, spacing: 12) {
+                // 3a. Caption
                 captionBlock
-                exerciseList
-                routeMap
-                Divider().background(Color.white.opacity(0.07))
-                actionRow
+                // 3b. Content block (sport-specific)
+                contentBlock
+                // 3c. Stats row for gym / run
+                statsRow
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 14)
             .padding(.top, 12)
-            .padding(.bottom, 14)
+            .padding(.bottom, 4)
+            // 4. Divider + Interaction bar
+            Divider()
+                .background(Color.white.opacity(0.07))
+                .padding(.horizontal, 14)
+                .padding(.top, 6)
+            interactionBar
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
         }
-        .background(Color(white: 0.07), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
+        .background(Color(white: 0.06), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.07), lineWidth: 1)
+        )
+        .shadow(color: primarySportColor.opacity(item.isLikedByCurrentUser ? 0.22 : 0.10), radius: 12, x: 0, y: 4)
+        // Burst particles overlay
+        .overlay(alignment: .bottomLeading) {
+            ZStack {
+                ForEach(burstParticles) { p in
+                    Circle()
+                        .fill(primarySportColor)
+                        .frame(width: p.size, height: p.size)
+                        .offset(x: p.x, y: p.y)
+                        .opacity(p.opacity)
+                        .scaleEffect(p.scale)
+                }
+            }
+            .offset(x: 18, y: -44)
+        }
+        // Floating "+1" kudos indicator
         .overlay(alignment: .bottomLeading) {
             if showFloatingKudos {
                 Text("+1")
                     .font(.system(size: 15, weight: .black, design: .rounded))
-                    .foregroundStyle(Color.red)
-                    .offset(x: 60, y: floatOffset)
+                    .foregroundStyle(primarySportColor)
+                    .offset(x: 62, y: floatOffset)
                     .opacity(floatOpacity)
                     .onAppear {
                         floatOffset = 0
@@ -66,60 +98,83 @@ struct ActivityFeedCard: View {
         } message: { Text("This can't be undone.") }
     }
 
-    // MARK: Sport Header Band
+    // MARK: - Card Header
 
-    private var sportHeaderBand: some View {
-        LinearGradient(colors: sportGradientColors(for: item.activityType), startPoint: .leading, endPoint: .trailing)
-            .frame(height: 40)
-            .clipShape(.rect(topLeadingRadius: 16, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 16))
-            .overlay(alignment: .leading) {
-                HStack(spacing: 8) {
-                    Image(systemName: activityIcon(item.activityType))
-                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
-                    Text(activityLabel(item.activityType))
-                        .font(.system(size: 12, weight: .semibold, design: .rounded)).foregroundStyle(.white)
-                }
-                .padding(.leading, 14)
-            }
-    }
-
-    // MARK: Header Row
-
-    private var headerRow: some View {
+    private var cardHeader: some View {
         HStack(spacing: 10) {
             avatarView
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.displayName)
-                    .font(.system(.subheadline, design: .rounded, weight: .bold))
-                    .foregroundStyle(.white).lineLimit(1)
-                Text("@\(item.username)").font(.caption).foregroundStyle(Color.kineticsSubtext).lineLimit(1)
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                Text("@\(item.username)")
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundStyle(Color.kineticsSubtext)
+                    .lineLimit(1)
             }
             Spacer()
-            Text(timeAgo(item.postedAt)).font(.caption2).foregroundStyle(Color.kineticsSubtext)
+            VStack(alignment: .trailing, spacing: 4) {
+                sportBadgePill
+                Text(relativeTimestamp(item.postedAt))
+                    .font(.system(size: 11, design: .rounded))
+                    .foregroundStyle(Color.kineticsSubtext)
+            }
         }
+        .padding(.horizontal, 14)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
     }
 
+    // MARK: - Avatar
+
     private var avatarView: some View {
-        ZStack {
+        let core = ZStack {
+            // Sport-color ring
+            Circle()
+                .strokeBorder(
+                    LinearGradient(
+                        colors: sportGradientColors(for: item.activityType),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 2
+                )
+                .frame(width: 44, height: 44)
+
             if !item.avatarURL.isEmpty, let url = URL(string: item.avatarURL) {
-                AsyncImage(url: url) { image in image.resizable().scaledToFill() }
-                    placeholder: { defaultAvatar }
-                    .frame(width: 40, height: 40).clipShape(Circle())
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    avatarInitialsView
+                }
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
             } else {
-                defaultAvatar
+                avatarInitialsView
+            }
+        }
+        return Group {
+            if let tap = onAvatarTap {
+                Button(action: tap) { core }
+                    .buttonStyle(.plain)
+            } else {
+                core
             }
         }
     }
 
-    /// Shows a sport emoji for known demo users; falls back to an initials circle.
-    private var defaultAvatar: some View {
+    private var avatarInitialsView: some View {
         let resolved = resolvedAvatar(for: item.userId, displayName: item.displayName)
         return ZStack {
             Circle()
-                .fill(LinearGradient(
-                    colors: [Color.kineticsPurple, Color.kineticsBlue.opacity(0.7)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                ))
+                .fill(
+                    LinearGradient(
+                        colors: [Color.kineticsPurple, Color.kineticsBlue.opacity(0.7)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .frame(width: 40, height: 40)
             if resolved.isEmoji {
                 Text(resolved.text).font(.system(size: 20))
@@ -138,15 +193,9 @@ struct ActivityFeedCard: View {
 
     private func resolvedAvatar(for userId: String, displayName: String) -> AvatarContent {
         let emojiMap: [String: String] = [
-            "demo_001": "🥊",
-            "demo_002": "🏋️",
-            "demo_003": "🏃",
-            "demo_004": "🧗",
-            "demo_005": "🤼",
-            "demo_006": "🏋️",
-            "demo_007": "🥋",
-            "demo_008": "🏃‍♂️",
-            "demo_009": "🤼‍♂️",
+            "demo_001": "🥊", "demo_002": "🏋️", "demo_003": "🏃",
+            "demo_004": "🧗", "demo_005": "🤼", "demo_006": "🏋️",
+            "demo_007": "🥋", "demo_008": "🏃‍♂️", "demo_009": "🤼‍♂️",
             "demo_010": "🧗‍♂️",
         ]
         if let emoji = emojiMap[userId] {
@@ -155,53 +204,111 @@ struct ActivityFeedCard: View {
         return AvatarContent(text: String(displayName.prefix(1).uppercased()), isEmoji: false)
     }
 
-    // MARK: Title Block
+    // MARK: - Sport Badge Pill
 
-    private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(item.title).font(.system(.callout, design: .rounded, weight: .bold)).foregroundStyle(.white).lineLimit(2)
-            if !item.subtitle.isEmpty {
-                Text(item.subtitle).font(.caption).foregroundStyle(Color.kineticsSubtext).lineLimit(1)
-            }
-        }
+    private var sportBadgePill: some View {
+        Text(sportBadgeLabel(item.activityType))
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .foregroundStyle(.white)
+            .tracking(0.8)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                LinearGradient(
+                    colors: sportGradientColors(for: item.activityType),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                in: Capsule()
+            )
     }
 
-    // MARK: Metrics Row
+    // MARK: - Sport Banner Strip
 
-    @ViewBuilder
-    private var metricsRow: some View {
-        let displayMetrics = Array(item.metrics.prefix(3))
-        if !displayMetrics.isEmpty {
-            HStack(spacing: 0) {
-                ForEach(displayMetrics.indices, id: \.self) { index in
-                    FeedMetricCell(metric: displayMetrics[index])
-                    if index < displayMetrics.count - 1 {
-                        Divider().frame(height: 28).background(Color.white.opacity(0.1))
-                    }
-                }
-            }
-            .padding(.vertical, 10)
-            .background(Color.kineticsBackground.opacity(0.6), in: RoundedRectangle(cornerRadius: 10))
-        }
+    private var sportBannerStrip: some View {
+        LinearGradient(
+            colors: sportGradientColors(for: item.activityType),
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+        .frame(height: 4)
+        .drawingGroup()
     }
 
-    // MARK: Caption Block
+    // MARK: - Caption
 
     @ViewBuilder
     private var captionBlock: some View {
         if let caption = item.caption, !caption.isEmpty {
             Text(caption)
-                .font(.system(size: 14))
-                .foregroundStyle(.white.opacity(0.88))
+                .font(.system(size: 14, weight: .regular, design: .rounded).italic())
+                .foregroundStyle(.white.opacity(0.9))
                 .lineSpacing(3)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 2)
         }
     }
 
-    // MARK: Exercise List
+    // MARK: - Sport-specific Content Block
 
     @ViewBuilder
-    private var exerciseList: some View {
+    private var contentBlock: some View {
+        switch item.activityType {
+        case "run", "ride":
+            runContent
+        case "ironTracker", "gym":
+            gymContent
+        default:
+            // striking, grappling, wall — big metric tiles
+            combatMetricGrid
+        }
+    }
+
+    // MARK: Run / GPS Content
+
+    private var runContent: some View {
+        VStack(spacing: 10) {
+            if let coords = item.routeCoordinates, coords.count >= 2 {
+                FeedRouteMapView(coordinates: coords)
+                    .frame(height: 160)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            if !item.metrics.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(item.metrics.prefix(3), id: \.label) { m in
+                        metricChip(label: m.label, value: m.value, unit: m.unit)
+                    }
+                }
+            }
+        }
+    }
+
+    private func metricChip(label: String, value: String, unit: String) -> some View {
+        VStack(spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                if !unit.isEmpty {
+                    Text(unit)
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color.kineticsSubtext)
+                }
+            }
+            Text(label)
+                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color.kineticsSubtext)
+                .tracking(0.5)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(Color(white: 0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    // MARK: Gym / Iron Content
+
+    @ViewBuilder
+    private var gymContent: some View {
         if let summaries = item.exerciseSummaries, !summaries.isEmpty {
             VStack(spacing: 0) {
                 ForEach(Array(summaries.prefix(4).enumerated()), id: \.offset) { index, exercise in
@@ -210,18 +317,20 @@ struct ActivityFeedCard: View {
                             .fill(muscleGroupColor(exercise.muscleGroup))
                             .frame(width: 7, height: 7)
                         Text(exercise.name)
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.88))
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.9))
                             .lineLimit(1)
                         Spacer(minLength: 4)
                         Text("\(exercise.sets)x @ \(formattedWeight(exercise.topWeightKg))")
-                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .foregroundStyle(Color.kineticsAmber)
                     }
-                    .padding(.vertical, 5)
+                    .padding(.vertical, 7)
                     .padding(.horizontal, 12)
                     if index < min(summaries.prefix(4).count, 4) - 1 {
-                        Divider().background(Color.white.opacity(0.05)).padding(.leading, 29)
+                        Divider()
+                            .background(Color.white.opacity(0.05))
+                            .padding(.leading, 29)
                     }
                 }
                 if summaries.count > 4 {
@@ -230,59 +339,135 @@ struct ActivityFeedCard: View {
                         Text("+ \(summaries.count - 4) more")
                             .font(.system(size: 11, weight: .medium, design: .rounded))
                             .foregroundStyle(Color.kineticsSubtext)
-                            .padding(.vertical, 5)
+                            .padding(.vertical, 6)
                             .padding(.horizontal, 12)
                     }
                 }
             }
-            .background(Color(white: 0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
+            .background(Color(white: 0.09), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+            )
         }
     }
 
-    // MARK: Route Map
+    // MARK: Combat / Climbing Metric Grid
 
     @ViewBuilder
-    private var routeMap: some View {
-        if let coords = item.routeCoordinates, coords.count >= 2 {
-            FeedRouteMapView(coordinates: coords)
-                .frame(height: 130)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    private var combatMetricGrid: some View {
+        let displayMetrics = Array(item.metrics.prefix(4))
+        if !displayMetrics.isEmpty {
+            let columns = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
+            LazyVGrid(columns: columns, spacing: 8) {
+                ForEach(displayMetrics, id: \.label) { metric in
+                    bigMetricTile(metric: metric)
+                }
+            }
         }
     }
 
-    // MARK: Action Row
-
-    private var actionRow: some View {
-        HStack(spacing: 20) {
-            Button {
-                let generator = UIImpactFeedbackGenerator(style: .medium)
-                generator.impactOccurred()
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.4)) { heartScale = 1.4 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) { heartScale = 1.0 }
-                }
-                Task { await onKudos() }
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: item.isLikedByCurrentUser ? "heart.fill" : "heart")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(item.isLikedByCurrentUser ? Color.red : Color.kineticsSubtext)
-                        .scaleEffect(heartScale)
-                    if item.kudosCount > 0 {
-                        Text("\(item.kudosCount)")
-                            .font(.system(.footnote, design: .rounded, weight: .semibold))
-                            .foregroundStyle(item.isLikedByCurrentUser ? Color.red : Color.kineticsSubtext)
-                            .contentTransition(.numericText())
-                    }
+    private func bigMetricTile(metric: FeedMetric) -> some View {
+        VStack(spacing: 4) {
+            Text(metric.label.uppercased())
+                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color.kineticsSubtext)
+                .tracking(0.8)
+                .lineLimit(1)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(metric.value)
+                    .font(.system(size: 22, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+                if !metric.unit.isEmpty {
+                    Text(metric.unit)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(primarySportColor.opacity(0.9))
                 }
             }
-            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(
+            LinearGradient(
+                colors: [Color(white: 0.10), Color(white: 0.08)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(primarySportColor.opacity(0.18), lineWidth: 1)
+        )
+    }
 
+    // MARK: - Stats Row (gym + run)
+
+    @ViewBuilder
+    private var statsRow: some View {
+        let displayMetrics = Array(item.metrics.prefix(3))
+        switch item.activityType {
+        case "ironTracker", "gym":
+            if !displayMetrics.isEmpty {
+                HStack(spacing: 0) {
+                    ForEach(displayMetrics.indices, id: \.self) { index in
+                        FeedMetricCell(metric: displayMetrics[index])
+                        if index < displayMetrics.count - 1 {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.10))
+                                .frame(width: 1, height: 28)
+                        }
+                    }
+                }
+                .padding(.vertical, 6)
+                .background(Color.kineticsBackground.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+            }
+        default:
+            EmptyView()
+        }
+    }
+
+    // MARK: - Interaction Bar
+
+    private var interactionBar: some View {
+        ZStack(alignment: .bottomLeading) {
+            HStack(spacing: 22) {
+                // Kudos / heart button with long-press reaction picker
+                Button {
+                    triggerKudosAnimation()
+                    Task { await onKudos() }
+                } label: {
+                    HStack(spacing: 5) {
+                        reactionLeadingEmoji
+                            .scaleEffect(heartScale)
+                        if item.kudosCount > 0 {
+                            Text("\(item.kudosCount)")
+                                .font(.system(.footnote, design: .rounded, weight: .semibold))
+                                .foregroundStyle(item.isLikedByCurrentUser ? Color.kineticsRed : Color.kineticsSubtext)
+                                .contentTransition(.numericText())
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .simultaneousGesture(
+                    LongPressGesture(minimumDuration: 0.4)
+                        .onEnded { _ in
+                            let generator = UIImpactFeedbackGenerator(style: .heavy)
+                            generator.impactOccurred()
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
+                                showReactionPicker = true
+                            }
+                        }
+                )
+
+            // Comment button
             Button { onComment() } label: {
                 HStack(spacing: 5) {
-                    Image(systemName: "bubble.left").font(.system(size: 15, weight: .medium)).foregroundStyle(Color.kineticsSubtext)
+                    Image(systemName: "bubble.left")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(Color.kineticsSubtext)
                     if item.commentCount > 0 {
                         Text("\(item.commentCount)")
                             .font(.system(.footnote, design: .rounded, weight: .semibold))
@@ -294,6 +479,7 @@ struct ActivityFeedCard: View {
 
             Spacer()
 
+            // Share button
             Button {
                 let shareText = "\(item.displayName) on Kinetics: \(item.title)\n\(item.subtitle)"
                 let activityVC = UIActivityViewController(
@@ -307,81 +493,189 @@ struct ActivityFeedCard: View {
                     presented.present(activityVC, animated: true)
                 }
             } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 14, weight: .medium))
+                Image(systemName: "arrow.up.circle")
+                    .font(.system(size: 17, weight: .medium))
                     .foregroundStyle(Color.kineticsSubtext)
             }
             .buttonStyle(.plain)
+            } // end HStack
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if showReactionPicker {
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                        showReactionPicker = false
+                    }
+                }
+            }
+
+            if showReactionPicker {
+                ReactionPickerView { reaction in
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                        showReactionPicker = false
+                    }
+                    triggerKudosAnimation()
+                    Task {
+                        try? await SocialRepository.shared.addReaction(
+                            reaction.rawValue,
+                            to: item.id,
+                            userId: currentUserId
+                        )
+                        await onKudos()
+                    }
+                }
+                .offset(x: 0, y: -52)
+                .transition(.scale(scale: 0.7, anchor: .bottomLeading).combined(with: .opacity))
+                .zIndex(10)
+            }
+        } // end ZStack
+    }
+
+    // MARK: - Reaction Leading Emoji
+
+    @ViewBuilder
+    private var reactionLeadingEmoji: some View {
+        let dominantReaction = item.reactions.max(by: { $0.value < $1.value })?.key
+        if let type = dominantReaction.flatMap({ ReactionType(rawValue: $0) }), item.isLikedByCurrentUser {
+            Text(type.emoji)
+                .font(.system(size: 17))
+        } else {
+            Image(systemName: item.isLikedByCurrentUser ? "heart.fill" : "heart")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(item.isLikedByCurrentUser ? Color.kineticsRed : Color.kineticsSubtext)
         }
     }
 
-    // MARK: Helpers
+    // MARK: - Kudos Animation
+
+    private func triggerKudosAnimation() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+
+        // Spring bounce on the heart icon
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+            heartScale = 1.4
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                heartScale = 1.0
+            }
+        }
+
+        // Burst particles: 4 circles that scale out and fade
+        burstParticles = (0..<4).map { i in
+            let angle = Double(i) / 4.0 * .pi * 2
+            return BurstParticle(
+                id: UUID(),
+                x: cos(angle) * 4,
+                y: sin(angle) * 4,
+                opacity: 1,
+                scale: 1,
+                size: CGFloat.random(in: 5...9)
+            )
+        }
+        withAnimation(.easeOut(duration: 0.55)) {
+            burstParticles = burstParticles.map { p in
+                let angle = atan2(p.y, p.x)
+                return BurstParticle(
+                    id: p.id,
+                    x: cos(angle) * 22,
+                    y: sin(angle) * 22,
+                    opacity: 0,
+                    scale: 0.3,
+                    size: p.size
+                )
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            burstParticles = []
+        }
+    }
+
+    // MARK: - Color + Label Helpers
+
+    private var primarySportColor: Color {
+        sportColor(for: item.activityType)
+    }
+
+    private func sportColor(for type: String) -> Color {
+        switch type.lowercased() {
+        case "iron", "irontracker", "gym": return Color.kineticsBlue
+        case "run":                         return Color.kineticsGreen
+        case "striking":                    return Color(red: 1, green: 0.5, blue: 0.1)
+        case "grappling":                   return Color.kineticsPurple
+        case "wall":                        return Color(red: 0.1, green: 0.9, blue: 0.8)
+        default:                            return Color.kineticsBlue
+        }
+    }
 
     private func sportGradientColors(for type: String) -> [Color] {
-        switch type {
-        case "striking":           return [Color(hex: "#FF6B35"), Color(hex: "#FF3B30")]
-        case "grappling":          return [Color(hex: "#5856D6"), Color(hex: "#9B59B6")]
-        case "ironTracker", "gym": return [Color(hex: "#FF9F0A"), Color(hex: "#FFD60A")]
-        case "wall":               return [Color(hex: "#00BF96"), Color(hex: "#34C759")]
-        default:                   return [Color.kineticsBlue, Color(hex: "#30D158")]
+        switch type.lowercased() {
+        case "iron", "irontracker", "gym":  return [Color.kineticsBlue, Color(hex: "#5856D6")]
+        case "run":                          return [Color.kineticsGreen, Color(hex: "#00BF96")]
+        case "striking":                     return [Color(hex: "#FF8C00"), Color(hex: "#FF3B30")]
+        case "grappling":                    return [Color.kineticsPurple, Color(hex: "#D946EF")]
+        case "wall":                         return [Color(hex: "#00BF96"), Color.kineticsBlue]
+        default:                             return [Color.kineticsBlue, Color.kineticsGreen]
         }
     }
 
-    private func activityLabel(_ type: String) -> String {
-        switch type {
-        case "striking":           return "Striking Clinic"
-        case "grappling":          return "Grappling Lab"
-        case "ironTracker", "gym": return "Iron Tracker"
-        case "wall":               return "Wall Beta"
-        case "run":                return "Run"
-        case "ride":               return "Ride"
-        default:                   return "Session"
-        }
-    }
-
-    private func activityIcon(_ type: String) -> String {
-        switch type {
-        case "run":                return "figure.run"
-        case "ride":               return "bicycle"
-        case "striking":           return "figure.boxing"
-        case "grappling":          return "figure.martial.arts"
-        case "ironTracker", "gym": return "dumbbell.fill"
-        case "wall":               return "figure.climbing"
-        default:                   return "bolt.fill"
+    private func sportBadgeLabel(_ type: String) -> String {
+        switch type.lowercased() {
+        case "iron", "irontracker", "gym":  return "IRON"
+        case "run":                          return "RUN"
+        case "ride":                         return "RIDE"
+        case "striking":                     return "STRIKING"
+        case "grappling":                    return "GRAPPLING"
+        case "wall":                         return "WALL"
+        default:                             return "SESSION"
         }
     }
 
     private func muscleGroupColor(_ group: String) -> Color {
         switch group.lowercased() {
-        case "chest":           return Color.kineticsBlue
-        case "back":            return Color.kineticsPurple
-        case "legs", "glutes":  return Color.kineticsGreen
-        case "shoulders":       return Color.kineticsAmber
-        case "arms", "biceps", "triceps": return Color(hex: "#FF6B35")
-        case "core":            return Color.kineticsRed
-        default:                return Color.kineticsSubtext
+        case "chest":                          return Color.kineticsBlue
+        case "back":                           return Color.kineticsPurple
+        case "legs", "glutes":                 return Color.kineticsGreen
+        case "shoulders":                      return Color.kineticsAmber
+        case "arms", "biceps", "triceps":      return Color(hex: "#FF6B35")
+        case "core":                           return Color.kineticsRed
+        default:                               return Color.kineticsSubtext
         }
     }
 
     private func formattedWeight(_ kg: Double) -> String {
-        if kg == kg.rounded() {
-            return "\(Int(kg))kg"
-        }
+        if kg == kg.rounded() { return "\(Int(kg))kg" }
         return String(format: "%.1fkg", kg)
     }
 
-    private func timeAgo(_ date: Date) -> String {
+    private func relativeTimestamp(_ date: Date) -> String {
         let seconds = Int(Date.now.timeIntervalSince(date))
         switch seconds {
-        case ..<60:            return "now"
-        case 60..<3_600:       return "\(seconds / 60) mins ago"
+        case ..<30:         return "Just now"
+        case 30..<3_600:    return "\(seconds / 60)m"
         case 3_600..<86_400:
             let h = seconds / 3_600
-            return h == 1 ? "1 hour ago" : "\(h) hours ago"
+            return "\(h)h"
         case 86_400..<172_800: return "Yesterday"
-        default:               return "\(seconds / 86_400)d ago"
+        case 172_800..<604_800:
+            return "\(seconds / 86_400)d"
+        default:
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM d"
+            return formatter.string(from: date)
         }
     }
+}
+
+// MARK: - BurstParticle
+
+private struct BurstParticle: Identifiable {
+    let id: UUID
+    var x: CGFloat
+    var y: CGFloat
+    var opacity: Double
+    var scale: CGFloat
+    let size: CGFloat
 }
 
 // MARK: - FeedRouteMapView
@@ -443,11 +737,14 @@ struct FeedMetricCell: View {
         VStack(spacing: 3) {
             Text(metric.label.uppercased())
                 .font(.system(size: 9, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color.kineticsSubtext).tracking(0.6).lineLimit(1)
+                .foregroundStyle(Color.kineticsSubtext)
+                .tracking(0.6)
+                .lineLimit(1)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(metric.value)
                     .font(.system(.subheadline, design: .rounded, weight: .bold))
-                    .foregroundStyle(.white).lineLimit(1)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
                 if !metric.unit.isEmpty {
                     Text(metric.unit)
                         .font(.system(size: 9, weight: .medium, design: .rounded))
@@ -469,29 +766,45 @@ struct StoryFullScreenView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(colors: sportGradient(for: story.sport), startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
+            LinearGradient(
+                colors: sportGradient(for: story.sport),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
             VStack(spacing: 20) {
                 Spacer()
                 Text(story.avatarEmoji).font(.system(size: 72))
                 VStack(spacing: 8) {
                     Text(story.displayName)
-                        .font(.system(size: 26, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
                     Text(story.sport.capitalized + " Session")
-                        .font(.system(size: 16, weight: .medium, design: .rounded)).foregroundStyle(.white.opacity(0.8))
+                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.8))
                 }
                 VStack(spacing: 12) {
                     HStack {
-                        Image(systemName: activityIcon(for: story.sport)).font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
-                        Text("Recent Session").font(.system(size: 15, weight: .semibold, design: .rounded)).foregroundStyle(.white)
+                        Image(systemName: activityIcon(for: story.sport))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                        Text("Recent Session")
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
                         Spacer()
-                        Text(story.createdAt.relativeFormatted).font(.system(size: 12)).foregroundStyle(.white.opacity(0.7))
+                        Text(story.createdAt.relativeFormatted)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.7))
                     }
                     Divider().background(.white.opacity(0.2))
                     Text("Training hard, making progress \u{1F4AA}")
-                        .font(.system(size: 14)).foregroundStyle(.white.opacity(0.9)).frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(16).background(.white.opacity(0.15)).clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(16)
+                .background(.white.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(.horizontal, 32)
                 Spacer()
             }
@@ -499,9 +812,12 @@ struct StoryFullScreenView: View {
                 HStack {
                     Spacer()
                     Button { dismiss() } label: {
-                        Image(systemName: "xmark.circle.fill").font(.system(size: 28)).foregroundStyle(.white.opacity(0.8))
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundStyle(.white.opacity(0.8))
                     }
-                    .padding(.trailing, 20).padding(.top, 20)
+                    .padding(.trailing, 20)
+                    .padding(.top, 20)
                 }
                 Spacer()
             }

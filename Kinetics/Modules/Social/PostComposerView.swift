@@ -1,6 +1,7 @@
 import MapKit
 import PhotosUI
 import SwiftUI
+import UIKit
 
 // MARK: - PostComposerActivity
 
@@ -21,6 +22,42 @@ struct PostComposerActivity: Sendable {
     var sessionTitle: String
 }
 
+// MARK: - SportChip
+
+enum SportChip: CaseIterable {
+    case striking, grappling, iron, run, wall
+
+    var label: String {
+        switch self {
+        case .striking:  return "🥊 Striking"
+        case .grappling: return "🤼 Grappling"
+        case .iron:      return "🏋️ Iron"
+        case .run:       return "🏃 Run"
+        case .wall:      return "🧗 Wall"
+        }
+    }
+
+    var activityType: String {
+        switch self {
+        case .striking:  return "striking"
+        case .grappling: return "grappling"
+        case .iron:      return "iron"
+        case .run:       return "run"
+        case .wall:      return "wall"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .striking:  return Color(red: 1.0, green: 0.35, blue: 0.25)
+        case .grappling: return Color(red: 0.55, green: 0.35, blue: 1.0)
+        case .iron:      return Color.kineticsAmber
+        case .run:       return Color.kineticsGreen
+        case .wall:      return Color(red: 0.25, green: 0.80, blue: 0.55)
+        }
+    }
+}
+
 // MARK: - PostComposerViewModel
 
 @Observable
@@ -31,27 +68,42 @@ final class PostComposerViewModel {
 
     var caption: String = ""
     var isPosting = false
+    var postSucceeded = false
     var errorMessage: String?
     var selectedPhotoItem: PhotosPickerItem?
     var selectedImageData: Data?
     var isPublic = true
+
+    /// The activity attached via the card selector. Initially set from `init` argument.
+    var selectedActivity: PostComposerActivity?
+
+    /// Sport chip selection used when no workout is attached.
+    var selectedSportChip: SportChip?
 
     // MARK: Derived
 
     var captionCount: Int { caption.count }
     var captionCountColor: Color {
         switch captionCount {
-        case ..<240:   return Color.kineticsSubtext
-        case 240..<280: return Color.kineticsAmber
-        default:       return Color.kineticsRed
+        case ..<260:    return Color.kineticsSubtext
+        case 260..<280: return Color.kineticsRed
+        default:        return Color.kineticsRed
         }
     }
-    var canPost: Bool { !isPosting }
+    /// Share is enabled when there is something to post — caption or an activity.
+    var canPost: Bool {
+        !isPosting && (!caption.trimmingCharacters(in: .whitespaces).isEmpty || selectedActivity != nil)
+    }
+
+    // MARK: Init
+
+    init(preloadedActivity: PostComposerActivity? = nil) {
+        self.selectedActivity = preloadedActivity
+    }
 
     // MARK: Post
 
     func post(
-        activity: PostComposerActivity?,
         userId: String,
         displayName: String,
         username: String
@@ -59,13 +111,14 @@ final class PostComposerViewModel {
         isPosting = true
         defer { isPosting = false }
 
+        let activity = selectedActivity
         var metrics: [FeedMetric] = []
         var exerciseSummaries: [ExerciseSummary]?
         var routeCoordinates: [[Double]]?
         var itemType: FeedItemType = .workout
         var title = caption.isEmpty ? "New Activity" : String(caption.prefix(60))
         var subtitle = ""
-        var activityType = "general"
+        var activityType = selectedSportChip?.activityType ?? "general"
 
         if let activity {
             switch activity.kind {
@@ -155,41 +208,100 @@ struct PostComposerView: View {
 
     // MARK: Init
 
-    /// Pass `activity` when launching from a completed session. Nil for a standalone post.
-    let activity: PostComposerActivity?
     let currentUserId: String
     let currentDisplayName: String
     let username: String
+    /// Pre-populated caption template (e.g. from a just-finished workout).
+    let initialCaption: String
+    /// Pre-populated activity data. Also settable interactively inside the composer.
+    let initialActivity: PostComposerActivity?
     /// Called on successful post with the newly created item so the caller can
     /// prepend it to the feed optimistically.
     let onPost: (FeedItem) -> Void
 
-    @State private var viewModel = PostComposerViewModel()
+    @State private var viewModel: PostComposerViewModel
     @Environment(\.dismiss) private var dismiss
 
     private let maxCaptionLength = 280
+
+    init(
+        currentUserId: String,
+        currentDisplayName: String,
+        username: String,
+        initialCaption: String = "",
+        initialActivity: PostComposerActivity? = nil,
+        onPost: @escaping (FeedItem) -> Void
+    ) {
+        self.currentUserId = currentUserId
+        self.currentDisplayName = currentDisplayName
+        self.username = username
+        self.initialCaption = initialCaption
+        self.initialActivity = initialActivity
+        self.onPost = onPost
+        self._viewModel = State(initialValue: PostComposerViewModel(preloadedActivity: initialActivity))
+    }
 
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.kineticsBackground.ignoresSafeArea()
+
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         authorRow
                         captionEditor
-                        if let activity {
-                            ActivityPreviewCard(activity: activity)
+
+                        // Activity card selector / preview
+                        activitySection
+
+                        // Sport chip row — only when no workout attached
+                        if viewModel.selectedActivity == nil {
+                            sportChipRow
                         }
+
+                        // Inline error banner
                         if let error = viewModel.errorMessage {
-                            Text(error)
-                                .font(.system(size: 13))
-                                .foregroundStyle(Color.kineticsRed)
-                                .padding(.horizontal, 20)
+                            HStack(spacing: 10) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Color.kineticsRed)
+                                Text(error)
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Color.kineticsRed)
+                                Spacer()
+                                Button {
+                                    viewModel.errorMessage = nil
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.kineticsRed.opacity(0.7))
+                                }
+                            }
+                            .padding(12)
+                            .background(Color.kineticsRed.opacity(0.1),
+                                        in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .strokeBorder(Color.kineticsRed.opacity(0.25), lineWidth: 1)
+                            )
+                            .padding(.horizontal, 20)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                            .animation(.spring(duration: 0.3), value: viewModel.errorMessage != nil)
                         }
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
                     .padding(.bottom, 40)
+                }
+
+                // Posting overlay
+                if viewModel.isPosting {
+                    postingOverlay
+                }
+
+                // Success checkmark overlay
+                if viewModel.postSucceeded {
+                    successOverlay
                 }
             }
             .navigationTitle("New Post")
@@ -199,16 +311,23 @@ struct PostComposerView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
-                        .foregroundStyle(Color.kineticsSubtext)
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.kineticsBlue)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    postButton
+                    shareButton
+                }
+            }
+            .onAppear {
+                if !initialCaption.isEmpty && viewModel.caption.isEmpty {
+                    viewModel.caption = String(initialCaption.prefix(maxCaptionLength))
                 }
             }
         }
+        .presentationDetents([.large])
     }
 
-    // MARK: Author Row
+    // MARK: - Author Row
 
     private var authorRow: some View {
         HStack(spacing: 12) {
@@ -237,19 +356,19 @@ struct PostComposerView: View {
         }
     }
 
-    // MARK: Caption Editor
+    // MARK: - Caption Editor
 
     private var captionEditor: some View {
-        ZStack(alignment: .topLeading) {
-            if viewModel.caption.isEmpty {
-                Text("What's on your mind? Share your session...")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color.kineticsSubtext)
-                    .padding(.top, 8)
-                    .padding(.leading, 4)
-                    .allowsHitTesting(false)
-            }
-            VStack(alignment: .trailing, spacing: 4) {
+        VStack(alignment: .trailing, spacing: 4) {
+            ZStack(alignment: .topLeading) {
+                if viewModel.caption.isEmpty {
+                    Text("What did you crush today? 💪")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.kineticsSubtext)
+                        .padding(.top, 8)
+                        .padding(.leading, 4)
+                        .allowsHitTesting(false)
+                }
                 TextEditor(text: Binding(
                     get: { viewModel.caption },
                     set: { viewModel.caption = String($0.prefix(maxCaptionLength)) }
@@ -259,48 +378,168 @@ struct PostComposerView: View {
                 .tint(Color.kineticsBlue)
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
-                .frame(minHeight: 100)
+                .frame(minHeight: 120)
+            }
 
-                Text("\(viewModel.captionCount)/\(maxCaptionLength)")
-                    .font(.system(size: 11, design: .rounded))
-                    .foregroundStyle(viewModel.captionCountColor)
+            Text("\(viewModel.captionCount)/\(maxCaptionLength)")
+                .font(.system(size: 11, design: .rounded))
+                .foregroundStyle(viewModel.captionCountColor)
+                .animation(.easeInOut(duration: 0.15), value: viewModel.captionCountColor)
+        }
+    }
+
+    // MARK: - Activity Section
+
+    @ViewBuilder
+    private var activitySection: some View {
+        if let activity = viewModel.selectedActivity {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    HStack(spacing: 6) {
+                        Image(systemName: "dumbbell.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.kineticsBlue)
+                        Text("ATTACHED WORKOUT")
+                            .font(.system(size: 10, weight: .semibold))
+                            .tracking(1.0)
+                            .foregroundStyle(Color.kineticsBlue)
+                    }
+                    Spacer()
+                    Button {
+                        withAnimation(.spring(duration: 0.3)) {
+                            viewModel.selectedActivity = nil
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 10, weight: .bold))
+                            Text("Remove")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundStyle(Color.kineticsSubtext)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.kineticsSubtext.opacity(0.1),
+                                    in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                ActivityPreviewCard(activity: activity)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            .animation(.spring(duration: 0.35), value: viewModel.selectedActivity != nil)
+        } else {
+            // "Attach Workout" placeholder card
+            Button {
+                // No-op: workout attach is only via programmatic pre-population.
+                // This card serves as a visual cue; real attachment comes from
+                // launching the composer from a finished session.
+            } label: {
+                HStack(spacing: 14) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color.kineticsBlue.opacity(0.12))
+                            .frame(width: 44, height: 44)
+                        Image(systemName: "dumbbell.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(Color.kineticsBlue)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Attach Workout")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white)
+                        Text("Finish a session then tap \"Share to Feed\"")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.kineticsSubtext)
+                    }
+                    Spacer()
+                }
+                .padding(14)
+                .background(Color(white: 0.06),
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.kineticsBlue.opacity(0.18), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Sport Chip Row
+
+    private var sportChipRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("SPORT")
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(1.0)
+                .foregroundStyle(Color.kineticsSubtext)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(SportChip.allCases, id: \.activityType) { chip in
+                        Button {
+                            withAnimation(.spring(duration: 0.22)) {
+                                if viewModel.selectedSportChip == chip {
+                                    viewModel.selectedSportChip = nil
+                                } else {
+                                    viewModel.selectedSportChip = chip
+                                }
+                            }
+                        } label: {
+                            Text(chip.label)
+                                .font(.system(size: 13, weight:
+                                    viewModel.selectedSportChip == chip ? .semibold : .regular))
+                                .foregroundStyle(
+                                    viewModel.selectedSportChip == chip ? .black : Color.kineticsSubtext)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(viewModel.selectedSportChip == chip
+                                              ? chip.color
+                                              : Color(white: 0.1))
+                                )
+                                .overlay(
+                                    Capsule()
+                                        .strokeBorder(
+                                            viewModel.selectedSportChip == chip
+                                                ? Color.clear
+                                                : chip.color.opacity(0.25),
+                                            lineWidth: 1
+                                        )
+                                )
+                                .animation(.spring(duration: 0.2), value: viewModel.selectedSportChip)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 2)
             }
         }
     }
 
-    // MARK: Post Button
+    // MARK: - Share Button
 
-    private var postButton: some View {
+    private var shareButton: some View {
         Button {
             Task {
                 do {
                     try await viewModel.post(
-                        activity: activity,
                         userId: currentUserId,
                         displayName: currentDisplayName,
                         username: username
                     )
-                    // Build a preview item to return optimistically.
-                    // The real item is already in Firestore; we rebuild a local copy here
-                    // so the caller can prepend it without a round-trip fetch.
-                    let previewItem = FeedItem(
-                        userId: currentUserId,
-                        displayName: currentDisplayName,
-                        username: username,
-                        avatarURL: "",
-                        itemType: .workout,
-                        title: viewModel.caption.isEmpty ? "New Activity" : String(viewModel.caption.prefix(60)),
-                        subtitle: "",
-                        caption: viewModel.caption.isEmpty ? nil : viewModel.caption,
-                        metrics: [],
-                        imageURL: "",
-                        postedAt: Date(),
-                        kudosCount: 0,
-                        commentCount: 0,
-                        isLikedByCurrentUser: false,
-                        workoutId: "",
-                        activityType: "general"
-                    )
+                    // Success haptic + brief overlay, then dismiss
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.success)
+                    withAnimation(.spring(duration: 0.35)) {
+                        viewModel.postSucceeded = true
+                    }
+                    // Build optimistic item
+                    let previewItem = buildOptimisticItem()
+                    try? await Task.sleep(for: .seconds(0.85))
                     onPost(previewItem)
                     dismiss()
                 } catch {
@@ -310,17 +549,86 @@ struct PostComposerView: View {
         } label: {
             if viewModel.isPosting {
                 ProgressView().tint(.white).scaleEffect(0.8)
+                    .frame(width: 70, height: 32)
             } else {
-                Text("Post")
+                Text("Share")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(viewModel.canPost ? Color.kineticsDark : Color.kineticsSubtext)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 18)
                     .padding(.vertical, 7)
-                    .background(viewModel.canPost ? Color.kineticsBlue : Color.kineticsDark)
+                    .background(
+                        viewModel.canPost
+                            ? Color.kineticsBlue
+                            : Color(white: 0.18)
+                    )
                     .clipShape(Capsule())
             }
         }
         .disabled(!viewModel.canPost)
+        .animation(.easeInOut(duration: 0.15), value: viewModel.canPost)
+    }
+
+    // MARK: - Posting Overlay
+
+    private var postingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.55).ignoresSafeArea()
+            VStack(spacing: 14) {
+                ProgressView()
+                    .tint(Color.kineticsBlue)
+                    .scaleEffect(1.3)
+                Text("Sharing…")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .padding(28)
+            .background(Color(white: 0.1),
+                        in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .transition(.opacity)
+    }
+
+    // MARK: - Success Overlay
+
+    private var successOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.45).ignoresSafeArea()
+            VStack(spacing: 10) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 52))
+                    .foregroundStyle(Color.kineticsGreen)
+                Text("Posted!")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+            .padding(32)
+            .background(Color(white: 0.1),
+                        in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .transition(.scale(scale: 0.8).combined(with: .opacity))
+    }
+
+    // MARK: - Helpers
+
+    private func buildOptimisticItem() -> FeedItem {
+        FeedItem(
+            userId: currentUserId,
+            displayName: currentDisplayName,
+            username: username,
+            avatarURL: "",
+            itemType: .workout,
+            title: viewModel.caption.isEmpty ? "New Activity" : String(viewModel.caption.prefix(60)),
+            subtitle: "",
+            caption: viewModel.caption.isEmpty ? nil : viewModel.caption,
+            metrics: [],
+            imageURL: "",
+            postedAt: Date(),
+            kudosCount: 0,
+            commentCount: 0,
+            isLikedByCurrentUser: false,
+            workoutId: "",
+            activityType: viewModel.selectedSportChip?.activityType ?? "general"
+        )
     }
 }
 

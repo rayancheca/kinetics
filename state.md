@@ -1,15 +1,15 @@
 # Kinetics — Session State
 
-**Last updated:** Session 7 (2026-04-29) — Phase 1+ enhancements complete
+**Last updated:** Session 8 (2026-05-01) — GPS Track audit, HistoryView, crash hardening
 **Current phase:** Phase 1+ — Post-MVP improvements ✅ DONE
-**Overall progress:** All Phase 1 deliverables + Session 7 enhancements built, committed, pushed. BUILD SUCCEEDED.
+**Overall progress:** All Phase 1 deliverables + Session 7–8 enhancements built, committed, pushed. BUILD SUCCEEDED.
 
 ---
 
 ## Status: PHASE 1+ ENHANCEMENTS COMPLETE — BUILD SUCCEEDED
 
 `** BUILD SUCCEEDED **` on iPhone 17 Pro Simulator.
-Latest commit: `95b89f1`
+Latest commit: `9673e35`
 Total Swift files: 80 (main app) + 1 (widget extension)
 
 ---
@@ -58,6 +58,13 @@ Total Swift files: 80 (main app) + 1 (widget extension)
 | Firestore offline persistence (100MB) | ✅ | `95b89f1` |
 | Auto rep counting (IronTracker) | ✅ | `95b89f1` |
 | Injury risk detection (5 flag types) | ✅ | `95b89f1` |
+| **Session 8 Hardening** | | |
+| GPS Track: dark map (MKStandardMapConfiguration) | ✅ | `9673e35` |
+| GPS Track: location permission denied banner | ✅ | `9673e35` |
+| GPS Track: deprecate UIScreen.main → UIWindowScene | ✅ | `9673e35` |
+| HistoryView: improved empty state w/ correct copy | ✅ | `9673e35` |
+| VideoLibraryView: fix force-unwrap crash in computeTrend | ✅ | `9673e35` |
+| Global: zero force-unwraps / force-casts / force-tries in production paths | ✅ | `9673e35` |
 
 ---
 

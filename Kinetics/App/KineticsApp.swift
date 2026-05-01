@@ -11,6 +11,10 @@ struct KineticsApp: App {
     @State private var appState = AppState()
     @AppStorage("permissions_requested") private var permissionsRequested = false
 
+    init() {
+        FirebaseApp.configure()
+    }
+
     private static let modelContainer: ModelContainer = {
         let schema = Schema([
             Exercise.self,

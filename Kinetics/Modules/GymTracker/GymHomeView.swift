@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 // MARK: - GymHomeViewModel
@@ -11,6 +12,7 @@ final class GymHomeViewModel {
     var recentSessions: [WorkoutSession] = []
     var personalRecords: [PersonalRecord] = []
     var routines: [Routine] = []
+    var activePlan: WeeklyPlan?
     var streak: Int = 0
     var weeklyWorkoutCount: Int = 0
     var monthlyVolumeKg: Double = 0
@@ -18,6 +20,7 @@ final class GymHomeViewModel {
     var errorMessage: String?
     var showNewWorkout = false
     var showExerciseLibrary = false
+    var showStartWorkoutSheet = false
 
     // MARK: Load
 
@@ -34,6 +37,7 @@ final class GymHomeViewModel {
             streak = (try? GymRepository.shared.calculateStreak(userId: userId)) ?? 0
             weeklyWorkoutCount = computeWeeklyCount(userId: userId)
             monthlyVolumeKg = computeMonthlyVolume()
+            activePlan = fetchActivePlan(userId: userId)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -51,6 +55,16 @@ final class GymHomeViewModel {
 
     func startRoutineSession(_ routine: Routine, userId: String) throws -> WorkoutSession {
         try GymRepository.shared.startSession(from: routine, userId: userId)
+    }
+
+    func fetchActivePlan(userId: String) -> WeeklyPlan? {
+        guard let container = GymRepository.shared.modelContainer else { return nil }
+        let context = ModelContext(container)
+        let uid = userId
+        let descriptor = FetchDescriptor<WeeklyPlan>(
+            predicate: #Predicate { $0.userId == uid && $0.isActive == true }
+        )
+        return try? context.fetch(descriptor).first
     }
 
     // MARK: Private Helpers
@@ -89,6 +103,7 @@ struct GymHomeView: View {
     @State private var viewModel = GymHomeViewModel()
     @State private var activeSession: WorkoutSession?
     @State private var navigationPath = NavigationPath()
+    @State private var daySlotToStart: WeeklyDaySlot?
 
     private var uid: String {
         appState.authManager.currentUser?.uid ?? "preview-user"
@@ -132,12 +147,40 @@ struct GymHomeView: View {
                     BodyMeasurementView(userId: uid)
                 case "history":
                     GymWorkoutHistoryView(userId: uid)
+                case "weekly-planner":
+                    WeeklyPlanListView()
                 default:
                     EmptyView()
                 }
             }
             .sheet(isPresented: $viewModel.showExerciseLibrary) {
                 ExerciseLibraryView()
+            }
+            .sheet(isPresented: $viewModel.showStartWorkoutSheet) {
+                StartWorkoutSheet(
+                    activePlan: viewModel.activePlan,
+                    routines: viewModel.routines,
+                    onStart: { routine in
+                        if let r = routine {
+                            startRoutineSession(r)
+                        } else {
+                            startEmptySession()
+                        }
+                    }
+                )
+            }
+            .sheet(item: $daySlotToStart) { _ in
+                StartWorkoutSheet(
+                    activePlan: viewModel.activePlan,
+                    routines: viewModel.routines,
+                    onStart: { routine in
+                        if let r = routine {
+                            startRoutineSession(r)
+                        } else {
+                            startEmptySession()
+                        }
+                    }
+                )
             }
             .sheet(item: $activeSession) { session in
                 ActiveGymSessionView(session: session)
@@ -166,7 +209,20 @@ struct GymHomeView: View {
                 logHeader
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
-                    .padding(.bottom, 24)
+                    .padding(.bottom, 16)
+
+                // Weekly Calendar Strip
+                WeeklyCalendarStrip(
+                    activePlan: viewModel.activePlan,
+                    onDayTap: { slot in
+                        daySlotToStart = slot
+                    },
+                    onViewPlanTap: {
+                        navigationPath.append("weekly-planner")
+                    }
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 20)
 
                 // Big CTA
                 startWorkoutButton
@@ -244,8 +300,8 @@ struct GymHomeView: View {
     // MARK: - Big Start Workout Button
 
     private var startWorkoutButton: some View {
-        StartWorkoutButton {
-            startEmptySession()
+        StartWorkoutBigButton {
+            viewModel.showStartWorkoutSheet = true
         }
     }
 
@@ -361,9 +417,9 @@ struct GymHomeView: View {
     }
 }
 
-// MARK: - StartWorkoutButton
+// MARK: - StartWorkoutBigButton
 
-private struct StartWorkoutButton: View {
+private struct StartWorkoutBigButton: View {
     let action: () -> Void
     @State private var isPressed = false
 
@@ -375,11 +431,11 @@ private struct StartWorkoutButton: View {
                     .foregroundStyle(.black)
 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("START EMPTY WORKOUT")
+                    Text("START WORKOUT")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(.black)
                         .kerning(0.5)
-                    Text("Log any exercises you want")
+                    Text("Choose routine or start empty")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.black.opacity(0.65))
                 }

@@ -305,179 +305,84 @@ extension GymRepository {
 
 extension GymRepository {
 
-    /// Populates the library with ~20 canonical exercises on first launch.
-    /// Idempotent — returns immediately if any non-custom exercise already exists.
+    // swiftlint:disable function_body_length
+    /// Populates the library with 60+ canonical exercises on first launch.
+    /// Idempotent — returns immediately if 50+ non-custom exercises already exist.
     func seedExerciseLibraryIfNeeded() throws {
         let ctx = try context
         var checkDescriptor = FetchDescriptor<Exercise>(
             predicate: #Predicate { !$0.isCustom }
         )
-        checkDescriptor.fetchLimit = 1
+        checkDescriptor.fetchLimit = 50
         let existing = try ctx.fetch(checkDescriptor)
-        guard existing.isEmpty else { return }
+        guard existing.count < 50 else { return }
 
-        // Exact 20-exercise canonical library matching the product spec.
         let seeds: [Exercise] = [
-            Exercise(
-                name: "Bench Press",
-                category: "Strength",
-                primaryMuscle: "Chest",
-                secondaryMuscles: ["Triceps", "Shoulders"],
-                equipment: "Barbell",
-                instructions: "Retract scapulae, slight arch. Lower bar to lower chest under control. Drive through the bar, squeeze chest at lockout."
-            ),
-            Exercise(
-                name: "Squat",
-                category: "Strength",
-                primaryMuscle: "Quadriceps",
-                secondaryMuscles: ["Glutes", "Hamstrings", "Core"],
-                equipment: "Barbell",
-                instructions: "Bar on upper traps, feet shoulder-width. Brace core, drive knees out, descend until hip crease passes knee. Drive through mid-foot to stand."
-            ),
-            Exercise(
-                name: "Deadlift",
-                category: "Strength",
-                primaryMuscle: "Hamstrings",
-                secondaryMuscles: ["Glutes", "Back", "Core"],
-                equipment: "Barbell",
-                instructions: "Bar over mid-foot, hip-width stance. Hinge to grip, lats engaged. Push the floor away, keep bar against shins. Lock hips and knees simultaneously at the top."
-            ),
-            Exercise(
-                name: "Pull-up",
-                category: "Strength",
-                primaryMuscle: "Back",
-                secondaryMuscles: ["Biceps"],
-                equipment: "Bodyweight",
-                instructions: "Dead hang start, overhand grip. Drive elbows to hips to initiate. Chin clears the bar at the top. Full extension on every rep."
-            ),
-            Exercise(
-                name: "Overhead Press",
-                category: "Strength",
-                primaryMuscle: "Shoulders",
-                secondaryMuscles: ["Triceps", "Core"],
-                equipment: "Barbell",
-                instructions: "Bar on front deltoids, elbows just in front. Press overhead, push head through at lockout. Lower under control to collarbone."
-            ),
-            Exercise(
-                name: "Barbell Row",
-                category: "Strength",
-                primaryMuscle: "Back",
-                secondaryMuscles: ["Biceps"],
-                equipment: "Barbell",
-                instructions: "Hip hinge until torso is nearly parallel. Pull bar to lower sternum, drive elbows back. Lower under control."
-            ),
-            Exercise(
-                name: "Incline Dumbbell Press",
-                category: "Strength",
-                primaryMuscle: "Chest",
-                secondaryMuscles: ["Shoulders", "Triceps"],
-                equipment: "Dumbbell",
-                instructions: "Bench at 30-45 degrees. Press from beside the upper chest to full lockout overhead. Lower dumbbells to chest line."
-            ),
-            Exercise(
-                name: "Leg Press",
-                category: "Strength",
-                primaryMuscle: "Quadriceps",
-                secondaryMuscles: ["Glutes", "Hamstrings"],
-                equipment: "Machine",
-                instructions: "Feet shoulder-width, high on platform. Descend until knees are at 90 degrees. Do not lock knees at the top."
-            ),
-            Exercise(
-                name: "Romanian Deadlift",
-                category: "Strength",
-                primaryMuscle: "Hamstrings",
-                secondaryMuscles: ["Glutes", "Core"],
-                equipment: "Barbell",
-                instructions: "Start standing, soft knee bend. Push hips back and hinge forward, bar tracking legs. Lower until a deep stretch in the hamstrings, then drive hips forward to stand."
-            ),
-            Exercise(
-                name: "Lat Pulldown",
-                category: "Strength",
-                primaryMuscle: "Back",
-                secondaryMuscles: ["Biceps"],
-                equipment: "Cable",
-                instructions: "Overhand grip slightly wider than shoulders. Lean back slightly, pull bar to upper chest. Initiate with lats, not arms."
-            ),
-            Exercise(
-                name: "Cable Fly",
-                category: "Strength",
-                primaryMuscle: "Chest",
-                secondaryMuscles: ["Shoulders"],
-                equipment: "Cable",
-                instructions: "Set cables at shoulder height with D-ring handles. Keep a slight elbow bend, arc hands together in front of chest. Control the return."
-            ),
-            Exercise(
-                name: "Tricep Pushdown",
-                category: "Strength",
-                primaryMuscle: "Triceps",
-                secondaryMuscles: [],
-                equipment: "Cable",
-                instructions: "Elbows pinned at sides, slight forward lean. Push the bar to full extension. Squeeze triceps hard at the bottom before controlled return."
-            ),
-            Exercise(
-                name: "Bicep Curl",
-                category: "Strength",
-                primaryMuscle: "Biceps",
-                secondaryMuscles: ["Forearms"],
-                equipment: "Dumbbell",
-                instructions: "Supinate wrist as you curl. Full extension at the bottom, squeeze at the top. Avoid swinging the torso."
-            ),
-            Exercise(
-                name: "Lunges",
-                category: "Strength",
-                primaryMuscle: "Quadriceps",
-                secondaryMuscles: ["Glutes", "Hamstrings", "Core"],
-                equipment: "Dumbbell",
-                instructions: "Step forward into a long stride. Lower back knee toward the floor, keep front shin vertical. Drive through the front heel to return."
-            ),
-            Exercise(
-                name: "Hip Thrust",
-                category: "Strength",
-                primaryMuscle: "Glutes",
-                secondaryMuscles: ["Hamstrings", "Core"],
-                equipment: "Barbell",
-                instructions: "Upper back on bench, bar across hips over a pad. Plant feet flat, drive hips to full extension. Squeeze glutes hard at the top."
-            ),
-            Exercise(
-                name: "Plank",
-                category: "Strength",
-                primaryMuscle: "Core",
-                secondaryMuscles: ["Shoulders"],
-                equipment: "Bodyweight",
-                instructions: "Forearms on floor, elbows under shoulders. Neutral spine. Breathe steadily and brace."
-            ),
-            Exercise(
-                name: "Face Pull",
-                category: "Strength",
-                primaryMuscle: "Shoulders",
-                secondaryMuscles: ["Biceps", "Trapezius"],
-                equipment: "Cable",
-                instructions: "Cable set above head height, rope attachment. Pull handles to eye level, elbows flaring wide. External-rotate wrists so knuckles face the ceiling."
-            ),
-            Exercise(
-                name: "Lateral Raise",
-                category: "Strength",
-                primaryMuscle: "Shoulders",
-                secondaryMuscles: [],
-                equipment: "Dumbbell",
-                instructions: "Stand tall, slight forward lean. Raise dumbbells to shoulder height with a slight elbow bend. Lower under control. Avoid shrugging."
-            ),
-            Exercise(
-                name: "Calf Raise",
-                category: "Strength",
-                primaryMuscle: "Calves",
-                secondaryMuscles: [],
-                equipment: "Machine",
-                instructions: "Rise onto the balls of your feet as high as possible. Pause at the top, then lower to a full stretch. Full range of motion on every rep."
-            ),
-            Exercise(
-                name: "Russian Twist",
-                category: "Strength",
-                primaryMuscle: "Core",
-                secondaryMuscles: [],
-                equipment: "Bodyweight",
-                instructions: "Sit on the floor with knees bent, lean back slightly. Rotate the torso side to side, touching the floor beside each hip."
-            )
+            // Chest
+            Exercise(name: "Bench Press", category: "Strength", primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders"], equipment: "Barbell", instructions: "Retract your scapulae and create a slight arch. Lower the bar under control to your lower pec line, elbows at roughly 75 degrees. Press explosively and squeeze the chest at lockout. Avoid flaring elbows past 90 degrees."),
+            Exercise(name: "Incline Bench Press", category: "Strength", primaryMuscle: "Chest", secondaryMuscles: ["Shoulders", "Triceps"], equipment: "Barbell", instructions: "Set the bench to 30-45 degrees. Grip slightly wider than shoulder-width. Lower bar to your upper chest just below the collarbone. Press in a slight arc back toward lockout. Keep arch and scapular retraction throughout."),
+            Exercise(name: "Decline Bench Press", category: "Strength", primaryMuscle: "Chest", secondaryMuscles: ["Triceps"], equipment: "Barbell", instructions: "Set decline to 15-30 degrees and secure feet. Grip just wider than shoulder-width. Lower the bar to your lower chest in a controlled arc. Press back to lockout. Maximally loads the sternal head of the pec."),
+            Exercise(name: "Dumbbell Fly", category: "Strength", primaryMuscle: "Chest", secondaryMuscles: ["Shoulders"], equipment: "Dumbbell", instructions: "Lie flat with dumbbells pressed above chest, palms facing each other. Maintain a soft elbow bend throughout. Lower in a wide arc until elbows are level with the bench. Squeeze pecs to bring dumbbells back together."),
+            Exercise(name: "Cable Crossover", category: "Strength", primaryMuscle: "Chest", secondaryMuscles: ["Shoulders"], equipment: "Cable", instructions: "Set cables to shoulder height with D-ring handles. Step forward into a split stance. With a slight elbow bend, arc your hands down and together in front of your hips. Squeeze at peak contraction. Control the return."),
+            Exercise(name: "Push-Up", category: "Strength", primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders", "Core"], equipment: "Bodyweight", instructions: "Plant hands slightly wider than shoulder-width, fingers forward. Keep a straight line from head to heels. Lower your chest to within an inch of the floor with elbows at 45-75 degrees. Push back to full extension and protract your scapulae at the top."),
+            Exercise(name: "Chest Dip", category: "Strength", primaryMuscle: "Chest", secondaryMuscles: ["Triceps", "Shoulders"], equipment: "Bodyweight", instructions: "Use parallel bars with grip slightly wider than shoulder-width. Lean torso forward at 15-30 degrees to emphasise chest over triceps. Lower until upper arms are parallel to the floor. Press back to full extension."),
+            Exercise(name: "Pec Deck", category: "Strength", primaryMuscle: "Chest", secondaryMuscles: [], equipment: "Machine", instructions: "Adjust seat so handles are at chest height. Sit with back flat against pad. Arc both arms together in front of your chest, squeezing pecs hard at peak contraction. Control the return."),
+            Exercise(name: "Incline Dumbbell Press", category: "Strength", primaryMuscle: "Chest", secondaryMuscles: ["Shoulders", "Triceps"], equipment: "Dumbbell", instructions: "Set bench to 30-45 degrees. Press dumbbells from beside your upper chest to full lockout overhead. Lower back to chest level slowly, feeling the upper pec stretch. Keep wrists stacked over elbows throughout."),
+            // Back
+            Exercise(name: "Pull-Up", category: "Strength", primaryMuscle: "Back", secondaryMuscles: ["Biceps"], equipment: "Bodyweight", instructions: "Start from a dead hang with an overhand grip slightly wider than shoulder-width. Engage core and squeeze lats before pulling. Drive elbows down toward hips. Chin clears the bar at the top. Lower to full extension on every rep."),
+            Exercise(name: "Lat Pulldown", category: "Strength", primaryMuscle: "Back", secondaryMuscles: ["Biceps"], equipment: "Cable", instructions: "Overhand grip slightly wider than shoulder-width, knees secured. Lean back slightly. Initiate by depressing scapulae, then pull the bar to your upper chest. Pause and squeeze lats. Arms are just hooks; do not pull primarily with biceps."),
+            Exercise(name: "Bent-Over Barbell Row", category: "Strength", primaryMuscle: "Back", secondaryMuscles: ["Biceps"], equipment: "Barbell", instructions: "Hip hinge until torso is nearly parallel to the floor. Pull bar to lower sternum, driving elbows back. Hold for a beat at the top. Brace core to prevent lower back rounding. Avoid jerking with hips."),
+            Exercise(name: "Seated Cable Row", category: "Strength", primaryMuscle: "Back", secondaryMuscles: ["Biceps"], equipment: "Cable", instructions: "Sit with a slight forward lean. Pull handle to your lower sternum, driving elbows behind your body and squeezing shoulder blades at peak contraction. Sit upright at the end of the pull. Control the extension."),
+            Exercise(name: "T-Bar Row", category: "Strength", primaryMuscle: "Back", secondaryMuscles: ["Biceps"], equipment: "Barbell", instructions: "Straddle a landmine-anchored barbell. Hip hinge to 45 degrees and grip the handle. Row to your sternum with a neutral grip, driving elbows back. Squeeze lats and rhomboids hard at the top."),
+            Exercise(name: "Deadlift", category: "Strength", primaryMuscle: "Back", secondaryMuscles: ["Hamstrings", "Glutes", "Core"], equipment: "Barbell", instructions: "Bar over mid-foot, hip-width stance, shins to the bar. Hinge to grip with lats engaged and chest proud. Brace hard. Push the floor away keeping the bar dragging up your shins. Lock out hips and knees simultaneously. Lower by hinging first then bending knees."),
+            Exercise(name: "Face Pull", category: "Strength", primaryMuscle: "Shoulders", secondaryMuscles: ["Back"], equipment: "Cable", instructions: "Set cable above head height with a rope attachment. Pull rope to eye level with elbows flaring wide and high. Externally rotate wrists at the end so knuckles face the ceiling. This activates rear delts and rotator cuff fully. Control the return."),
+            Exercise(name: "Good Morning", category: "Strength", primaryMuscle: "Hamstrings", secondaryMuscles: ["Back", "Glutes"], equipment: "Barbell", instructions: "Place the bar on upper traps and brace your core. Push hips back while hinging at the waist, keeping a neutral spine. Lower torso until nearly parallel to the floor. Drive hips forward to return to standing. Keep a slight knee bend throughout."),
+            // Shoulders
+            Exercise(name: "Overhead Press", category: "Strength", primaryMuscle: "Shoulders", secondaryMuscles: ["Triceps", "Core"], equipment: "Barbell", instructions: "Bar on front deltoids, elbows just in front of the bar. Brace and squeeze glutes. Press overhead, pushing head through the window at lockout. Bar travels in a slight arc over the crown of your head. Lower under control to the clavicle."),
+            Exercise(name: "Arnold Press", category: "Strength", primaryMuscle: "Shoulders", secondaryMuscles: ["Triceps"], equipment: "Dumbbell", instructions: "Start with palms facing your face and elbows at shoulder height. As you press overhead rotate palms outward so they face forward at the top. Reverse on the way down. The rotation recruits all three heads of the deltoid. Move with control."),
+            Exercise(name: "Lateral Raise", category: "Strength", primaryMuscle: "Shoulders", secondaryMuscles: [], equipment: "Dumbbell", instructions: "Stand tall with a slight forward lean. Raise dumbbells to shoulder height with a slight elbow bend, leading with your elbows. Lower under control. Avoid shrugging or using momentum. Slow, controlled reps maximise medial delt activation."),
+            Exercise(name: "Front Raise", category: "Strength", primaryMuscle: "Shoulders", secondaryMuscles: [], equipment: "Dumbbell", instructions: "Stand with dumbbells at your thighs. With a slight elbow bend, raise one or both arms to shoulder height in front of you. Lower slowly. Avoid leaning back or swinging. Alternate arms to allow the working side to fully contract."),
+            Exercise(name: "Reverse Fly", category: "Strength", primaryMuscle: "Shoulders", secondaryMuscles: ["Back"], equipment: "Dumbbell", instructions: "Hip hinge with torso nearly parallel, or use an incline bench. With a slight elbow bend, arc dumbbells upward and out to your sides until arms are parallel to the floor. Squeeze rear delts at the top. Avoid shrugging traps."),
+            Exercise(name: "Upright Row", category: "Strength", primaryMuscle: "Shoulders", secondaryMuscles: ["Back"], equipment: "Barbell", instructions: "Grip the bar slightly narrower than shoulder-width. Pull upward, leading with elbows which travel higher than wrists. Stop when elbows are at chin height. Use a wider grip to reduce shoulder impingement risk."),
+            Exercise(name: "Shrug", category: "Strength", primaryMuscle: "Back", secondaryMuscles: [], equipment: "Barbell", instructions: "Hold barbell or dumbbells at arm's length. Elevate shoulders straight up toward ears as high as possible. Hold at the peak for one second. Lower slowly to a full depression. Do not roll your shoulders; pure elevation and depression only."),
+            // Biceps
+            Exercise(name: "Barbell Curl", category: "Strength", primaryMuscle: "Biceps", secondaryMuscles: ["Forearms"], equipment: "Barbell", instructions: "Stand with underhand grip just wider than hip-width. Curl from full extension to full contraction, keeping upper arms pinned to sides. Squeeze hard at the top. Lower slowly for the eccentric. If you need to swing the weight is too heavy."),
+            Exercise(name: "Dumbbell Curl", category: "Strength", primaryMuscle: "Biceps", secondaryMuscles: ["Forearms"], equipment: "Dumbbell", instructions: "Hold dumbbells at sides with palms forward. Curl from full extension, supinating wrist as you lift. Squeeze at the top. Lower under control. Can be done alternating or simultaneously. Keep core tight and upper body still."),
+            Exercise(name: "Hammer Curl", category: "Strength", primaryMuscle: "Biceps", secondaryMuscles: ["Forearms"], equipment: "Dumbbell", instructions: "Hold dumbbells with a neutral grip, palms facing each other. Curl to shoulder height without rotating wrist. Heavily loads the brachialis and brachioradialis. Lower fully before next rep. Can be done alternating or simultaneously."),
+            Exercise(name: "Incline Dumbbell Curl", category: "Strength", primaryMuscle: "Biceps", secondaryMuscles: [], equipment: "Dumbbell", instructions: "Set bench to 45-60 degrees and sit back so arms hang behind torso, pre-stretching the bicep long head. Curl from full extension, supinating at the top. Use lighter weight than standing curls. Lower slowly for maximum tension."),
+            Exercise(name: "Concentration Curl", category: "Strength", primaryMuscle: "Biceps", secondaryMuscles: [], equipment: "Dumbbell", instructions: "Sit on a bench with your elbow braced against the inside of your thigh. Curl from full extension to peak contraction and squeeze hard. Lower slowly to a full stretch. The braced position eliminates cheating entirely."),
+            Exercise(name: "Cable Curl", category: "Strength", primaryMuscle: "Biceps", secondaryMuscles: ["Forearms"], equipment: "Cable", instructions: "Attach a straight or EZ-bar to a low cable pulley. Stand facing the machine and curl, keeping upper arms stationary. Cables maintain constant tension through the full range of motion. Control the return slowly."),
+            // Triceps
+            Exercise(name: "Skull Crusher", category: "Strength", primaryMuscle: "Triceps", secondaryMuscles: [], equipment: "Barbell", instructions: "Lie flat with an EZ-bar locked out above your chest. Keeping upper arms vertical, lower the bar toward your forehead by bending elbows. Press back to lockout. Keep upper arm angle critical and do not let them drift."),
+            Exercise(name: "Tricep Dip", category: "Strength", primaryMuscle: "Triceps", secondaryMuscles: ["Chest", "Shoulders"], equipment: "Bodyweight", instructions: "Use parallel bars and keep torso upright to emphasise triceps. Lower until upper arms are parallel to the floor. Press back to full extension. Unlike chest dips keep a more upright torso and elbows closer to body."),
+            Exercise(name: "Overhead Tricep Extension", category: "Strength", primaryMuscle: "Triceps", secondaryMuscles: [], equipment: "Dumbbell", instructions: "Hold one dumbbell with both hands overhead. Lower it behind your head by bending elbows, keeping upper arms close to ears. Press back to full extension and squeeze. The overhead position stretches the long head maximally."),
+            Exercise(name: "Cable Pushdown", category: "Strength", primaryMuscle: "Triceps", secondaryMuscles: [], equipment: "Cable", instructions: "Attach bar or rope to a high pulley. Elbows pinned at sides with slight forward lean. Push down to full extension and squeeze hard at bottom. Control the return until forearms are at roughly 90 degrees."),
+            Exercise(name: "Close-Grip Bench Press", category: "Strength", primaryMuscle: "Triceps", secondaryMuscles: ["Chest"], equipment: "Barbell", instructions: "Grip the bar slightly inside shoulder-width. Lower to your lower chest, keeping elbows tucked close to torso. Press back to lockout focusing on pushing triceps into the bar. Avoid a grip too narrow as this strains wrists."),
+            Exercise(name: "Tricep Kickback", category: "Strength", primaryMuscle: "Triceps", secondaryMuscles: [], equipment: "Dumbbell", instructions: "Hip hinge with your upper arm parallel to the floor and elbow bent at 90 degrees. Extend forearm back until arm is fully straight. Squeeze the tricep hard. Lower to 90 degrees and repeat. Keep upper arm completely still."),
+            // Legs
+            Exercise(name: "Squat", category: "Strength", primaryMuscle: "Quadriceps", secondaryMuscles: ["Glutes", "Hamstrings", "Core"], equipment: "Barbell", instructions: "Bar on upper traps, feet shoulder-width with toes slightly flared. Brace hard, drive knees out over toes, descend until hip crease passes knee. Drive through mid-foot to stand, pushing knees outward the entire way up."),
+            Exercise(name: "Front Squat", category: "Strength", primaryMuscle: "Quadriceps", secondaryMuscles: ["Core", "Shoulders"], equipment: "Barbell", instructions: "Bar rests across front deltoids with elbows high to create a shelf. Keep an extremely upright torso throughout. Descend to full depth, driving knees out. Front squats demand more core and upper back strength than back squats."),
+            Exercise(name: "Leg Press", category: "Strength", primaryMuscle: "Quadriceps", secondaryMuscles: ["Glutes", "Hamstrings"], equipment: "Machine", instructions: "Feet shoulder-width on platform, toes slightly out. Descend until knees are at 90 degrees. Do not let lower back peel off the seat. Drive through mid-foot to near-lockout. Higher foot placement shifts emphasis to glutes."),
+            Exercise(name: "Lunge", category: "Strength", primaryMuscle: "Quadriceps", secondaryMuscles: ["Glutes", "Hamstrings", "Core"], equipment: "Dumbbell", instructions: "Step forward into a long stride. Lower back knee toward floor until front shin is vertical. Drive through front heel to return to standing. Keep chest up throughout. Ensure stride is long enough so front knee does not drift past the toe."),
+            Exercise(name: "Romanian Deadlift", category: "Strength", primaryMuscle: "Hamstrings", secondaryMuscles: ["Glutes", "Core"], equipment: "Barbell", instructions: "Start standing with barbell at hips. Maintain soft knee bend, push hips back, and hinge forward tracking bar down your thighs. Lower until a deep stretch through hamstrings, typically mid-shin. Drive hips forward to stand. Back stays neutral throughout."),
+            Exercise(name: "Leg Curl", category: "Strength", primaryMuscle: "Hamstrings", secondaryMuscles: [], equipment: "Machine", instructions: "Lie face down with pad just above heels. Curl heels toward glutes under control. Squeeze at peak contraction and lower slowly. Avoid lifting hips off the pad. Pointed toes slightly increase hamstring activation."),
+            Exercise(name: "Leg Extension", category: "Strength", primaryMuscle: "Quadriceps", secondaryMuscles: [], equipment: "Machine", instructions: "Sit with pad resting on shins just above feet. Extend legs to near lockout, squeezing quads at top. Lower under control and do not let weight stack crash. Avoid locking knees under heavy load. Use as isolation, not primary movement."),
+            Exercise(name: "Calf Raise", category: "Strength", primaryMuscle: "Calves", secondaryMuscles: [], equipment: "Machine", instructions: "Place balls of feet on edge of platform with heels hanging off. Rise onto toes as high as possible. Pause at peak to eliminate stretch reflex. Lower slowly to a full stretch. Full range of motion every rep is critical for calf development."),
+            Exercise(name: "Hip Thrust", category: "Strength", primaryMuscle: "Glutes", secondaryMuscles: ["Hamstrings", "Core"], equipment: "Barbell", instructions: "Rest upper back on bench with padded bar across hips. Plant feet flat roughly under knees. Drive hips upward until body forms a straight line from knees to shoulders. Squeeze glutes maximally at the top. Lower to just above floor and repeat."),
+            Exercise(name: "Bulgarian Split Squat", category: "Strength", primaryMuscle: "Quadriceps", secondaryMuscles: ["Glutes", "Hamstrings"], equipment: "Dumbbell", instructions: "Rear foot elevated on a bench behind you. Hold dumbbells at sides. Descend until rear knee nearly touches the floor, keeping torso upright. Drive through front heel to return. Foot placement determines emphasis: further forward targets glutes, closer forward targets quads."),
+            // Core
+            Exercise(name: "Plank", category: "Strength", primaryMuscle: "Core", secondaryMuscles: ["Shoulders"], equipment: "Bodyweight", instructions: "Forearms on floor with elbows directly under shoulders. Create a straight line from head to heels. Actively brace your core, squeeze glutes, and breathe steadily. Avoid letting hips sag or pike. Add difficulty with a weight vest or elevated feet."),
+            Exercise(name: "Crunch", category: "Strength", primaryMuscle: "Core", secondaryMuscles: [], equipment: "Bodyweight", instructions: "Lie on back with knees bent. Fingertips lightly behind ears, do not pull neck. Curl shoulders off floor by contracting abs, bringing ribcage toward hips. Do not reach for knees. Pause at top and lower with control. Exhale during the crunch."),
+            Exercise(name: "Hanging Leg Raise", category: "Strength", primaryMuscle: "Core", secondaryMuscles: [], equipment: "Bodyweight", instructions: "Hang from a pull-up bar in a dead hang. Brace core and raise legs until parallel to the floor or higher. Avoid swinging; control both the raise and lowering phase. Bend knees to reduce difficulty. Keep legs straight to increase it."),
+            Exercise(name: "Cable Crunch", category: "Strength", primaryMuscle: "Core", secondaryMuscles: [], equipment: "Cable", instructions: "Kneel below high pulley with rope attachment. Grasp rope on either side of face. Crunch elbows toward knees by flexing the spine; hips stay stationary. This is a spinal flexion movement, not a hip flexion. Hold at the bottom contraction."),
+            Exercise(name: "Russian Twist", category: "Strength", primaryMuscle: "Core", secondaryMuscles: [], equipment: "Bodyweight", instructions: "Sit on floor with knees bent at 90 degrees, feet elevated slightly. Lean back about 45 degrees. Rotate torso side to side, touching the floor beside each hip. Hold a weight plate or medicine ball to add resistance. Keep lower back neutral."),
+            Exercise(name: "Ab Wheel Rollout", category: "Strength", primaryMuscle: "Core", secondaryMuscles: ["Shoulders", "Back"], equipment: "Other", instructions: "Kneel on floor and grip the ab wheel handles. Brace core hard before starting. Roll forward slowly, keeping hips low and lower back from sagging. Extend as far as possible while maintaining the rigid brace. Pull yourself back with abs, not arms."),
+            // Full Body / Olympic / Conditioning
+            Exercise(name: "Power Clean", category: "Strength", primaryMuscle: "Full Body", secondaryMuscles: ["Quadriceps", "Glutes", "Back", "Shoulders"], equipment: "Barbell", instructions: "Start with bar over mid-foot, grip just outside legs. First pull: push the floor keeping bar close. At mid-thigh, explode with hips via triple extension. Shrug aggressively, then pull yourself under and catch in a front rack position. Stand to full extension to complete."),
+            Exercise(name: "Kettlebell Swing", category: "Strength", primaryMuscle: "Glutes", secondaryMuscles: ["Hamstrings", "Core", "Back"], equipment: "Kettlebell", instructions: "Hike kettlebell back between legs in a hip hinge, not a squat. Snap hips forward aggressively to drive the bell to shoulder height. Power comes from hip extension, not from lifting with arms. Let the bell float at shoulder height. Control the hike back for next rep."),
+            Exercise(name: "Battle Ropes", category: "Cardio", primaryMuscle: "Full Body", secondaryMuscles: ["Shoulders", "Core"], equipment: "Other", instructions: "Hold one end of each rope with a neutral grip, standing a few feet from the anchor. Alternate arms creating large waves, or slam both simultaneously. Use your entire body; hips and legs drive the power through core to arms. Work in 20-30 second intervals."),
+            Exercise(name: "Farmer's Walk", category: "Strength", primaryMuscle: "Full Body", secondaryMuscles: ["Core", "Forearms", "Back"], equipment: "Dumbbell", instructions: "Pick up heavy dumbbells or kettlebells in each hand. Stand tall with chest up, shoulders packed down and back. Walk with deliberate controlled steps. Brace core the entire distance. Focus on grip strength and upright posture. One of the best core stability movements available."),
+            Exercise(name: "Lateral Lunge", category: "Strength", primaryMuscle: "Quadriceps", secondaryMuscles: ["Glutes", "Hamstrings"], equipment: "Bodyweight", instructions: "Stand with feet together. Step one foot wide to the side, pushing hips back as you bend the stepping knee. Keep the opposite leg straight. Push off the bent-knee leg to return. Lateral lunges target the inner thigh and load the hip through a different plane of motion."),
         ]
 
         for exercise in seeds {
@@ -485,6 +390,7 @@ extension GymRepository {
         }
         try saveContext(ctx)
     }
+    // swiftlint:enable function_body_length
 }
 
 // MARK: - Streak Calculation

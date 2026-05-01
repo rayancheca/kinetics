@@ -70,7 +70,8 @@ struct KineticsApp: App {
             Routine.self,
             PersonalRecord.self,
             BodyMeasurement.self,
-            VideoSession.self
+            VideoSession.self,
+            WeeklyPlan.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {

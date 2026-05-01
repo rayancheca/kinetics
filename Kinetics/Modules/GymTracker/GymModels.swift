@@ -405,6 +405,82 @@ final class Routine {
     }
 }
 
+// MARK: - WeeklyPlan
+
+/// A dynamic weekly training split the user creates.
+/// Each plan has N day-slots (not necessarily 7) that map to routines or rest.
+/// Repeat behaviour is optional and user-controlled.
+@Model
+final class WeeklyPlan {
+    var id: String
+    var userId: String
+    var name: String
+    var startDate: Date
+    var repeatType: String    // "none" | "weeks"
+    var repeatWeeks: Int      // how many weeks to repeat (0 = indefinitely)
+    /// JSON-encoded [WeeklyDaySlot]
+    var slotsData: Data
+    var isActive: Bool
+    var createdAt: Date
+
+    init(
+        id: String = UUID().uuidString,
+        userId: String,
+        name: String = "My Split",
+        startDate: Date = Date(),
+        repeatType: String = "none",
+        repeatWeeks: Int = 0,
+        slots: [WeeklyDaySlot] = [],
+        isActive: Bool = false,
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.userId = userId
+        self.name = name
+        self.startDate = startDate
+        self.repeatType = repeatType
+        self.repeatWeeks = repeatWeeks
+        slotsData = (try? JSONEncoder().encode(slots)) ?? Data()
+        self.isActive = isActive
+        self.createdAt = createdAt
+    }
+
+    var slots: [WeeklyDaySlot] {
+        get { (try? JSONDecoder().decode([WeeklyDaySlot].self, from: slotsData)) ?? [] }
+        set { slotsData = (try? JSONEncoder().encode(newValue)) ?? Data() }
+    }
+}
+
+// MARK: - WeeklyDaySlot
+
+struct WeeklyDaySlot: Codable, Identifiable, Equatable, Sendable {
+    var id: String
+    var dayIndex: Int          // 0 = first day of plan, 1 = second, etc.
+    var dayOfWeek: Int         // 0=Sun, 1=Mon...6=Sat (user-assigned)
+    var routineId: String?     // nil = rest day
+    var routineName: String?
+    var label: String          // e.g. "Push", "Pull", "Legs", "Rest"
+    var muscleGroups: [String] // e.g. ["Chest", "Shoulders", "Triceps"]
+
+    init(
+        id: String = UUID().uuidString,
+        dayIndex: Int,
+        dayOfWeek: Int,
+        routineId: String? = nil,
+        routineName: String? = nil,
+        label: String = "Rest",
+        muscleGroups: [String] = []
+    ) {
+        self.id = id
+        self.dayIndex = dayIndex
+        self.dayOfWeek = dayOfWeek
+        self.routineId = routineId
+        self.routineName = routineName
+        self.label = label
+        self.muscleGroups = muscleGroups
+    }
+}
+
 // MARK: - PersonalRecord
 
 /// Stores the all-time best weight x reps pair for a given exercise.

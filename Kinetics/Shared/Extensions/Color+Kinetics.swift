@@ -12,8 +12,8 @@ extension Color {
     /// Electric blue accent for skeleton overlays and active UI states: #00C2FF.
     static let kineticsBlue = Color(red: 0.0, green: 0.761, blue: 1.0)
 
-    /// Neon green for real-time metrics badges: #39FF14.
-    static let kineticsGreen = Color(red: 0.224, green: 1.0, blue: 0.078)
+    /// Neon green for real-time metrics badges and GymTracker secondary accent: #39E870.
+    static let kineticsGreen = Color(red: 0.224, green: 0.906, blue: 0.439)
 
     /// Primary card background: #131313 — slightly lifted from the app background.
     static let kineticsDark = Color(red: 0.075, green: 0.075, blue: 0.075)

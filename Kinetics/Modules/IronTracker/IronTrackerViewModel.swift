@@ -163,11 +163,29 @@ final class IronTrackerViewModel {
 
         guard sessionDuration > 2 else { return }
 
+        // Compute a bar path deviation proxy: average perpendicular spread of the
+        // accumulated bar path from an ideal vertical line, scaled to centimetres.
+        // We use the horizontal range of the bar path (max X – min X) as a simple
+        // stand-in for deviation since exact path history is not stored here.
+        let barDeviationCM: Double = {
+            guard !barPath.isEmpty else { return 0 }
+            let xs = barPath.map { Double($0.x) }
+            let spread = (xs.max() ?? 0) - (xs.min() ?? 0)
+            // 1 normalized unit ≈ 50 cm at typical filming distance; convert to cm.
+            return spread * 50.0
+        }()
+
         let result = SessionResult(
             sport: .ironTracker,
             startedAt: sessionStartTime ?? Date(),
             duration: sessionDuration,
             metrics: [
+                // Keys read by IronTrackerSessionReportView
+                "bar_path_deviation_cm":  barDeviationCM,
+                "vbt_velocity_ms":        metrics.peakBarVelocityMS,
+                "bilateral_symmetry":     max(0.0, 1.0 - abs(metrics.bilateralSymmetry) / 100.0),
+                "butt_wink_angle":        metrics.isButtWink ? (180.0 - metrics.leftHipAngle) : 0.0,
+                // Keys read by CoachingEngine
                 "peak_bar_velocity_ms":   metrics.peakBarVelocityMS,
                 "bilateral_symmetry_pct": metrics.bilateralSymmetry,
                 "butt_wink_detected":     metrics.isButtWink ? 1.0 : 0.0,

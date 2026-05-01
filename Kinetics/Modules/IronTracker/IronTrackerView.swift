@@ -66,8 +66,11 @@ struct IronTrackerView: View {
         .onDisappear {
             Task {
                 let uid = appState.authManager.currentUser?.uid ?? "anonymous"
-                viewModel.stopProcessing()
+                // endSession must be called BEFORE stopProcessing so isSessionActive is
+                // still true when endSession's guard runs. stopProcessing is a no-op
+                // if endSession already cleared the session.
                 await viewModel.endSession(userId: uid)
+                viewModel.stopProcessing()
                 appState.cameraManager.stopSession()
                 if viewModel.lastCompletedSession != nil { showReport = true }
             }
@@ -121,10 +124,11 @@ struct IronTrackerView: View {
                 .ignoresSafeArea()
 
             // Layer 4a: Injury risk warning banner (top of overlay — full width).
+            // Animate on the danger flag count so the banner slides in/out cleanly.
             injuryRiskBanner
                 .animation(
                     .spring(duration: 0.25),
-                    value: viewModel.activeRiskFlags.filter { $0.severity == .danger }.isEmpty
+                    value: viewModel.activeRiskFlags.filter { $0.severity == .danger }.count
                 )
 
             // Layer 4b: Form-breakdown alert badges (top-left).
@@ -139,7 +143,10 @@ struct IronTrackerView: View {
             // Layer 6: Camera flip button
             cameraFlipButton
         }
-        .alert("Camera Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+        .alert("Camera Error", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
             Button("OK") { viewModel.errorMessage = nil }
         } message: {
             Text(viewModel.errorMessage ?? "")

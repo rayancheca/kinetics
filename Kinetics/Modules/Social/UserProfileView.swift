@@ -115,12 +115,14 @@ struct UserProfileView: View {
                         .padding(.top, 20)
                 }
 
-                // Error
+                // Error banner
                 if let message = viewModel.errorMessage {
-                    Text(message)
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color.kineticsRed)
-                        .padding(16)
+                    ErrorBannerView(message: message) {
+                        viewModel.errorMessage = nil
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .transition(.opacity)
                 }
 
                 // Recent activity
@@ -148,21 +150,56 @@ struct UserProfileView: View {
 
     private var recentActivitySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Recent Activity")
-                .font(.system(size: 13, weight: .semibold))
-                .tracking(1.4)
-                .foregroundStyle(.white.opacity(0.38))
-                .padding(.horizontal, 20)
-                .padding(.top, 24)
+            HStack {
+                Text("RECENT ACTIVITY")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(2.0)
+                    .foregroundStyle(.white.opacity(0.38))
 
-            if viewModel.activities.isEmpty && !viewModel.isLoading {
-                Text("No public activity yet")
-                    .font(.system(size: 15))
-                    .foregroundStyle(Color.kineticsSubtext)
+                Spacer()
+
+                if !viewModel.activities.isEmpty {
+                    Text("\(viewModel.activities.count) sessions")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.kineticsSubtext)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+
+            if viewModel.isLoading {
+                ProgressView()
+                    .tint(Color.kineticsBlue)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 32)
+                    .padding(.vertical, 24)
+            } else if viewModel.activities.isEmpty {
+                // Empty state with icon and context
+                VStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.kineticsDark)
+                            .frame(width: 64, height: 64)
+                        Image(systemName: "figure.run.circle")
+                            .font(.system(size: 28, weight: .light))
+                            .foregroundStyle(Color.kineticsSubtext)
+                    }
+
+                    VStack(spacing: 4) {
+                        Text("No public activity yet")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.7))
+
+                        Text("Completed sessions will appear here.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.kineticsSubtext)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 32)
+                .padding(.horizontal, 16)
             } else {
-                LazyVStack(spacing: 10) {
+                LazyVStack(spacing: 8) {
                     ForEach(viewModel.activities) { item in
                         MiniActivityCard(item: item)
                             .padding(.horizontal, 16)
@@ -185,10 +222,16 @@ struct UserProfileView: View {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
                 .fill(Color.kineticsDark)
                 .frame(width: 90, height: 14)
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(Color.kineticsDark)
+                .frame(width: 200, height: 13)
+            Spacer().frame(height: 8)
+            Divider().background(.white.opacity(0.07))
         }
         .padding(.top, 32)
-        .padding(.bottom, 16)
+        .padding(.bottom, 4)
         .frame(maxWidth: .infinity)
+        .redacted(reason: .placeholder)
     }
 
     // MARK: - Edit Bio Button

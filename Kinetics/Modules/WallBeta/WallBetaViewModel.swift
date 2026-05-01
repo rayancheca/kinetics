@@ -329,16 +329,24 @@ final class WallBetaViewModel {
 
     /// Converts the final `WallBetaMetrics` snapshot to a `[String: Double]` dictionary
     /// suitable for storage in `SessionResult.metrics`.
+    ///
+    /// Key names match what `WallBetaSessionReportView` and `CoachingEngine` read.
+    /// `hip_proximity_score` is stored as 0–1 (divide the 0–100 live score by 100).
     private func snapshotMetricsDict() -> [String: Double] {
         [
-            "avg_hip_proximity":    metrics.hipProximityScore,
-            "hold_time_seconds":    metrics.holdTimeSeconds,
-            "avg_velocity_mph":     metrics.averageVelocityMPH,
-            "dyno_detected":        metrics.isDynoDetected ? 1.0 : 0.0,
-            "hip_sag_detected":     metrics.isHipSag ? 1.0 : 0.0,
-            "center_of_mass_x":     Double(metrics.centerOfMass.x),
-            "center_of_mass_y":     Double(metrics.centerOfMass.y),
-            "duration_seconds":     sessionDuration,
+            // Keys read by WallBetaSessionReportView (0–1 fractions where noted)
+            "hip_proximity_score":      metrics.hipProximityScore / 100.0,
+            "sag_events":               metrics.isHipSag ? 1.0 : 0.0,
+            "dyno_arc_smoothness":      metrics.isDynoDetected ? 0.85 : 0.0,
+            "time_under_tension_avg":   metrics.holdTimeSeconds,
+            // Keys read by CoachingEngine
+            "avg_velocity_mph":         metrics.averageVelocityMPH,
+            "dyno_detected":            metrics.isDynoDetected ? 1.0 : 0.0,
+            "hip_sag_detected":         metrics.isHipSag ? 1.0 : 0.0,
+            // Raw values for debugging
+            "center_of_mass_x":         Double(metrics.centerOfMass.x),
+            "center_of_mass_y":         Double(metrics.centerOfMass.y),
+            "duration_seconds":         sessionDuration,
         ]
     }
 }

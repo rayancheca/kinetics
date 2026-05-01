@@ -238,7 +238,7 @@ enum CoachingEngine {
     private static func ironTrackerNotes(for result: SessionResult) -> [CoachingNote] {
         var notes: [CoachingNote] = []
 
-        // bar_path_deviation_cm
+        // bar_path_deviation_cm — key matches IronTrackerViewModel snapshot
         if let deviation = result.metrics["bar_path_deviation_cm"] {
             let formatted = String(format: "%.1f", deviation)
             if deviation < 2 {
@@ -262,7 +262,7 @@ enum CoachingEngine {
             }
         }
 
-        // vbt_velocity_ms
+        // vbt_velocity_ms — key matches IronTrackerViewModel snapshot
         if let velocity = result.metrics["vbt_velocity_ms"] {
             if velocity > 0.8 {
                 let formatted = String(format: "%.2f", velocity)
@@ -277,7 +277,7 @@ enum CoachingEngine {
             }
         }
 
-        // bilateral_symmetry
+        // bilateral_symmetry — stored as 0–1 fraction (1.0 = perfect)
         if let symmetry = result.metrics["bilateral_symmetry"] {
             if symmetry < 0.85 {
                 notes.append(CoachingNote(
@@ -291,7 +291,7 @@ enum CoachingEngine {
             }
         }
 
-        // butt_wink_angle
+        // butt_wink_angle — key matches IronTrackerViewModel snapshot
         if let winkAngle = result.metrics["butt_wink_angle"] {
             if winkAngle > 15 {
                 let formatted = String(format: "%.0f", winkAngle)
@@ -426,11 +426,12 @@ enum CoachingEngine {
     }
 
     /// The single most representative metric for each sport module.
+    /// Keys must match those written by each module's ViewModel metrics snapshot.
     private static func primaryMetricKey(for sport: SportType) -> String {
         switch sport {
         case .striking:    "peak_velocity_mph"
         case .grappling:   "kuzushi_index"
-        case .ironTracker: "bilateral_symmetry"
+        case .ironTracker: "vbt_velocity_ms"
         case .wallBeta:    "hip_proximity_score"
         }
     }
@@ -461,16 +462,26 @@ enum CoachingEngine {
     }
 
     private static func ironTrackerGoal(for result: SessionResult) -> String {
+        // bilateral_symmetry is stored as 0–1 fraction
         if let symmetry = result.metrics["bilateral_symmetry"], symmetry < 0.9 {
             return "Close the symmetry gap — slow reps with mirror"
         }
-        return "Push bar velocity above 0.8 m/s"
+        // vbt_velocity_ms key matches IronTrackerViewModel snapshot
+        if let velocity = result.metrics["vbt_velocity_ms"], velocity < 0.8 {
+            return "Push bar velocity above 0.8 m/s"
+        }
+        return "Maintain bar path precision — keep deviation under 2 cm"
     }
 
     private static func wallBetaGoal(for result: SessionResult) -> String {
+        // hip_proximity_score is stored as 0–1 fraction
         if let proximity = result.metrics["hip_proximity_score"], proximity < 0.65 {
             return "Focus entirely on hip proximity — quality over quantity"
         }
-        return "Work on reducing hold time below 2.5s average"
+        // time_under_tension_avg key matches WallBetaViewModel snapshot
+        if let holdTime = result.metrics["time_under_tension_avg"], holdTime > 2.5 {
+            return "Work on reducing hold time below 2.5s average"
+        }
+        return "Push for a clean Dyno — explosive hip drive on the crux move"
     }
 }

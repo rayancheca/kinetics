@@ -480,11 +480,13 @@ struct ExerciseLibraryView: View {
     @State private var exercises: [Exercise] = []
     @State private var searchText = ""
     @State private var selectedCategory: String? = nil
+    @State private var selectedMuscle: String? = nil
     @State private var isLoading = false
     @State private var showComingSoonAlert = false
     @Environment(\.dismiss) private var dismiss
 
     private let categories = ["All", "Strength", "Cardio", "Olympic", "Flexibility"]
+    private let muscleGroups = GymMuscleGroup.allCases.map(\.rawValue)
 
     var body: some View {
         NavigationStack {
@@ -524,9 +526,10 @@ struct ExerciseLibraryView: View {
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: "Search exercises"
             )
-            .task { loadExercises() }
-            .onChange(of: searchText) { loadExercises() }
-            .onChange(of: selectedCategory) { loadExercises() }
+            .task { await loadExercisesAsync() }
+            .onChange(of: searchText) { Task { await loadExercisesAsync() } }
+            .onChange(of: selectedCategory) { Task { await loadExercisesAsync() } }
+            .onChange(of: selectedMuscle) { Task { await loadExercisesAsync() } }
             .alert("Coming Soon", isPresented: $showComingSoonAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -535,24 +538,58 @@ struct ExerciseLibraryView: View {
         }
     }
 
-    // MARK: - Category Filter Bar
+    // MARK: - Category + Muscle Filter Bar
 
     private var categoryFilterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(categories, id: \.self) { category in
-                    CategoryPill(
-                        title: category,
-                        isSelected: category == "All"
-                            ? selectedCategory == nil
-                            : selectedCategory == category
-                    ) {
-                        selectedCategory = category == "All" ? nil : category
+        VStack(spacing: 0) {
+            // Row 1: Workout categories
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(categories, id: \.self) { category in
+                        CategoryPill(
+                            title: category,
+                            isSelected: category == "All"
+                                ? selectedCategory == nil
+                                : selectedCategory == category,
+                            accentColor: Color.kineticsBlue
+                        ) {
+                            selectedCategory = category == "All" ? nil : category
+                        }
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 6)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+
+            // Row 2: Muscle group chips (accent green to visually separate)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    CategoryPill(
+                        title: "All Muscles",
+                        isSelected: selectedMuscle == nil,
+                        accentColor: Color.kineticsGreen
+                    ) {
+                        selectedMuscle = nil
+                    }
+
+                    ForEach(muscleGroups, id: \.self) { muscle in
+                        CategoryPill(
+                            title: muscle,
+                            isSelected: selectedMuscle == muscle,
+                            accentColor: Color.kineticsGreen
+                        ) {
+                            selectedMuscle = selectedMuscle == muscle ? nil : muscle
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 2)
+                .padding(.bottom, 10)
+            }
+
+            Divider()
+                .background(Color.kineticsSubtext.opacity(0.15))
         }
         .background(Color.kineticsBackground)
     }
@@ -574,20 +611,48 @@ struct ExerciseLibraryView: View {
     // MARK: - Empty State
 
     private var emptyLibraryState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Spacer()
 
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 44, weight: .light))
-                .foregroundStyle(Color.kineticsSubtext.opacity(0.5))
+            ZStack {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color.kineticsDark)
+                    .frame(width: 80, height: 80)
+                Image(systemName: searchText.isEmpty ? "books.vertical.fill" : "magnifyingglass")
+                    .font(.system(size: 34, weight: .medium))
+                    .foregroundStyle(Color.kineticsBlue.opacity(0.55))
+            }
 
-            Text(searchText.isEmpty ? "No exercises in library" : "No results for \"\(searchText)\"")
-                .font(.headline)
-                .foregroundStyle(.white)
+            VStack(spacing: 8) {
+                Text(searchText.isEmpty ? "No exercises in library" : "No results for \"\(searchText)\"")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.white)
 
-            Text("Try a different search or category")
-                .font(.subheadline)
-                .foregroundStyle(Color.kineticsSubtext)
+                Text(searchText.isEmpty
+                     ? "The exercise library will seed automatically on first load."
+                     : "Try clearing the filter or use a different keyword.")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.kineticsSubtext)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+            }
+
+            if !searchText.isEmpty {
+                Button {
+                    selectedCategory = nil
+                } label: {
+                    Text("Clear Filters")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.kineticsBlue)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.kineticsBlue.opacity(0.12))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
 
             Spacer()
         }
@@ -622,13 +687,23 @@ struct ExerciseLibraryView: View {
 
     // MARK: - Data Loading
 
-    private func loadExercises() {
+    @MainActor
+    private func loadExercisesAsync() async {
         isLoading = true
+        // Yield once so SwiftUI can render the spinner before the synchronous fetch.
+        await Task.yield()
         let filter = searchText.isEmpty ? nil : searchText
-        exercises = (try? GymRepository.shared.fetchExercises(
+        var results = (try? GymRepository.shared.fetchExercises(
             filter: filter,
             category: selectedCategory
         )) ?? []
+        // Apply muscle group filter in-memory (primary or secondary muscle match).
+        if let muscle = selectedMuscle {
+            results = results.filter {
+                $0.primaryMuscle == muscle || $0.secondaryMuscles.contains(muscle)
+            }
+        }
+        exercises = results
         isLoading = false
     }
 }
@@ -639,18 +714,26 @@ private struct CategoryPill: View {
 
     let title: String
     let isSelected: Bool
+    var accentColor: Color = Color.kineticsBlue
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? .black : Color.kineticsSubtext)
+                .foregroundStyle(isSelected ? Color.black : Color.kineticsSubtext)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
                 .background(
                     Capsule()
-                        .fill(isSelected ? Color.kineticsBlue : Color.kineticsDark)
+                        .fill(isSelected ? accentColor : Color.kineticsDark)
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(
+                                    isSelected ? Color.clear : accentColor.opacity(0.12),
+                                    lineWidth: 1
+                                )
+                        )
                 )
                 .animation(.spring(duration: 0.2), value: isSelected)
         }

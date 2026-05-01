@@ -24,6 +24,11 @@ final class SubscriptionManager {
     var purchaseError: String?
     var isLoading = false
 
+    /// `true` once the product load has completed and no products came back.
+    /// Indicates that App Store Connect hasn't been configured yet — shows a
+    /// graceful "Premium Coming Soon" state instead of crashing or hanging.
+    var noProductsAvailable: Bool = false
+
     nonisolated(unsafe) private var transactionListener: Task<Void, Error>?
 
     init() {
@@ -42,15 +47,21 @@ final class SubscriptionManager {
         isLoading = true
         defer { isLoading = false }
         do {
-            products = try await Product.products(
+            let loaded = try await Product.products(
                 for: KineticsProduct.allCases.map(\.rawValue)
             )
+            products = loaded
+            // Mark as coming-soon if the store returned zero products.
+            noProductsAvailable = loaded.isEmpty
         } catch {
-            purchaseError = error.localizedDescription
+            // Network/sandbox error — treat as coming-soon rather than surfacing
+            // a cryptic StoreKit error to the user.
+            noProductsAvailable = true
+            // Don't set purchaseError here; the screen shows a graceful banner.
         }
     }
 
-    // MARK: - Purchase
+    // MARK: - Purchase (Product overload)
 
     @discardableResult
     func purchase(_ product: Product) async -> Bool {
@@ -77,6 +88,23 @@ final class SubscriptionManager {
             purchaseError = error.localizedDescription
             return false
         }
+    }
+
+    // MARK: - Purchase (KineticsProduct overload)
+    //
+    // Called from SubscriptionView when the StoreKit product hasn't loaded yet
+    // but the user taps Subscribe anyway. Triggers a reload first, then purchases.
+
+    @discardableResult
+    func purchase(_ plan: KineticsProduct) async -> Bool {
+        if products.isEmpty {
+            await loadProducts()
+        }
+        guard let product = products.first(where: { $0.id == plan.rawValue }) else {
+            purchaseError = "This product isn't available yet. Please try again later."
+            return false
+        }
+        return await purchase(product)
     }
 
     // MARK: - Restore

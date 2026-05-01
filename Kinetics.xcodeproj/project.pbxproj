@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FA72C3D1E2B4A5F6C7D8E9B0 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FB83D4E2F3C5B6A7D8E9F0C1 /* GoogleService-Info.plist */; };
 		09F67684245B876B24959826 /* ActiveGymSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19FEB8C998F1CF53FF5240E /* ActiveGymSessionView.swift */; };
 		0C296E87D17F3ABEF24D62CD /* SocialModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0EA76A613EE66A3CFB9842 /* SocialModels.swift */; };
 		0FC3C27122B7C7C1C81A087B /* Color+Kinetics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */; };
@@ -124,6 +125,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FB83D4E2F3C5B6A7D8E9F0C1 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Kinetics/Resources/GoogleService-Info.plist"; sourceTree = SOURCE_ROOT; };
 		04CF8E2F952DD6ED295C43EA /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		05FB80A5C42F07AC82B0487B /* StrikingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingView.swift; sourceTree = "<group>"; };
 		099853C55F62679C9537A8A4 /* SocialRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialRepository.swift; sourceTree = "<group>"; };
@@ -541,6 +543,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = BFFD0799B8B9186B37682FD2 /* Build configuration list for PBXNativeTarget "Kinetics" */;
 			buildPhases = (
+				FC94E5F3A4D6C7B8E9F0A1D2 /* Resources */,
 				FC13FF98C07B93D6D17F9E25 /* Sources */,
 				38910400C9BF7C3AF1620A86 /* Frameworks */,
 				2D1C6D9D10D5F2C7AAA38263 /* Embed Foundation Extensions */,
@@ -602,6 +605,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FC94E5F3A4D6C7B8E9F0A1D2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA72C3D1E2B4A5F6C7D8E9B0 /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		EEF2820FAE98973E1AA6A8AC /* Sources */ = {

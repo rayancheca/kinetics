@@ -83,6 +83,11 @@ final class GrapplingViewModel {
 
     // MARK: - Session Lifecycle
 
+    /// Clears the current error message. Called when the user dismisses the error alert.
+    func clearError() {
+        errorMessage = nil
+    }
+
     /// Starts the camera and begins real-time pose analysis.
     ///
     /// - Parameter cameraManager: The shared `CameraManager` from `AppState`.
@@ -260,16 +265,22 @@ final class GrapplingViewModel {
 
     /// Converts the final `GrapplingMetrics` to a `[String: Double]` dictionary
     /// for storage in `SessionResult.metrics`.
+    ///
+    /// Key names match what `GrapplingSessionReportView` and `CoachingEngine` read.
     private func snapshotMetricsDict() -> [String: Double] {
         [
-            "spineAngleDegrees":   metrics.spineAngleDegrees,
-            "kuzushiIndex":        metrics.kuzushiIndex,
-            "hipElevation":        metrics.hipElevation,
-            "isGroundPosition":    metrics.isGroundPosition ? 1.0 : 0.0,
-            "isBaseStable":        metrics.isBaseStable ? 1.0 : 0.0,
-            "centerOfMassX":       Double(metrics.centerOfMass.x),
-            "centerOfMassY":       Double(metrics.centerOfMass.y),
-            "durationSeconds":     sessionDuration
+            // Report-view keys (must match GrapplingSessionReportView derived properties)
+            "kuzushi_index":     metrics.kuzushiIndex,
+            "base_stability":    metrics.isBaseStable ? 1.0 : 0.0,
+            "postural_breaks":   metrics.isPosturalAlert ? 1.0 : 0.0,
+            "com_control":       metrics.isBaseStable ? 1.0 : 0.0,
+            // Additional detail keys
+            "spine_angle_deg":   metrics.spineAngleDegrees,
+            "hip_elevation":     metrics.hipElevation,
+            "is_ground_position": metrics.isGroundPosition ? 1.0 : 0.0,
+            "center_of_mass_x":  Double(metrics.centerOfMass.x),
+            "center_of_mass_y":  Double(metrics.centerOfMass.y),
+            "duration_seconds":  sessionDuration
         ]
     }
 }

@@ -75,11 +75,11 @@ struct IronTrackerSessionReportView: View {
 
     // MARK: Symmetry Helpers
 
+    // bilateralSym is stored as a 0–1 fraction (1.0 = perfect symmetry).
     private var symmetryColor: Color {
-        let pct = bilateralSym * 100
-        switch pct {
-        case 90...: return Color.kineticsGreen
-        case 80..<90: return Color.kineticsOrange
+        switch bilateralSym {
+        case 0.90...: return Color.kineticsGreen
+        case 0.80..<0.90: return Color.kineticsOrange
         default: return Color.kineticsRed
         }
     }

@@ -423,42 +423,74 @@ private struct StrengthChartView: View {
         let lastRecord = records.last
 
         Chart(records, id: \.id) { record in
+            // Gradient area fill below the line
+            AreaMark(
+                x: .value("Date", record.achievedAt),
+                y: .value("Weight (kg)", record.weight)
+            )
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [
+                        Color.kineticsBlue.opacity(0.22),
+                        Color.kineticsBlue.opacity(0.03)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .interpolationMethod(.catmullRom)
+
+            // Primary line
             LineMark(
                 x: .value("Date", record.achievedAt),
                 y: .value("Weight (kg)", record.weight)
             )
             .foregroundStyle(Color.kineticsBlue)
+            .lineStyle(StrokeStyle(lineWidth: 2.5))
             .interpolationMethod(.catmullRom)
 
+            // Point markers — filled circle with white center dot
             PointMark(
                 x: .value("Date", record.achievedAt),
                 y: .value("Weight (kg)", record.weight)
             )
             .foregroundStyle(Color.kineticsBlue)
-            .symbolSize(50)
+            .symbolSize(64)
 
+            PointMark(
+                x: .value("Date", record.achievedAt),
+                y: .value("Weight (kg)", record.weight)
+            )
+            .foregroundStyle(Color.kineticsDark)
+            .symbolSize(20)
+
+            // Floating weight badge on the latest point
             if let last = lastRecord, record.id == last.id {
                 PointMark(
                     x: .value("Date", record.achievedAt),
                     y: .value("Weight (kg)", record.weight)
                 )
-                .annotation(position: .top, alignment: .center, spacing: 6) {
+                .annotation(position: .top, alignment: .center, spacing: 8) {
                     Text(formatWeight(record.weight))
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
                         .background(
                             Capsule()
                                 .fill(Color.kineticsBlue)
                         )
                 }
+                .foregroundStyle(Color.clear)
+                .symbolSize(0)
             }
         }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
                     .foregroundStyle(Color.kineticsSubtext.opacity(0.2))
+                AxisTick()
+                    .foregroundStyle(Color.kineticsSubtext.opacity(0.3))
                 AxisValueLabel {
                     if let date = value.as(Date.self) {
                         Text(date, format: .dateTime.month(.abbreviated).day())
@@ -469,8 +501,8 @@ private struct StrengthChartView: View {
             }
         }
         .chartYAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
                     .foregroundStyle(Color.kineticsSubtext.opacity(0.2))
                 AxisValueLabel {
                     if let kg = value.as(Double.self) {
@@ -484,7 +516,7 @@ private struct StrengthChartView: View {
         .chartPlotStyle { plot in
             plot.background(Color.clear)
         }
-        .frame(height: 200)
+        .frame(height: 220)
     }
 
     // MARK: Empty State
@@ -602,6 +634,8 @@ private struct BodyWeightChartView: View {
 
     @ViewBuilder
     private var chart: some View {
+        let lastMeasurement = measurements.last
+
         Chart(measurements, id: \.id) { m in
             AreaMark(
                 x: .value("Date", m.recordedAt),
@@ -624,13 +658,48 @@ private struct BodyWeightChartView: View {
                 y: .value("Weight (kg)", m.weightKg)
             )
             .foregroundStyle(Color.kineticsBlue)
-            .lineStyle(StrokeStyle(lineWidth: 2))
+            .lineStyle(StrokeStyle(lineWidth: 2.5))
             .interpolationMethod(.catmullRom)
+
+            // Point marker — filled outer + dark inner dot
+            PointMark(
+                x: .value("Date", m.recordedAt),
+                y: .value("Weight (kg)", m.weightKg)
+            )
+            .foregroundStyle(Color.kineticsBlue)
+            .symbolSize(52)
+
+            PointMark(
+                x: .value("Date", m.recordedAt),
+                y: .value("Weight (kg)", m.weightKg)
+            )
+            .foregroundStyle(Color.kineticsDark)
+            .symbolSize(18)
+
+            // Latest entry label
+            if let last = lastMeasurement, m.id == last.id {
+                PointMark(
+                    x: .value("Date", m.recordedAt),
+                    y: .value("Weight (kg)", m.weightKg)
+                )
+                .annotation(position: .top, alignment: .center, spacing: 8) {
+                    Text(String(format: "%.1f kg", m.weightKg))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(Color.kineticsBlue))
+                }
+                .foregroundStyle(Color.clear)
+                .symbolSize(0)
+            }
         }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
                     .foregroundStyle(Color.kineticsSubtext.opacity(0.2))
+                AxisTick()
+                    .foregroundStyle(Color.kineticsSubtext.opacity(0.3))
                 AxisValueLabel {
                     if let date = value.as(Date.self) {
                         Text(date, format: .dateTime.month(.abbreviated).day())
@@ -641,8 +710,8 @@ private struct BodyWeightChartView: View {
             }
         }
         .chartYAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
                     .foregroundStyle(Color.kineticsSubtext.opacity(0.2))
                 AxisValueLabel {
                     if let kg = value.as(Double.self) {
@@ -656,7 +725,7 @@ private struct BodyWeightChartView: View {
         .chartPlotStyle { plot in
             plot.background(Color.clear)
         }
-        .frame(height: 180)
+        .frame(height: 200)
     }
 
     private var emptyState: some View {

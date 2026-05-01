@@ -95,9 +95,13 @@ struct GrapplingView: View {
         }
         .alert(
             "Camera Error",
-            isPresented: .constant(viewModel.errorMessage != nil),
+            isPresented: Binding(
+                get: { viewModel.errorMessage != nil },
+                set: { if !$0 { viewModel.clearError() } }
+            ),
             actions: {
                 Button("Dismiss") {
+                    viewModel.clearError()
                     dismiss()
                 }
             },

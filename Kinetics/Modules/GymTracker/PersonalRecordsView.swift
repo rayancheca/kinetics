@@ -8,10 +8,15 @@ struct PersonalRecordsView: View {
 
     let userId: String
 
-    @Query(sort: \PersonalRecord.achievedAt, order: .reverse) private var records: [PersonalRecord]
+    // Filter at the @Query level so only this user's PRs are loaded.
+    @Query(sort: \PersonalRecord.achievedAt, order: .reverse) private var allRecords: [PersonalRecord]
     @State private var searchText = ""
 
     // MARK: Derived
+
+    private var records: [PersonalRecord] {
+        allRecords.filter { $0.userId == userId }
+    }
 
     private var filteredRecords: [PersonalRecord] {
         guard !searchText.isEmpty else { return records }
@@ -35,6 +40,7 @@ struct PersonalRecordsView: View {
             .navigationTitle("Personal Records")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(Color.kineticsBackground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .searchable(
                 text: $searchText,
@@ -47,19 +53,32 @@ struct PersonalRecordsView: View {
     // MARK: - Subviews
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "trophy.slash")
-                .font(.system(size: 52, weight: .medium))
-                .foregroundStyle(Color.kineticsSubtext)
+        VStack(spacing: 20) {
+            Spacer()
 
-            Text("No personal records yet")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
+            ZStack {
+                Circle()
+                    .fill(Color.kineticsAmber.opacity(0.08))
+                    .frame(width: 96, height: 96)
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 44, weight: .medium))
+                    .foregroundStyle(Color.kineticsAmber.opacity(0.5))
+            }
 
-            Text("Complete a workout to set your first PR.")
-                .font(.subheadline)
-                .foregroundStyle(Color.kineticsSubtext)
-                .multilineTextAlignment(.center)
+            VStack(spacing: 8) {
+                Text(searchText.isEmpty ? "No personal records yet" : "No results")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white)
+
+                Text(searchText.isEmpty
+                     ? "Complete a workout and log your sets to\nset your first PR automatically."
+                     : "Try a different search term.")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.kineticsSubtext)
+                    .multilineTextAlignment(.center)
+            }
+
+            Spacer()
         }
         .padding(.horizontal, 40)
     }
@@ -163,6 +182,8 @@ struct BodyMeasurementView: View {
     @State private var showAddSheet = false
     @State private var latestWeight: Double = 0
     @State private var latestBodyFat: Double = 0
+    /// Whether the user prefers imperial (lbs) vs metric (kg) display.
+    @State private var showImperial = false
 
     // MARK: Body
 
@@ -186,6 +207,20 @@ struct BodyMeasurementView: View {
             .toolbarBackground(Color.kineticsBackground, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    // Unit toggle: kg ↔ lbs
+                    let unitLabel = showImperial ? "lbs" : "kg"
+                    Button {
+                        showImperial.toggle()
+                    } label: {
+                        Text(unitLabel)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.kineticsBlue)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(Color.kineticsBlue.opacity(0.15)))
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showAddSheet = true
@@ -205,7 +240,7 @@ struct BodyMeasurementView: View {
                 latestBodyFat = newValue.first?.bodyFatPercent ?? 0
             }
             .sheet(isPresented: $showAddSheet) {
-                AddMeasurementSheet(userId: userId) {
+                AddMeasurementSheet(userId: userId, showImperial: showImperial) {
                     showAddSheet = false
                 }
             }
@@ -218,8 +253,8 @@ struct BodyMeasurementView: View {
         HStack(spacing: 12) {
             MeasurementStatCard(
                 label: "WEIGHT",
-                value: latestWeight > 0 ? weightFormatted(latestWeight) : "--",
-                unit: latestWeight > 0 ? "kg" : nil
+                value: latestWeight > 0 ? displayWeight(latestWeight) : "--",
+                unit: latestWeight > 0 ? (showImperial ? "lbs" : "kg") : nil
             )
             MeasurementStatCard(
                 label: "BODY FAT",
@@ -227,6 +262,19 @@ struct BodyMeasurementView: View {
                 unit: latestBodyFat > 0 ? "%" : nil
             )
         }
+    }
+
+    // MARK: - Unit Helpers
+
+    /// Converts kg → lbs when `showImperial` is true, then formats.
+    private func displayWeight(_ kg: Double) -> String {
+        if showImperial {
+            let lbs = kg * 2.20462
+            return lbs.truncatingRemainder(dividingBy: 1) == 0
+                ? String(format: "%.0f", lbs)
+                : String(format: "%.1f", lbs)
+        }
+        return weightFormatted(kg)
     }
 
     private var historySection: some View {
@@ -415,6 +463,8 @@ private struct MetricPill: View {
 private struct AddMeasurementSheet: View {
 
     let userId: String
+    /// Inherited from parent — determines whether the input label says kg or lbs.
+    let showImperial: Bool
     let onSave: () -> Void
 
     @Environment(\.modelContext) private var modelContext
@@ -423,6 +473,16 @@ private struct AddMeasurementSheet: View {
     @State private var weightText = ""
     @State private var bodyFatText = ""
     @State private var notes = ""
+    @State private var useImperial: Bool
+
+    // MARK: Init
+
+    init(userId: String, showImperial: Bool = false, onSave: @escaping () -> Void) {
+        self.userId = userId
+        self.showImperial = showImperial
+        self.onSave = onSave
+        self._useImperial = State(initialValue: showImperial)
+    }
 
     // MARK: Computed
 
@@ -430,11 +490,33 @@ private struct AddMeasurementSheet: View {
         !weightText.isEmpty || !bodyFatText.isEmpty
     }
 
+    private var weightUnit: String { useImperial ? "lbs" : "kg" }
+
     // MARK: Body
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    // Unit toggle inside the form
+                    HStack {
+                        Text("Unit")
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Picker("", selection: $useImperial) {
+                            Text("kg").tag(false)
+                            Text("lbs").tag(true)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 120)
+                        .tint(Color.kineticsBlue)
+                    }
+                } header: {
+                    Text("Preferences")
+                        .foregroundStyle(Color.kineticsSubtext)
+                }
+                .listRowBackground(Color.kineticsDark)
+
                 Section {
                     HStack {
                         Text("Weight")
@@ -444,7 +526,7 @@ private struct AddMeasurementSheet: View {
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .foregroundStyle(.white)
-                        Text("kg")
+                        Text(weightUnit)
                             .foregroundStyle(Color.kineticsSubtext)
                     }
 
@@ -480,22 +562,19 @@ private struct AddMeasurementSheet: View {
             .navigationTitle("Log Measurement")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.kineticsBackground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundStyle(Color.kineticsSubtext)
+                    Button("Cancel") { dismiss() }
+                        .foregroundStyle(Color.kineticsSubtext)
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") {
-                        saveMeasurement()
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(canSave ? Color.kineticsBlue : Color.kineticsSubtext)
-                    .disabled(!canSave)
+                    Button("Save") { saveMeasurement() }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(canSave ? Color.kineticsBlue : Color.kineticsSubtext)
+                        .disabled(!canSave)
                 }
             }
         }
@@ -504,13 +583,16 @@ private struct AddMeasurementSheet: View {
     // MARK: Save
 
     private func saveMeasurement() {
-        let parsedWeight = Double(weightText.replacingOccurrences(of: ",", with: ".")) ?? 0
+        let rawWeight = Double(weightText.replacingOccurrences(of: ",", with: ".")) ?? 0
         let parsedBodyFat = Double(bodyFatText.replacingOccurrences(of: ",", with: ".")) ?? 0
+
+        // Always store in kg; convert from lbs if the user entered in imperial.
+        let weightKg = useImperial ? rawWeight / 2.20462 : rawWeight
 
         let measurement = BodyMeasurement(
             userId: userId,
             recordedAt: Date(),
-            weightKg: parsedWeight,
+            weightKg: weightKg,
             bodyFatPercent: parsedBodyFat,
             notes: notes
         )

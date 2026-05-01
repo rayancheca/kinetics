@@ -49,6 +49,7 @@ struct ProfileView: View {
     @State private var showSignIn = false
     @State private var confirmSignOut = false
     @AppStorage("preferred_units") private var preferredUnits = "mph"
+    @AppStorage("coach_voice_enabled") private var coachVoiceEnabled = true
 
     private var isAnonymous: Bool { appState.authManager.currentUser?.isAnonymous == true }
 
@@ -65,18 +66,22 @@ struct ProfileView: View {
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.0"
     }
 
+    private var buildNumber: String {
+        (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "1"
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
+                VStack(spacing: 28) {
                     avatarSection
                     statsGrid
-                    settingsSection
-                    Text("Kinetics v\(appVersion)")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.2))
-                        .padding(.bottom, 40)
+                    accountSection
+                    preferencesSection
+                    subscriptionSection
+                    aboutSection
                 }
+                .padding(.bottom, 48)
             }
             .background(Color.kineticsBackground)
             .navigationBarHidden(true)
@@ -87,6 +92,8 @@ struct ProfileView: View {
                 Button("Sign Out", role: .destructive) {
                     try? appState.authManager.signOut()
                 }
+            } message: {
+                Text("You will be signed out of your account.")
             }
             .task {
                 if let uid = appState.authManager.currentUser?.uid {
@@ -96,24 +103,34 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Subviews
+    // MARK: - Avatar
 
     private var avatarSection: some View {
         VStack(spacing: 10) {
             ZStack {
-                Circle().fill(Color.kineticsBlue).frame(width: 72, height: 72)
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.kineticsBlue, Color.kineticsPurple],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 76, height: 76)
                 Text(initials)
-                    .font(.system(size: 28, weight: .black))
-                    .foregroundStyle(Color.kineticsDark)
+                    .font(.system(size: 30, weight: .black))
+                    .foregroundStyle(.black)
             }
+            .padding(.top, 16)
+
             Text(displayName)
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(.white)
 
             if isAnonymous {
                 Button { showSignIn = true } label: {
-                    Text("Sign in to save progress")
-                        .font(.system(size: 13))
+                    Label("Sign in to save progress", systemImage: "person.badge.key.fill")
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color.kineticsBlue)
                 }
             } else {
@@ -122,11 +139,15 @@ struct ProfileView: View {
                     .foregroundStyle(.white.opacity(0.38))
             }
         }
-        .padding(.top, 8)
     }
 
+    // MARK: - Stats Grid
+
     private var statsGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+        LazyVGrid(
+            columns: [GridItem(.flexible()), GridItem(.flexible())],
+            spacing: 12
+        ) {
             StatCard(
                 value: "\(vm.totalCount)",
                 label: "Total Sessions",
@@ -155,132 +176,279 @@ struct ProfileView: View {
         .padding(.horizontal, 16)
     }
 
-    private var settingsSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("SETTINGS")
-                .font(.system(size: 10, weight: .semibold))
-                .tracking(2.5)
-                .foregroundStyle(.white.opacity(0.38))
-                .padding(.horizontal, 20)
-                .padding(.bottom, 10)
+    // MARK: - Account Section
 
-            VStack(spacing: 0) {
-                NavigationLink(destination: SubscriptionView()) {
-                    HStack {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 15))
-                            .foregroundStyle(Color.kineticsAmber)
-                            .frame(width: 28)
-                        Text("Premium")
+    private var accountSection: some View {
+        SettingsGroup(header: "ACCOUNT") {
+            if isAnonymous {
+                SettingsNavRow(
+                    icon: "person.badge.plus",
+                    iconColor: Color.kineticsBlue,
+                    label: "Create Account",
+                    detail: "Save progress across devices"
+                ) {
+                    showSignIn = true
+                }
+            } else {
+                HStack(spacing: 12) {
+                    settingsIconBox(systemName: "envelope.fill", color: Color.kineticsBlue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Email")
                             .font(.system(size: 15))
                             .foregroundStyle(.white)
+                        Text(appState.authManager.currentUser?.email ?? "—")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.38))
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+
+                SettingsDivider()
+
+                Button { confirmSignOut = true } label: {
+                    HStack(spacing: 12) {
+                        settingsIconBox(systemName: "rectangle.portrait.and.arrow.right", color: Color.kineticsRed)
+                        Text("Sign Out")
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color.kineticsRed)
                         Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.2))
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
                 }
+            }
+        }
+    }
 
-                Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
+    // MARK: - Preferences Section
 
-                SettingsRow(icon: "camera.fill", label: "Camera Permissions") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
+    private var preferencesSection: some View {
+        SettingsGroup(header: "PREFERENCES") {
+            // Coach Voice toggle
+            HStack(spacing: 12) {
+                settingsIconBox(systemName: "waveform", color: Color.kineticsPurple)
+                Toggle(isOn: $coachVoiceEnabled) {
+                    Text("Coach Voice")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.white)
                 }
+                .tint(Color.kineticsBlue)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
 
-                Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
+            SettingsDivider()
 
-                NavigationLink(destination: NotificationSettingsView()) {
-                    HStack {
-                        Image(systemName: "bell.badge.fill")
-                            .font(.system(size: 15))
-                            .foregroundStyle(Color.kineticsBlue)
-                            .frame(width: 28)
+            // Units picker
+            HStack(spacing: 12) {
+                settingsIconBox(systemName: "ruler", color: Color.kineticsGreen)
+                Text("Units")
+                    .font(.system(size: 15))
+                    .foregroundStyle(.white)
+                Spacer()
+                Picker("Units", selection: $preferredUnits) {
+                    Text("mph").tag("mph")
+                    Text("km/h").tag("kmh")
+                    Text("m/s").tag("ms")
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 140)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            SettingsDivider()
+
+            // Notifications
+            NavigationLink {
+                NotificationSettingsView()
+            } label: {
+                HStack(spacing: 12) {
+                    settingsIconBox(systemName: "bell.badge.fill", color: Color.kineticsAmber)
+                    VStack(alignment: .leading, spacing: 2) {
                         Text("Notifications")
                             .font(.system(size: 15))
                             .foregroundStyle(.white)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.2))
+                        Text("Reminders & achievement alerts")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.38))
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.2))
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+            }
 
-                Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
+            SettingsDivider()
 
-                coachVoiceToggle
-
-                Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
-
-                unitsPicker
-
-                Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
-
-                SettingsRow(icon: "info.circle", label: "App Version \(appVersion)") { }
-
-                if !isAnonymous {
-                    Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
-                    signOutRow
+            // Camera permissions deep-link
+            SettingsNavRow(
+                icon: "camera.fill",
+                iconColor: Color.kineticsBlue,
+                label: "Camera Permissions",
+                detail: "Manage in Settings"
+            ) {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
                 }
+            }
+        }
+    }
+
+    // MARK: - Subscription Section
+
+    private var subscriptionSection: some View {
+        SettingsGroup(header: "SUBSCRIPTION") {
+            NavigationLink {
+                SubscriptionView()
+            } label: {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.kineticsAmber.opacity(0.18))
+                            .frame(width: 34, height: 34)
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.kineticsAmber)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text("Go Premium")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(.white)
+                            Text("PRO")
+                                .font(.system(size: 9, weight: .bold))
+                                .tracking(1)
+                                .foregroundStyle(Color.kineticsDark)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.kineticsAmber)
+                                .clipShape(Capsule())
+                        }
+                        Text("Unlock advanced analytics & remove limits")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.45))
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.2))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+            }
+        }
+    }
+
+    // MARK: - About Section
+
+    private var aboutSection: some View {
+        SettingsGroup(header: "ABOUT") {
+            HStack(spacing: 12) {
+                settingsIconBox(systemName: "info.circle.fill", color: Color.kineticsSubtext)
+                Text("Version")
+                    .font(.system(size: 15))
+                    .foregroundStyle(.white)
+                Spacer()
+                Text("\(appVersion) (\(buildNumber))")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.white.opacity(0.38))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+        }
+    }
+
+    // MARK: - Icon Box Helper
+
+    private func settingsIconBox(systemName: String, color: Color) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(color.opacity(0.18))
+                .frame(width: 34, height: 34)
+            Image(systemName: systemName)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(color)
+        }
+    }
+}
+
+// MARK: - SettingsGroup
+
+/// A labelled grouped section matching iOS Settings dark aesthetic.
+struct SettingsGroup<Content: View>: View {
+    let header: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(header)
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(2.5)
+                .foregroundStyle(.white.opacity(0.38))
+                .padding(.horizontal, 22)
+                .padding(.bottom, 8)
+
+            VStack(spacing: 0) {
+                content()
             }
             .background(Color.kineticsDark)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .padding(.horizontal, 16)
         }
     }
+}
 
-    private var coachVoiceToggle: some View {
-        Toggle(isOn: Binding(
-            get: { UserDefaults.standard.bool(forKey: "coach_voice_enabled") },
-            set: { UserDefaults.standard.set($0, forKey: "coach_voice_enabled") }
-        )) {
-            Label("Coach Voice", systemImage: "waveform")
-                .font(.system(size: 15))
-                .foregroundStyle(.white)
-        }
-        .tint(Color.kineticsBlue)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+// MARK: - SettingsDivider
+
+struct SettingsDivider: View {
+    var body: some View {
+        Divider()
+            .background(.white.opacity(0.06))
+            .padding(.horizontal, 14)
     }
+}
 
-    private var unitsPicker: some View {
-        HStack {
-            Image(systemName: "ruler")
-                .font(.system(size: 15))
-                .foregroundStyle(Color.kineticsBlue)
-                .frame(width: 28)
-            Text("Units")
-                .font(.system(size: 15))
-                .foregroundStyle(.white)
-            Spacer()
-            Picker("Units", selection: $preferredUnits) {
-                Text("mph").tag("mph")
-                Text("km/h").tag("kmh")
-                Text("m/s").tag("ms")
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 140)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-    }
+// MARK: - SettingsNavRow
 
-    private var signOutRow: some View {
-        Button { confirmSignOut = true } label: {
-            HStack {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 15))
-                    .foregroundStyle(Color.kineticsRed)
-                    .frame(width: 28)
-                Text("Sign Out")
-                    .font(.system(size: 15))
-                    .foregroundStyle(Color.kineticsRed)
+/// A tappable settings row with icon, label, optional detail subtitle, and chevron.
+struct SettingsNavRow: View {
+    let icon: String
+    let iconColor: Color
+    let label: String
+    var detail: String? = nil
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(iconColor.opacity(0.18))
+                        .frame(width: 34, height: 34)
+                    Image(systemName: icon)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(iconColor)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label)
+                        .font(.system(size: 15))
+                        .foregroundStyle(.white)
+                    if let detail {
+                        Text(detail)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.38))
+                    }
+                }
                 Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.2))
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
@@ -319,7 +487,7 @@ struct StatCard: View {
     }
 }
 
-// MARK: - SettingsRow
+// MARK: - SettingsRow (legacy — kept for backward compatibility)
 
 struct SettingsRow: View {
     let icon: String

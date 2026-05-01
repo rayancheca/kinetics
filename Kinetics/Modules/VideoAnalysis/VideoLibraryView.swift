@@ -63,8 +63,13 @@ final class VideoLibraryViewModel {
         defer { isAnalyzing = false }
 
         do {
+            // Step 1: Copy to documents (0 → 0.1)
             let localPath = try VideoRepository.shared.copyVideoToDocuments(from: url)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { analysisProgress = 0.1 }
+
+            // Step 2: Generate thumbnail (0.1 → 0.2)
             let thumbData = await VideoRepository.shared.generateThumbnail(from: url)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { analysisProgress = 0.2 }
 
             let session = VideoSession(
                 userId: userId,
@@ -75,11 +80,13 @@ final class VideoLibraryViewModel {
             try VideoRepository.shared.save(session)
             sessions.insert(session, at: 0)
 
-            analysisProgress = 0.3
+            // Step 3: Frame extraction begins (0.2 → 0.4)
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) { analysisProgress = 0.4 }
 
             let result = try await VideoAnalysisEngine.shared.analyze(videoURL: url)
 
-            analysisProgress = 0.9
+            // Step 4: Analysis complete, computing metrics (0.4 → 0.85)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { analysisProgress = 0.85 }
 
             session.sport = result.sport.rawValue
             session.confidence = result.confidence
@@ -97,9 +104,11 @@ final class VideoLibraryViewModel {
             }
 
             try VideoRepository.shared.update(session)
-            analysisProgress = 1.0
 
-            try? await Task.sleep(for: .milliseconds(300))
+            // Step 5: Done (0.85 → 1.0)
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.9)) { analysisProgress = 1.0 }
+
+            try? await Task.sleep(for: .milliseconds(500))
             await load()
         } catch {
             errorMessage = error.localizedDescription
@@ -240,21 +249,34 @@ struct VideoLibraryView: View {
                 Image(systemName: "waveform.badge.magnifyingglass")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.kineticsBlue)
-                Text("Analyzing video...")
+                Text(analysisStepLabel)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.kineticsBlue)
+                    .animation(.easeInOut(duration: 0.25), value: analysisStepLabel)
                 Spacer()
                 Text("\(Int(viewModel.analysisProgress * 100))%")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundStyle(Color.kineticsSubtext)
+                    .contentTransition(.numericText())
+                    .animation(.spring(duration: 0.4), value: viewModel.analysisProgress)
             }
             ProgressView(value: viewModel.analysisProgress)
                 .tint(Color.kineticsBlue)
-                .animation(.linear(duration: 0.3), value: viewModel.analysisProgress)
+                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: viewModel.analysisProgress)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color.kineticsBlue.opacity(0.08))
+    }
+
+    private var analysisStepLabel: String {
+        switch viewModel.analysisProgress {
+        case ..<0.15: return "Importing video..."
+        case ..<0.45: return "Extracting frames..."
+        case ..<0.80: return "Analyzing movement..."
+        case ..<0.95: return "Computing metrics..."
+        default:      return "Finishing up..."
+        }
     }
 
     // MARK: - Video grid
@@ -335,7 +357,14 @@ private struct VideoFilterChip: View {
                 .padding(.vertical, 7)
                 .background(
                     Capsule()
-                        .fill(isSelected ? Color.kineticsPurple : Color.kineticsDark)
+                        .fill(isSelected ? Color.kineticsBlue : Color.clear)
+                )
+                .overlay(
+                    Capsule()
+                        .strokeBorder(
+                            isSelected ? Color.clear : Color.kineticsSubtext.opacity(0.4),
+                            lineWidth: 1
+                        )
                 )
                 .animation(.spring(duration: 0.2), value: isSelected)
         }
@@ -367,14 +396,21 @@ private struct VideoThumbnailCard: View {
                     .frame(height: 160)
                     .clipped()
             } else {
-                Rectangle()
-                    .fill(Color.kineticsDark)
-                    .frame(height: 160)
-                    .overlay(
-                        Image(systemName: session.videoSport.systemImage)
-                            .font(.system(size: 28, weight: .light))
-                            .foregroundStyle(sportColor.opacity(0.5))
+                ZStack {
+                    LinearGradient(
+                        colors: [
+                            sportColor.opacity(0.18),
+                            Color.kineticsDark
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
+                    .frame(height: 160)
+
+                    Image(systemName: session.videoSport.systemImage)
+                        .font(.system(size: 32, weight: .light))
+                        .foregroundStyle(sportColor.opacity(0.65))
+                }
             }
 
             // Bottom gradient overlay
@@ -524,8 +560,12 @@ struct VideoDetailView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .onAppear { notes = session.notes }
-        .alert("Delete Video", isPresented: $showDeleteAlert) {
-            Button("Delete", role: .destructive) {
+        .confirmationDialog(
+            "Delete Video?",
+            isPresented: $showDeleteAlert,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Video", role: .destructive) {
                 Task {
                     try? VideoRepository.shared.delete(session)
                     dismiss()
@@ -548,14 +588,21 @@ struct VideoDetailView: View {
                     .frame(height: 220)
                     .clipped()
             } else {
-                Rectangle()
-                    .fill(Color.kineticsDark)
-                    .frame(height: 220)
-                    .overlay(
-                        Image(systemName: session.videoSport.systemImage)
-                            .font(.system(size: 48, weight: .light))
-                            .foregroundStyle(sportColor.opacity(0.4))
+                ZStack {
+                    LinearGradient(
+                        colors: [
+                            sportColor.opacity(0.2),
+                            Color.kineticsDark
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
+                    .frame(height: 220)
+
+                    Image(systemName: session.videoSport.systemImage)
+                        .font(.system(size: 56, weight: .light))
+                        .foregroundStyle(sportColor.opacity(0.55))
+                }
             }
 
             LinearGradient(
@@ -678,15 +725,46 @@ private struct MetricPill: View {
     let value: Double
     let accentColor: Color
 
-    private var formattedKey: String {
-        key
-            .replacingOccurrences(of: "_", with: " ")
-            .capitalized
+    // MARK: - Display metadata
+
+    private struct MetricDisplay {
+        let label: String
+        let icon: String
+        let unit: String
+    }
+
+    private static let metricDisplayMap: [String: MetricDisplay] = [
+        "avg_wrist_velocity":         MetricDisplay(label: "Avg Velocity",    icon: "bolt.fill",              unit: "m/s"),
+        "max_wrist_velocity":         MetricDisplay(label: "Peak Velocity",   icon: "bolt.circle.fill",       unit: "m/s"),
+        "avg_hip_height":             MetricDisplay(label: "Avg Hip Height",  icon: "figure.stand",           unit: ""),
+        "min_hip_height":             MetricDisplay(label: "Min Hip Height",  icon: "arrow.down.to.line",     unit: ""),
+        "arms_above_head_ratio":      MetricDisplay(label: "Arms Raised",     icon: "arrow.up.circle.fill",   unit: "%"),
+        "bilateral_symmetry":         MetricDisplay(label: "Symmetry",        icon: "arrow.left.and.right",   unit: "%"),
+        "avg_hip_shoulder_separation":MetricDisplay(label: "Hip Separation",  icon: "rotate.3d",              unit: "°"),
+        "max_hip_shoulder_separation":MetricDisplay(label: "Peak Separation", icon: "rotate.3d.fill",         unit: "°"),
+        "pose_detection_ratio":       MetricDisplay(label: "Pose Coverage",   icon: "person.crop.circle.badge.checkmark", unit: "%"),
+    ]
+
+    private var display: MetricDisplay {
+        Self.metricDisplayMap[key] ?? MetricDisplay(
+            label: key.replacingOccurrences(of: "_", with: " ").capitalized,
+            icon: "chart.bar.fill",
+            unit: ""
+        )
     }
 
     private var formattedValue: String {
-        if key.hasSuffix("ratio") || key.hasSuffix("symmetry") || key.hasSuffix("confidence") {
-            return String(format: "%.0f%%", value * 100)
+        let unit = display.unit
+        if unit == "%" {
+            // Ratio keys are 0–1; angle keys are already in degrees.
+            let isRatio = key.hasSuffix("ratio") || key.hasSuffix("symmetry") || key.hasSuffix("confidence")
+            return isRatio ? String(format: "%.0f", value * 100) : String(format: "%.0f", value)
+        }
+        if unit == "°" {
+            return String(format: "%.1f", value)
+        }
+        if unit == "m/s" {
+            return String(format: "%.2f", value)
         }
         if value == value.rounded() && value < 1000 {
             return String(Int(value))
@@ -695,17 +773,30 @@ private struct MetricPill: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(formattedKey)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(Color.kineticsSubtext)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 5) {
+                Image(systemName: display.icon)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(accentColor)
+                Text(display.label)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(Color.kineticsSubtext)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
 
-            Text(formattedValue)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(accentColor)
-                .lineLimit(1)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(formattedValue)
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundStyle(accentColor)
+                    .lineLimit(1)
+
+                if !display.unit.isEmpty {
+                    Text(display.unit)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(accentColor.opacity(0.6))
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
@@ -925,11 +1016,12 @@ struct VideoProgressView: View {
     }
 
     private func computeTrend() -> Double? {
-        guard chartData.count >= 2 else { return nil }
-        let first = chartData.first!.value
-        let last  = chartData.last!.value
-        guard first > 0 else { return nil }
-        return ((last - first) / first) * 100
+        guard chartData.count >= 2,
+              let firstEntry = chartData.first,
+              let lastEntry  = chartData.last,
+              firstEntry.value > 0
+        else { return nil }
+        return ((lastEntry.value - firstEntry.value) / firstEntry.value) * 100
     }
 
     private func loadSessions() async {

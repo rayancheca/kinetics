@@ -61,7 +61,9 @@ struct ActiveWorkoutView: View {
     // MARK: - Map
 
     private var mapSection: some View {
-        GeometryReader { geo in
+        // Use GeometryReader to size the map relative to the screen without
+        // UIScreen.main (deprecated in iOS 16+).
+        GeometryReader { proxy in
             ZStack(alignment: .bottomLeading) {
                 RouteMapView(
                     coordinates: viewModel.routeCoordinates,
@@ -82,9 +84,19 @@ struct ActiveWorkoutView: View {
                     pausedOverlay
                 }
             }
-            .frame(height: geo.size.height * 0.42)
         }
-        .frame(height: UIScreen.main.bounds.height * 0.42)
+        // 42 % of the window height — measured via the parent GeometryReader in body.
+        .frame(height: mapHeight)
+    }
+
+    /// 42 % of the screen height, computed once per layout pass.
+    @MainActor
+    private var mapHeight: CGFloat {
+        let screenHeight = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?
+            .screen.bounds.height ?? 844 // iPhone 14 height as safe fallback
+        return screenHeight * 0.42
     }
 
     private var recordingBadge: some View {

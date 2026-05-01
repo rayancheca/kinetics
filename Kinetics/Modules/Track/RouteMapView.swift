@@ -67,17 +67,17 @@ struct RouteMapView: UIViewRepresentable {
         mapView.delegate = context.coordinator
 
         // Appearance
-        mapView.mapType = .standard
         mapView.showsUserLocation = true
         mapView.showsCompass = false
         mapView.showsScale = false
         mapView.isPitchEnabled = false
         mapView.isRotateEnabled = false
 
-        // Style: dark map matching the app chrome
-        if let darkStyle = MKMapConfiguration.preferredConfiguration(for: .dark) {
-            mapView.preferredConfiguration = darkStyle
-        }
+        // Dark map style: MKStandardMapConfiguration with muted emphasis matches
+        // the app's near-black chrome. The kineticsBlue polyline renders well on
+        // the dark basemap.
+        let darkConfig = MKStandardMapConfiguration(elevationStyle: .flat, emphasisStyle: .muted)
+        mapView.preferredConfiguration = darkConfig
 
         // Start following the user immediately when in live mode
         if followsUser {
@@ -203,14 +203,3 @@ extension RouteMapView {
     }
 }
 
-// MARK: - MKMapConfiguration convenience
-
-private extension MKMapConfiguration {
-    /// Returns the preferred dark-mode map configuration, or `nil` on OS versions
-    /// that don't support `MKStandardMapConfiguration`.
-    static func preferredConfiguration(for appearance: UIUserInterfaceStyle) -> MKMapConfiguration? {
-        guard appearance == .dark else { return nil }
-        let config = MKStandardMapConfiguration(elevationStyle: .flat, emphasisStyle: .muted)
-        return config
-    }
-}

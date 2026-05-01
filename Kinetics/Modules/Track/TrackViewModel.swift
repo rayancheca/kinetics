@@ -58,6 +58,12 @@ final class TrackViewModel {
     /// whenever a new GPS fix arrives.
     var routeCoordinates: [CLLocationCoordinate2D] = []
 
+    // MARK: - Permission State
+
+    /// `true` when the user has explicitly denied location access. Used to surface
+    /// a "Go to Settings" prompt in the pre-session UI instead of silently doing nothing.
+    private(set) var locationPermissionDenied = false
+
     // MARK: - Selection
 
     /// The activity the athlete is about to start. Bound to a picker in the pre-session UI.
@@ -129,7 +135,8 @@ final class TrackViewModel {
     /// Call this from a `.task {}` modifier on the pre-session picker screen so the
     /// permission prompts appear before the athlete taps Start — not mid-workout.
     func requestPermissions() async {
-        _ = await locationService.requestAuthorization()
+        let granted = await locationService.requestAuthorization()
+        locationPermissionDenied = !granted
         try? await healthKit.requestAuthorization()
     }
 

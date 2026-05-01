@@ -30,7 +30,13 @@ struct TrackView: View {
                     VStack(spacing: 0) {
                         headerSection
                         activityPickerSection
-                        startButton
+                        if viewModel.locationPermissionDenied {
+                            locationDeniedBanner
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 20)
+                        } else {
+                            startButton
+                        }
                         todayStatsSection
                         Spacer(minLength: 32)
                     }
@@ -182,6 +188,50 @@ struct TrackView: View {
         .padding(.bottom, 36)
         .disabled(isStarting)
         .animation(.easeInOut(duration: 0.2), value: viewModel.selectedActivityType)
+    }
+
+    // MARK: - Location Permission Denied Banner
+
+    private var locationDeniedBanner: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 12) {
+                Image(systemName: "location.slash.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Color.kineticsOrange)
+                    .frame(width: 44, height: 44)
+                    .background(Color.kineticsOrange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Location Access Required")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                    Text("GPS tracking needs location permission to record your route.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.55))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                Text("Open Settings")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.kineticsDark)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(Color.kineticsOrange)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+        }
+        .padding(16)
+        .background(Color.kineticsOrange.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.kineticsOrange.opacity(0.18), lineWidth: 1)
+        )
     }
 
     // MARK: - Today's Stats

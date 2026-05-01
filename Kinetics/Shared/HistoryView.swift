@@ -89,15 +89,45 @@ struct HistoryView: View {
 
                     // Grouped list
                     if vm.filtered.isEmpty && !vm.isLoading {
-                        VStack(spacing: 8) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 40, weight: .thin))
-                                .foregroundStyle(.white.opacity(0.2))
-                            Text("No sessions yet")
-                                .font(.system(.subheadline, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.35))
+                        let isFiltered = vm.selectedFilter != nil
+                        VStack(spacing: 16) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.kineticsBlue.opacity(0.08))
+                                    .frame(width: 88, height: 88)
+                                Image(systemName: isFiltered ? "line.3.horizontal.decrease.circle" : "figure.run.circle")
+                                    .font(.system(size: 44, weight: .light))
+                                    .foregroundStyle(Color.kineticsBlue.opacity(0.5))
+                            }
+
+                            VStack(spacing: 6) {
+                                Text(isFiltered ? "No \(vm.selectedFilter?.displayName ?? "") sessions" : "No sessions yet")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundStyle(.white)
+                                Text(isFiltered
+                                     ? "Try a different filter or complete a session."
+                                     : "Your sessions will appear here\nafter you complete a workout.")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(.white.opacity(0.38))
+                                    .multilineTextAlignment(.center)
+                            }
+
+                            if isFiltered {
+                                Button {
+                                    vm.selectedFilter = nil
+                                } label: {
+                                    Text("Show All Sessions")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(Color.kineticsDark)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 9)
+                                        .background(Color.kineticsBlue)
+                                        .clipShape(Capsule())
+                                }
+                            }
                         }
                         .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 40)
                         .padding(.vertical, 60)
                     } else {
                         LazyVStack(spacing: 20, pinnedViews: .sectionHeaders) {

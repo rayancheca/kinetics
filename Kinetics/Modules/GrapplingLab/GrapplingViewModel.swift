@@ -78,6 +78,9 @@ final class GrapplingViewModel {
     /// Retains the repeating timer task that ticks `sessionDuration` every second.
     private var timerTask: Task<Void, Never>?
 
+    /// Tracks the last cue text spoken so we only call CoachVoice when the cue changes.
+    private var lastSpokenCue: String = ""
+
     // MARK: - Session Lifecycle
 
     /// Starts the camera and begins real-time pose analysis.
@@ -107,6 +110,7 @@ final class GrapplingViewModel {
         sessionStartDate = Date()
         previousPose = nil
         metrics = GrapplingMetrics()
+        lastSpokenCue = ""
 
         startTimer()
         startProcessingLoop(cameraManager: cameraManager)
@@ -121,6 +125,7 @@ final class GrapplingViewModel {
         processingTask = nil
         timerTask = nil
         isSessionActive = false
+        CoachVoice.shared.stop()
     }
 
     func endSession(userId: String) async {
@@ -132,6 +137,7 @@ final class GrapplingViewModel {
         timerTask = nil
 
         isSessionActive = false
+        CoachVoice.shared.stop()
 
         // Capture final duration before clearing the start date.
         let finalDuration = sessionStartDate.map { Date().timeIntervalSince($0) } ?? sessionDuration
@@ -218,6 +224,14 @@ final class GrapplingViewModel {
             currentPose = pose
             previousPose = pose
             metrics = updatedMetrics
+
+            // Speak the coaching cue only when it changes to avoid repetition at 30 fps.
+            let cue = coachingCue
+            if cue != lastSpokenCue {
+                lastSpokenCue = cue
+                let priority: SpeechPriority = cue.isHighPriorityCue ? .high : .normal
+                CoachVoice.shared.speak(cue, priority: priority)
+            }
 
         } catch {
             // Vision errors are logged but do not terminate the session — a single

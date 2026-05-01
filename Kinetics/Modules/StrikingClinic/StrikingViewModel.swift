@@ -56,6 +56,8 @@ final class StrikingViewModel {
     private var sessionStartTime: Date?
     private var durationTask: Task<Void, Never>?
     private var processingTask: Task<Void, Never>?
+    /// Tracks the last cue text spoken so we only call CoachVoice when the cue changes.
+    private var lastSpokenCue: String = ""
 
     // MARK: - Session Lifecycle
 
@@ -90,6 +92,7 @@ final class StrikingViewModel {
         metrics = StrikingMetrics()
         previousPose = nil
         errorMessage = nil
+        lastSpokenCue = ""
 
         startDurationTimer()
 
@@ -116,6 +119,7 @@ final class StrikingViewModel {
         processingTask = nil
         durationTask?.cancel()
         durationTask = nil
+        CoachVoice.shared.stop()
 
         await poseEngine.reset()
 
@@ -173,6 +177,7 @@ final class StrikingViewModel {
         processingTask = nil
         durationTask = nil
         isSessionActive = false
+        CoachVoice.shared.stop()
     }
 
     // MARK: - Private Frame Processing
@@ -192,6 +197,14 @@ final class StrikingViewModel {
             )
             previousPose = pose
             currentPose = pose
+
+            // Speak the coaching cue only when it changes to avoid repetition at 30 fps.
+            let cue = coachingCue
+            if cue != lastSpokenCue {
+                lastSpokenCue = cue
+                let priority: SpeechPriority = cue.isHighPriorityCue ? .high : .normal
+                CoachVoice.shared.speak(cue, priority: priority)
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

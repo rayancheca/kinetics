@@ -106,7 +106,7 @@ final class SessionRepository: Sendable {
     private func configurePersistence() {
         guard isFirebaseReady else { return }
         let settings = FirestoreSettings()
-        settings.cacheSettings = PersistentCacheSettings()
+        settings.cacheSettings = PersistentCacheSettings(sizeBytes: NSNumber(value: 100 * 1024 * 1024))
         Firestore.firestore().settings = settings
     }
 

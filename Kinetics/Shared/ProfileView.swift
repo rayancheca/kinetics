@@ -213,6 +213,10 @@ struct ProfileView: View {
 
                 Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
 
+                coachVoiceToggle
+
+                Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
+
                 unitsPicker
 
                 Divider().background(.white.opacity(0.06)).padding(.horizontal, 14)
@@ -228,6 +232,20 @@ struct ProfileView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .padding(.horizontal, 16)
         }
+    }
+
+    private var coachVoiceToggle: some View {
+        Toggle(isOn: Binding(
+            get: { UserDefaults.standard.bool(forKey: "coach_voice_enabled") },
+            set: { UserDefaults.standard.set($0, forKey: "coach_voice_enabled") }
+        )) {
+            Label("Coach Voice", systemImage: "waveform")
+                .font(.system(size: 15))
+                .foregroundStyle(.white)
+        }
+        .tint(Color.kineticsBlue)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
     }
 
     private var unitsPicker: some View {

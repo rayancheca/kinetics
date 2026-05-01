@@ -1,4 +1,7 @@
 import FirebaseAnalytics
+import FirebaseCore
+import FirebaseCrashlytics
+import FirebaseFirestore
 import SwiftData
 import SwiftUI
 
@@ -40,6 +43,16 @@ struct KineticsApp: App {
                     Analytics.logEvent("app_session_started", parameters: [
                         "timestamp": Date().timeIntervalSince1970
                     ])
+                    // Enable Crashlytics
+                    Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+                    // Offline Firestore caching (100 MB on-device persistent cache)
+                    if FirebaseApp.app() != nil {
+                        let settings = FirestoreSettings()
+                        settings.cacheSettings = PersistentCacheSettings(
+                            sizeBytes: NSNumber(value: 100 * 1024 * 1024)
+                        )
+                        Firestore.firestore().settings = settings
+                    }
                 }
                 .fullScreenCover(isPresented: Binding(
                     get: { !permissionsRequested },

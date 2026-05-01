@@ -47,6 +47,16 @@ final class IronTrackerViewModel {
     /// The result of the most recently completed session; populated after `endSession` saves.
     var lastCompletedSession: SessionResult?
 
+    /// Automatically-counted rep total, incremented by `RepCounter` each time a full
+    /// wrist oscillation cycle is detected.
+    var autoRepCount: Int = 0
+
+    /// Active injury-risk flags from the most recently processed frame.
+    ///
+    /// Empty when no dangerous conditions are detected. The view reads this to render
+    /// the top-of-overlay warning banner and to drive CoachVoice danger cues.
+    var activeRiskFlags: [InjuryRiskDetector.RiskFlag] = []
+
     /// Elapsed session time formatted as M:SS for display.
     var formattedDuration: String {
         let total = Int(sessionDuration)
@@ -75,6 +85,11 @@ final class IronTrackerViewModel {
     private var sessionStartTime: Date?
     private var durationTask: Task<Void, Never>?
     private var processingTask: Task<Void, Never>?
+    /// Tracks the last cue text spoken so we only call CoachVoice when the cue changes.
+    private var lastSpokenCue: String = ""
+
+    private var repCounter = RepCounter()
+    private let injuryDetector = InjuryRiskDetector()
 
     private let maxBarPathPoints = 90
 
@@ -113,6 +128,10 @@ final class IronTrackerViewModel {
         barPath = []
         previousPose = nil
         errorMessage = nil
+        lastSpokenCue = ""
+        autoRepCount = 0
+        activeRiskFlags = []
+        repCounter.reset()
 
         startDurationTimer()
 
@@ -138,6 +157,7 @@ final class IronTrackerViewModel {
         processingTask = nil
         durationTask?.cancel()
         durationTask = nil
+        CoachVoice.shared.stop()
 
         await poseEngine.reset()
 
@@ -148,10 +168,11 @@ final class IronTrackerViewModel {
             startedAt: sessionStartTime ?? Date(),
             duration: sessionDuration,
             metrics: [
-                "peak_bar_velocity_ms":     metrics.peakBarVelocityMS,
-                "bilateral_symmetry_pct":   metrics.bilateralSymmetry,
-                "butt_wink_detected":       metrics.isButtWink ? 1.0 : 0.0,
-                "knee_cave_detected":       metrics.isKneeCave ? 1.0 : 0.0,
+                "peak_bar_velocity_ms":   metrics.peakBarVelocityMS,
+                "bilateral_symmetry_pct": metrics.bilateralSymmetry,
+                "butt_wink_detected":     metrics.isButtWink ? 1.0 : 0.0,
+                "knee_cave_detected":     metrics.isKneeCave ? 1.0 : 0.0,
+                "auto_rep_count":         Double(autoRepCount),
             ],
             userId: userId
         )
@@ -192,6 +213,7 @@ final class IronTrackerViewModel {
         processingTask = nil
         durationTask = nil
         isSessionActive = false
+        CoachVoice.shared.stop()
     }
 
     // MARK: - Private: Frame Processing
@@ -213,8 +235,42 @@ final class IronTrackerViewModel {
 
             appendBarPoint(metrics.barMidpoint)
 
+            // Rep counting — track right wrist Y oscillation.
+            if let rightWrist = pose[.rightWrist], rightWrist.isReliable {
+                autoRepCount = repCounter.update(wristY: Double(rightWrist.position.y))
+            }
+
+            // Injury risk detection — build joint map from reliable joints only.
+            let jointNames: [VNHumanBodyPoseObservation.JointName] = [
+                .leftKnee, .leftAnkle, .rightKnee, .rightAnkle,
+                .nose, .leftShoulder, .rightShoulder,
+                .leftElbow, .leftWrist,
+                .root,
+            ]
+            let jointMap = jointNames.reduce(
+                into: [VNHumanBodyPoseObservation.JointName: CGPoint]()
+            ) { dict, name in
+                if let joint = pose[name], joint.isReliable {
+                    dict[name] = joint.position
+                }
+            }
+            activeRiskFlags = injuryDetector.evaluate(joints: jointMap)
+
+            // Speak danger-level flags immediately — athlete needs to stop or correct now.
+            for flag in activeRiskFlags where flag.severity == .danger {
+                CoachVoice.shared.speak(flag.message, priority: .high)
+            }
+
             previousPose = pose
             currentPose = pose
+
+            // Speak the coaching cue only when it changes to avoid repetition at 30 fps.
+            let cue = coachingCue
+            if cue != lastSpokenCue {
+                lastSpokenCue = cue
+                let priority: SpeechPriority = cue.isHighPriorityCue ? .high : .normal
+                CoachVoice.shared.speak(cue, priority: priority)
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

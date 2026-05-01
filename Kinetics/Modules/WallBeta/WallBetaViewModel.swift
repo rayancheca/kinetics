@@ -101,6 +101,9 @@ final class WallBetaViewModel {
     /// Retains the 1-second timer task that ticks `sessionDuration`.
     private var timerTask: Task<Void, Never>?
 
+    /// Tracks the last cue text spoken so we only call CoachVoice when the cue changes.
+    private var lastSpokenCue: String = ""
+
     // MARK: - Session Lifecycle
 
     /// Starts the camera and begins real-time pose analysis.
@@ -120,6 +123,7 @@ final class WallBetaViewModel {
         hipYBaseline   = nil
         holdStartTime  = Date()   // Assume static until first movement detected.
         errorMessage   = nil
+        lastSpokenCue  = ""
 
         // Log the analytics event before the camera rolls so funnel attribution is clean.
         SessionRepository.shared.logSessionStarted(sport: .wallBeta)
@@ -154,6 +158,7 @@ final class WallBetaViewModel {
         processingTask = nil
         timerTask      = nil
         isSessionActive = false
+        CoachVoice.shared.stop()
     }
 
     func endSession(userId: String) async {
@@ -165,6 +170,7 @@ final class WallBetaViewModel {
         timerTask      = nil
 
         isSessionActive = false
+        CoachVoice.shared.stop()
 
         // Capture the final duration before clearing the start date.
         let finalDuration = sessionStartDate.map { Date().timeIntervalSince($0) } ?? sessionDuration
@@ -288,6 +294,14 @@ final class WallBetaViewModel {
             metrics      = updatedMetrics
             previousPose = pose
             currentPose  = pose
+
+            // Speak the coaching cue only when it changes to avoid repetition at 30 fps.
+            let cue = coachingCue
+            if cue != lastSpokenCue {
+                lastSpokenCue = cue
+                let priority: SpeechPriority = cue.isHighPriorityCue ? .high : .normal
+                CoachVoice.shared.speak(cue, priority: priority)
+            }
 
         } catch {
             // Vision errors are surfaced but do not terminate the session.

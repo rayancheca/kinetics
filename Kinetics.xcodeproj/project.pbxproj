@@ -39,6 +39,7 @@
 		58D7D9A2550728717E6BD0AA /* JointPose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CFC25313B76AA9012A0A96 /* JointPose.swift */; };
 		5A7D41C9A6C3862567130171 /* TrajectoryTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D3479AF90A2F3494B2D3F50 /* TrajectoryTracker.swift */; };
 		5D424CAB04517AD7ACA5F78F /* GymModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76E6D4584A4566026C4F3591 /* GymModels.swift */; };
+		5DB2165BFB966EF4B40FFEFA /* CoachVoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9975CF29738ABDE897D62F /* CoachVoice.swift */; };
 		6253BD14B830015B5B3D73B3 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CFDEB608EE0C4C47FEA8440 /* NotificationService.swift */; };
 		64C054DF49CA406C1D29117F /* VideoAnalysisEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1FDE6C1FE8B56A89DE042BF /* VideoAnalysisEngine.swift */; };
 		65AF90F6886E1FB4A948F130 /* PoseDetectionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE95815B031AA4940A863EE /* PoseDetectionEngine.swift */; };
@@ -48,6 +49,7 @@
 		72CA7F4E153888A87089D1C2 /* PoseOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */; };
 		7377A50BF3E4F6147E41AD89 /* WallBetaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 344EC78E25549C9A891871A6 /* WallBetaView.swift */; };
 		756D56E0ED10FC641E17194E /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F36FE62052C6F5934ACAAA40 /* ActiveWorkoutView.swift */; };
+		7A44D12C512FF469EAC6FC10 /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34CF303ADC249DE03467E406 /* ShareCardView.swift */; };
 		7B4066A954E393ECF3628611 /* StrikingSessionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB9351DAC698CFD29E7C89D8 /* StrikingSessionReportView.swift */; };
 		80540CFE2336B7C01E02211C /* CoachingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63D18F45C130B389B898CD57 /* CoachingEngine.swift */; };
 		848844499EDC71521B05B46F /* WorkoutDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E48187450AB5A96B52417ED /* WorkoutDetailView.swift */; };
@@ -61,6 +63,7 @@
 		9598F6CA6662EC1F128A3F2A /* SocialRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 099853C55F62679C9537A8A4 /* SocialRepository.swift */; };
 		98C0AED100800BD8EA5FE78B /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4444A68F70A599ECA48403BE /* SessionRepository.swift */; };
 		9A384FDAF37E32FF5428E23B /* WidgetDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB185FD265C0A4E6E75368F /* WidgetDataStore.swift */; };
+		9B5DE83DC117C96FE3165CC9 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */; };
 		9C6B803704170B6992365B78 /* RoutineBuilderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB916B7E7603D1D43A896F73 /* RoutineBuilderView.swift */; };
 		A192A25212CD2AE387CEF232 /* KineticsWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C302C404B5BD0B3928CB0E8C /* KineticsWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A1F9B0AF1252345E962F76C8 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F7902015FAF42D59AEF1E6 /* CameraManager.swift */; };
@@ -74,7 +77,8 @@
 		B4D682567F3839AAD7D501A8 /* GymProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B1735A24DA64B0245D7374 /* GymProgressView.swift */; };
 		B605CD90ADBE4244CF2E5A99 /* TrackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7934535B95DCFCD9079D79 /* TrackView.swift */; };
 		B875E6380324D015BC9E9920 /* TrackViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8643CBD1C2B047956616ACC /* TrackViewModel.swift */; };
-		BB26387B878693EE71C9C95A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */; };
+		B948297D38FEBE9A3E257525 /* RepCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D04000D98CBD21248298A0 /* RepCounter.swift */; };
+		BB26387B878693EE71C9C95A /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 726CF430F8281EF13190F56B /* FirebaseCrashlytics */; };
 		CB6BECC8855AE1CEEABAA02E /* SessionResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63DE416D081F3C588AC652A3 /* SessionResult.swift */; };
 		CBD5745D36354446FB741AE0 /* StrikingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB80A5C42F07AC82B0487B /* StrikingView.swift */; };
 		D4D833C1CD725F485BF5827C /* GrapplingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */; };
@@ -82,6 +86,7 @@
 		DA2AA3C77D50FCE82C91B928 /* IronTrackerAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3572F2B97B5DEC018B4829E7 /* IronTrackerAnalytics.swift */; };
 		E17AF55DA7AC09125EE4669B /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */; };
 		E4DC3B328F23443705BCE86A /* GrapplingOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52A53BDDF7AD6CAA2F4E282 /* GrapplingOnboardingView.swift */; };
+		E80DC249A91B7F7141666BC9 /* InjuryRiskDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 121AC521FEFB5BC065773CAB /* InjuryRiskDetector.swift */; };
 		ED04CA4FA88F26989DD1CDCF /* WorkoutRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7B95E1925765E8119CF3FF /* WorkoutRepository.swift */; };
 		EF19DFF6DAF112D684FCCE3F /* GymHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A95A2EC5EFE23571ABDBD194 /* GymHomeView.swift */; };
 		F0625C27A79CC0D116990168 /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E248662A4970A12F5F6FAD9 /* FeedView.swift */; };
@@ -125,6 +130,7 @@
 		0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Kinetics.swift"; sourceTree = "<group>"; };
 		0CFFA101E73EC4F9738ACEED /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
 		0DC032562411DDDC1ED7D376 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		121AC521FEFB5BC065773CAB /* InjuryRiskDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjuryRiskDetector.swift; sourceTree = "<group>"; };
 		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerViewModel.swift; sourceTree = "<group>"; };
 		17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
@@ -138,6 +144,7 @@
 		2C192019AE80768F03CED177 /* TrackAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackAnalytics.swift; sourceTree = "<group>"; };
 		2E48187450AB5A96B52417ED /* WorkoutDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutDetailView.swift; sourceTree = "<group>"; };
 		344EC78E25549C9A891871A6 /* WallBetaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaView.swift; sourceTree = "<group>"; };
+		34CF303ADC249DE03467E406 /* ShareCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardView.swift; sourceTree = "<group>"; };
 		3572F2B97B5DEC018B4829E7 /* IronTrackerAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerAnalytics.swift; sourceTree = "<group>"; };
 		3648047108B6B4CA0E33C4CF /* KineticsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KineticsApp.swift; sourceTree = "<group>"; };
 		3D3479AF90A2F3494B2D3F50 /* TrajectoryTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrajectoryTracker.swift; sourceTree = "<group>"; };
@@ -146,6 +153,7 @@
 		43F7902015FAF42D59AEF1E6 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		4444A68F70A599ECA48403BE /* SessionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRepository.swift; sourceTree = "<group>"; };
 		497B16EEA223AE88C450FBA8 /* PersonalRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalRecordsView.swift; sourceTree = "<group>"; };
+		4C9975CF29738ABDE897D62F /* CoachVoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachVoice.swift; sourceTree = "<group>"; };
 		4F16ADFA50EB885D3690144D /* RouteMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteMapView.swift; sourceTree = "<group>"; };
 		514D783F0279F09D15F268E7 /* PermissionsGateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsGateView.swift; sourceTree = "<group>"; };
 		54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
@@ -194,6 +202,7 @@
 		E60C049ACD5028A62BCFBB96 /* VideoModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoModels.swift; sourceTree = "<group>"; };
 		E64295A75846A5227141320D /* UserProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileView.swift; sourceTree = "<group>"; };
 		E8CDBB4B81075781F23B9E68 /* WallBetaViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaViewModel.swift; sourceTree = "<group>"; };
+		E8D04000D98CBD21248298A0 /* RepCounter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepCounter.swift; sourceTree = "<group>"; };
 		ECE0D529563112634E110515 /* IronTrackerSessionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerSessionReportView.swift; sourceTree = "<group>"; };
 		EF82ED7BF717471259F1A6EB /* WorkoutResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutResult.swift; sourceTree = "<group>"; };
 		EFB185FD265C0A4E6E75368F /* WidgetDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataStore.swift; sourceTree = "<group>"; };
@@ -213,7 +222,8 @@
 			files = (
 				448F9B65DC78550E389E5B4D /* FirebaseAnalytics in Frameworks */,
 				6AD7786B7AEE29FEE451DC22 /* FirebaseAuth in Frameworks */,
-				BB26387B878693EE71C9C95A /* FirebaseFirestore in Frameworks */,
+				BB26387B878693EE71C9C95A /* FirebaseCrashlytics in Frameworks */,
+				9B5DE83DC117C96FE3165CC9 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -357,6 +367,7 @@
 				91AF016B55595E5A3008382C /* OnboardingMetricRow.swift */,
 				F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */,
 				6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */,
+				34CF303ADC249DE03467E406 /* ShareCardView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -378,6 +389,8 @@
 			children = (
 				57776DF779A9EF196FF0099B /* BiomechanicsCalculator.swift */,
 				63D18F45C130B389B898CD57 /* CoachingEngine.swift */,
+				121AC521FEFB5BC065773CAB /* InjuryRiskDetector.swift */,
+				E8D04000D98CBD21248298A0 /* RepCounter.swift */,
 			);
 			path = Analytics;
 			sourceTree = "<group>";
@@ -385,6 +398,7 @@
 		8FE54D7D3D2460C8EDFFF657 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				4C9975CF29738ABDE897D62F /* CoachVoice.swift */,
 				FF26AF759C2CAF15557EA802 /* HealthKitService.swift */,
 				95B1FF2C59121834922C934E /* LocationService.swift */,
 				1CFDEB608EE0C4C47FEA8440 /* NotificationService.swift */,
@@ -540,6 +554,7 @@
 			packageProductDependencies = (
 				0F69E24E87E8F14089DDF2CC /* FirebaseAnalytics */,
 				C4CED923C35612DDE1BFAD9F /* FirebaseAuth */,
+				726CF430F8281EF13190F56B /* FirebaseCrashlytics */,
 				BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */,
 			);
 			productName = Kinetics;
@@ -608,6 +623,7 @@
 				AE091BA3A0E856C1E7FBE128 /* BiomechanicsCalculator.swift in Sources */,
 				A1F9B0AF1252345E962F76C8 /* CameraManager.swift in Sources */,
 				31A6EE899D6BC52F5BA390BC /* CameraPreviewView.swift in Sources */,
+				5DB2165BFB966EF4B40FFEFA /* CoachVoice.swift in Sources */,
 				80540CFE2336B7C01E02211C /* CoachingEngine.swift in Sources */,
 				0FC3C27122B7C7C1C81A087B /* Color+Kinetics.swift in Sources */,
 				F0D91AAE5B8ACFFBF4347D88 /* DeepLinkRouter.swift in Sources */,
@@ -625,6 +641,7 @@
 				FDBD12D7A1E09F769C5884E1 /* HistoryView.swift in Sources */,
 				1088DCBF512BA3FBC2F0C253 /* HomeView.swift in Sources */,
 				112FAFFB42872D754E3C11FA /* HomeViewModel.swift in Sources */,
+				E80DC249A91B7F7141666BC9 /* InjuryRiskDetector.swift in Sources */,
 				DA2AA3C77D50FCE82C91B928 /* IronTrackerAnalytics.swift in Sources */,
 				31E7709CD8F8F3A1BDA2F934 /* IronTrackerOnboardingView.swift in Sources */,
 				F2BF7D9E611D9C7C8554DB30 /* IronTrackerSessionReportView.swift in Sources */,
@@ -643,6 +660,7 @@
 				65AF90F6886E1FB4A948F130 /* PoseDetectionEngine.swift in Sources */,
 				72CA7F4E153888A87089D1C2 /* PoseOverlayView.swift in Sources */,
 				1E21073D8ED01D1A90EAACFF /* ProfileView.swift in Sources */,
+				B948297D38FEBE9A3E257525 /* RepCounter.swift in Sources */,
 				175C3ADDB5DCFB9C6D9B1167 /* RouteMapView.swift in Sources */,
 				9C6B803704170B6992365B78 /* RoutineBuilderView.swift in Sources */,
 				E17AF55DA7AC09125EE4669B /* SessionDetailView.swift in Sources */,
@@ -650,6 +668,7 @@
 				A4E9C776BB171B6613E9ED20 /* SessionHistoryRow.swift in Sources */,
 				98C0AED100800BD8EA5FE78B /* SessionRepository.swift in Sources */,
 				CB6BECC8855AE1CEEABAA02E /* SessionResult.swift in Sources */,
+				7A44D12C512FF469EAC6FC10 /* ShareCardView.swift in Sources */,
 				0C296E87D17F3ABEF24D62CD /* SocialModels.swift in Sources */,
 				9598F6CA6662EC1F128A3F2A /* SocialRepository.swift in Sources */,
 				3AAECFFD09059C41182B79E5 /* StrikingAnalytics.swift in Sources */,
@@ -950,6 +969,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAnalytics;
+		};
+		726CF430F8281EF13190F56B /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
 		};
 		BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */ = {
 			isa = XCSwiftPackageProductDependency;

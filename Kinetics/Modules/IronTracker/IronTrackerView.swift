@@ -120,7 +120,14 @@ struct IronTrackerView: View {
             BarPathCanvas(barPath: viewModel.barPath)
                 .ignoresSafeArea()
 
-            // Layer 4: Alert badges
+            // Layer 4a: Injury risk warning banner (top of overlay — full width).
+            injuryRiskBanner
+                .animation(
+                    .spring(duration: 0.25),
+                    value: viewModel.activeRiskFlags.filter { $0.severity == .danger }.isEmpty
+                )
+
+            // Layer 4b: Form-breakdown alert badges (top-left).
             alertBadgeStack
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -136,6 +143,41 @@ struct IronTrackerView: View {
             Button("OK") { viewModel.errorMessage = nil }
         } message: {
             Text(viewModel.errorMessage ?? "")
+        }
+    }
+
+    // MARK: - Injury Risk Banner
+
+    /// Full-width red banner that appears at the very top of the camera overlay when a
+    /// danger-level injury risk flag is active. Shows the most severe message first.
+    @ViewBuilder
+    private var injuryRiskBanner: some View {
+        let dangerFlags = viewModel.activeRiskFlags.filter { $0.severity == .danger }
+        if let topFlag = dangerFlags.first {
+            VStack(spacing: 0) {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 13, weight: .bold))
+                    Text(topFlag.message.uppercased())
+                        .font(.system(size: 12, weight: .bold))
+                        .tracking(0.6)
+                    Spacer()
+                    if dangerFlags.count > 1 {
+                        Text("+\(dangerFlags.count - 1)")
+                            .font(.system(size: 11, weight: .semibold))
+                            .opacity(0.75)
+                    }
+                }
+                .foregroundStyle(Color.black)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color.kineticsRed)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .ignoresSafeArea(edges: .top)
+            .allowsHitTesting(false)
+            .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
@@ -233,6 +275,25 @@ struct IronTrackerView: View {
                         color: viewModel.metrics.isSymmetryAlert ? .kineticsRed : .white,
                         isAlert: viewModel.metrics.isSymmetryAlert
                     )
+                    .frame(maxWidth: .infinity)
+
+                    Divider()
+                        .frame(height: 36)
+                        .background(Color.white.opacity(0.15))
+
+                    // Auto rep count badge
+                    VStack(spacing: 2) {
+                        Text("\(viewModel.autoRepCount)")
+                            .font(.system(.title, design: .rounded, weight: .bold))
+                            .foregroundStyle(Color.kineticsGreen)
+                            .monospacedDigit()
+                            .contentTransition(.numericText())
+                            .animation(.easeInOut(duration: 0.15), value: viewModel.autoRepCount)
+                        Text("AUTO REPS")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.50))
+                            .tracking(1.2)
+                    }
                     .frame(maxWidth: .infinity)
                 }
 

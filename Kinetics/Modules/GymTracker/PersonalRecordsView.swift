@@ -128,6 +128,15 @@ private struct PRDetailRow: View {
                 Text(record.achievedAt, format: .dateTime.month(.abbreviated).day())
                     .font(.caption)
                     .foregroundStyle(Color.kineticsSubtext)
+
+                Button {
+                    ShareCardGenerator.share(record: record)
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.kineticsBlue)
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(.vertical, 6)

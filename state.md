@@ -1,16 +1,16 @@
 # Kinetics — Session State
 
-**Last updated:** Session 8 (2026-05-01) — GPS Track audit, HistoryView, crash hardening
+**Last updated:** Session 9 (2026-05-01) — Feed overhaul, Gym UX fixes, Social seeder
 **Current phase:** Phase 1+ — Post-MVP improvements ✅ DONE
-**Overall progress:** All Phase 1 deliverables + Session 7–8 enhancements built, committed, pushed. BUILD SUCCEEDED.
+**Overall progress:** All Phase 1 deliverables + Session 7–9 enhancements built, committed, pushed. BUILD SUCCEEDED (zero errors, no warnings).
 
 ---
 
 ## Status: PHASE 1+ ENHANCEMENTS COMPLETE — BUILD SUCCEEDED
 
-`** BUILD SUCCEEDED **` on iPhone 17 Pro Simulator.
-Latest commit: `9673e35`
-Total Swift files: 80 (main app) + 1 (widget extension)
+`** BUILD SUCCEEDED **` — zero errors, no duplicate file warnings.
+Latest commit: `fcb7738`
+Total Swift files: 83 (main app) + 1 (widget extension)
 
 ---
 
@@ -130,6 +130,8 @@ Until then: HealthKit returns empty data (graceful degradation), widgets show ze
 | 5 | Gym Tracker Part B, HealthKit dashboard, notifications, WidgetKit extension |
 | 6 | App Store prep, permissions gate, Firebase Analytics depth, Sign in with Apple, streak tracking, deep links, tab analytics, session→feed pipeline, StoreKit 2 skeleton |
 | 7 | Entitlements fix (free team), widget fallback, video upload + AI analysis, coach voice TTS, PR share cards, Crashlytics, offline Firestore, auto rep counting, injury risk detection |
+| 8 | GPS Track dark map, location permission denied banner, deprecate UIScreen.main, HistoryView empty state, VideoLibrary force-unwrap crash fix, zero force-unwraps/casts project-wide |
+| 9 | Feed overhaul (pagination, real-time listener, 3-tab pill bar, infinite scroll, new posts banner, sport-gradient cards, kudos burst, comment sheet, reactions, search/discover, profile preview, post composer), Gym UX (resume banner, conflict alert, swipe delete/archive, filter chips, GymWorkoutHistoryView redesign, exercise card tap fix, SwiftData completeSession fix), FeedSeeder (follows/comments/kudos seeding, nested-array Firestore fix), CommentSheetView + SearchDiscoverView + UserProfilePreviewSheet added |
 
 ---
 

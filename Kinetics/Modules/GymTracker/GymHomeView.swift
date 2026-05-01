@@ -94,6 +94,8 @@ struct GymHomeView: View {
                     PersonalRecordsView(userId: uid)
                 case "body":
                     BodyMeasurementView(userId: uid)
+                case "videos":
+                    VideoLibraryView(userId: uid)
                 default:
                     EmptyView()
                 }
@@ -198,6 +200,17 @@ struct GymHomeView: View {
                     color: Color.kineticsAmber
                 ) {
                     navigationPath.append("progress")
+                }
+            }
+
+            HStack(spacing: 12) {
+                QuickStartCard(
+                    title: "Video Library",
+                    subtitle: "AI video analysis",
+                    icon: "video.fill",
+                    color: Color.kineticsPurple
+                ) {
+                    navigationPath.append("videos")
                 }
             }
         }

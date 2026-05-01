@@ -16,7 +16,8 @@ struct KineticsApp: App {
             WorkoutSet.self,
             Routine.self,
             PersonalRecord.self,
-            BodyMeasurement.self
+            BodyMeasurement.self,
+            VideoSession.self
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
@@ -35,6 +36,7 @@ struct KineticsApp: App {
                 .modelContainer(Self.modelContainer)
                 .onAppear {
                     GymRepository.shared.modelContainer = Self.modelContainer
+                    VideoRepository.shared.modelContainer = Self.modelContainer
                     Analytics.logEvent("app_session_started", parameters: [
                         "timestamp": Date().timeIntervalSince1970
                     ])

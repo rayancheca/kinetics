@@ -137,6 +137,11 @@ struct IronTrackerView: View {
                 .padding(.vertical, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
+            // Layer 4c: AI coach cue overlay — slides in from top.
+            CoachOverlayView(cue: viewModel.currentCoachCue)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, 80)
+
             // Layer 5: Metrics panel
             metricsPanel
 
@@ -348,13 +353,6 @@ struct IronTrackerView: View {
                     }
                 }
 
-                // Coaching cue
-                Text(viewModel.coachingCue)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.65))
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 2)
-                    .animation(.easeInOut(duration: 0.4), value: viewModel.coachingCue)
             }
         }
     }

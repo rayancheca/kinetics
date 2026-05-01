@@ -50,7 +50,12 @@ struct StrikingView: View {
             // Layer 3: Module label + session timer HUD at the top.
             hudLayer
 
-            // Layer 4: Floating camera flip button — interactive overlay.
+            // Layer 4: AI coach cue overlay — slides in from top above the HUD.
+            CoachOverlayView(cue: viewModel.currentCoachCue)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, 108)
+
+            // Layer 5: Floating camera flip button — interactive overlay.
             cameraFlipButton
         }
         .ignoresSafeArea()
@@ -292,13 +297,6 @@ struct StrikingView: View {
                 }
                 .padding(.horizontal, 4)
 
-                // ── Coaching cue ───────────────────────────────────────────
-                Text(viewModel.coachingCue)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.65))
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 4)
-                    .animation(.easeInOut(duration: 0.4), value: viewModel.coachingCue)
             }
             .animation(.easeInOut(duration: 0.2), value: viewModel.metrics.isStrikeDetected)
         }

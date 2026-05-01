@@ -1,14 +1,449 @@
 import Foundation
 
+// MARK: - CoachCue
+
+/// A single real-time coaching cue produced by `CoachingEngine.evaluate(metrics:sport:)`.
+///
+/// Cues are generated from live per-frame metrics, distinct from the post-session
+/// `CoachingNote` values which summarise a completed session.
+struct CoachCue: Equatable, Sendable {
+
+    // MARK: Priority
+
+    enum Priority: Sendable {
+        case info
+        case warning
+        case critical
+    }
+
+    /// The coaching message to display and optionally speak aloud.
+    let text: String
+    /// Severity level — drives overlay color and TTS pitch/rate.
+    let priority: Priority
+    /// The metric name that triggered this cue (used for cooldown keying).
+    let metric: String?
+    /// SF Symbol name for the overlay icon.
+    let icon: String
+}
+
+// MARK: - LiveCoachingMetrics
+
+/// Type-erased bag of live metric values passed into `CoachingEngine.evaluate`.
+///
+/// Each sport module populates only the fields it tracks; unused fields stay `nil`.
+struct LiveCoachingMetrics: Sendable {
+
+    // MARK: Striking
+    var hipShoulderSeparation: Double?    // degrees
+    var strikeVelocityMPH: Double?
+    var stanceRecoveryTime: Double?       // seconds
+    var leftRightBalance: Double?         // 0..1 (0 = fully left, 1 = fully right)
+    var isSessionActive: Bool = false
+
+    // MARK: Grappling
+    var isBaseStable: Bool?
+    var spineAngleDegrees: Double?
+    var kuzushiIndex: Double?             // 0..100
+    var centerOfMassInBase: Bool?
+
+    // MARK: IronTracker
+    var vbtVelocityMs: Double?
+    var bilateralSymmetry: Double?        // 0..1 (1.0 = perfect)
+    var buttWinkDetected: Bool?
+    var autoRepCount: Int?
+
+    // MARK: WallBeta
+    var hipProximityScore: Double?        // 0..100
+    var sagDetected: Bool?
+    var timeUnderTensionAvg: Double?      // seconds
+}
+
 // MARK: - CoachingEngine
 
-/// Pure-function namespace that derives coaching feedback from a completed `SessionResult`.
+/// Pure-function namespace that produces both real-time `CoachCue` values and
+/// post-session `CoachingNote` values from session data.
 ///
-/// All methods are stateless — they read from the session's `metrics` dictionary and an
-/// optional list of previous sessions, then return new value types. Nothing is mutated.
+/// Real-time coaching (live session):
+/// ```swift
+/// let metrics = LiveCoachingMetrics(hipShoulderSeparation: 18, ...)
+/// let cue = CoachingEngine.evaluate(metrics: metrics, sport: .striking, cooldowns: &cooldowns)
+/// ```
+///
+/// Post-session notes:
+/// ```swift
+/// let notes = CoachingEngine.generateNotes(for: result, previousSessions: history)
+/// ```
 enum CoachingEngine {
 
-    // MARK: - Public API
+    // MARK: - Cooldown Interval
+
+    /// Minimum seconds between two cues of the same category.
+    static let cueCooldownSeconds: TimeInterval = 8.0
+
+    // MARK: - Real-Time Cue Evaluation
+
+    /// Derives a single `CoachCue` from the current live metrics for the given sport.
+    ///
+    /// Returns `nil` when no condition threshold is exceeded or when the most-relevant
+    /// cue category is still within its cooldown window.
+    ///
+    /// - Parameters:
+    ///   - metrics: The latest computed biomechanics values for this frame.
+    ///   - sport: The active sport module — selects which rule set to evaluate.
+    ///   - cooldowns: Caller-owned dictionary mapping cue-category keys to the last
+    ///     time that category fired. Updated in place when a cue is returned.
+    /// - Returns: A `CoachCue` if a threshold was exceeded and the cooldown has elapsed,
+    ///   otherwise `nil`.
+    static func evaluate(
+        metrics: LiveCoachingMetrics,
+        sport: SportType,
+        cooldowns: inout [String: Date]
+    ) -> CoachCue? {
+        switch sport {
+        case .striking:    return strikingCue(metrics: metrics, cooldowns: &cooldowns)
+        case .grappling:   return grapplingCue(metrics: metrics, cooldowns: &cooldowns)
+        case .ironTracker: return ironTrackerCue(metrics: metrics, cooldowns: &cooldowns)
+        case .wallBeta:    return wallBetaCue(metrics: metrics, cooldowns: &cooldowns)
+        }
+    }
+
+    // MARK: - Private: Striking Cues
+
+    private static func strikingCue(
+        metrics: LiveCoachingMetrics,
+        cooldowns: inout [String: Date]
+    ) -> CoachCue? {
+        let sep = metrics.hipShoulderSeparation ?? 0
+        let vel = metrics.strikeVelocityMPH ?? 0
+        let recovery = metrics.stanceRecoveryTime ?? 0
+        let balance = metrics.leftRightBalance ?? 0.5
+
+        // Priority order: critical > warning > info.
+        // Each check includes its cooldown key so categories fire independently.
+
+        if balance < 0.4 {
+            return fireCue(
+                CoachCue(
+                    text: "You're over-committed to one side — keep your guard",
+                    priority: .warning,
+                    metric: "leftRightBalance",
+                    icon: "shield.slash"
+                ),
+                key: "striking_balance",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if recovery > 0.8 {
+            return fireCue(
+                CoachCue(
+                    text: "Reset faster — get back to stance immediately",
+                    priority: .warning,
+                    metric: "stanceRecoveryTime",
+                    icon: "arrow.counterclockwise"
+                ),
+                key: "striking_recovery",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if sep < 15 {
+            return fireCue(
+                CoachCue(
+                    text: "Rotate your hips FIRST — lead with the core, not the arm",
+                    priority: .warning,
+                    metric: "hipShoulderSeparation",
+                    icon: "rotate.right"
+                ),
+                key: "striking_sep_low",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if sep > 35 {
+            return fireCue(
+                CoachCue(
+                    text: "Perfect hip rotation — keep that coiling motion",
+                    priority: .info,
+                    metric: "hipShoulderSeparation",
+                    icon: "checkmark.circle"
+                ),
+                key: "striking_sep_high",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if vel > 12.0 {
+            return fireCue(
+                CoachCue(
+                    text: "Explosive! That's elite-level hand speed",
+                    priority: .info,
+                    metric: "strikeVelocity",
+                    icon: "bolt.fill"
+                ),
+                key: "striking_vel_high",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if vel < 4.0, vel > 0.1, metrics.isSessionActive {
+            return fireCue(
+                CoachCue(
+                    text: "Drive through the target — commit to the strike",
+                    priority: .info,
+                    metric: "strikeVelocity",
+                    icon: "arrow.up.forward"
+                ),
+                key: "striking_vel_low",
+                cooldowns: &cooldowns
+            )
+        }
+
+        return nil
+    }
+
+    // MARK: - Private: Grappling Cues
+
+    private static func grapplingCue(
+        metrics: LiveCoachingMetrics,
+        cooldowns: inout [String: Date]
+    ) -> CoachCue? {
+        let isBaseStable = metrics.isBaseStable ?? true
+        let spineAngle = metrics.spineAngleDegrees ?? 0
+        let kuzushi = metrics.kuzushiIndex ?? 0
+        let comInBase = metrics.centerOfMassInBase ?? true
+
+        if !isBaseStable {
+            return fireCue(
+                CoachCue(
+                    text: "BASE — drop your hips and widen your base NOW",
+                    priority: .critical,
+                    metric: "isBaseStable",
+                    icon: "exclamationmark.triangle.fill"
+                ),
+                key: "grappling_base",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if !comInBase {
+            return fireCue(
+                CoachCue(
+                    text: "Off balance — realign your center over your feet",
+                    priority: .warning,
+                    metric: "centerOfMassInBase",
+                    icon: "scope"
+                ),
+                key: "grappling_com",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if spineAngle > 45 {
+            return fireCue(
+                CoachCue(
+                    text: "You're getting broken down — straighten up",
+                    priority: .warning,
+                    metric: "spineAngle",
+                    icon: "arrow.up.to.line"
+                ),
+                key: "grappling_spine",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if kuzushi > 0.7 * 100 {
+            return fireCue(
+                CoachCue(
+                    text: "Perfect kuzushi — commit to the throw!",
+                    priority: .info,
+                    metric: "kuzushiIndex",
+                    icon: "hand.raised.fill"
+                ),
+                key: "grappling_kuzushi_high",
+                cooldowns: &cooldowns
+            )
+        }
+
+        return nil
+    }
+
+    // MARK: - Private: IronTracker Cues
+
+    private static func ironTrackerCue(
+        metrics: LiveCoachingMetrics,
+        cooldowns: inout [String: Date]
+    ) -> CoachCue? {
+        let vbt = metrics.vbtVelocityMs ?? 0
+        let symmetry = metrics.bilateralSymmetry ?? 1.0
+        let buttWink = metrics.buttWinkDetected ?? false
+        let repCount = metrics.autoRepCount ?? 0
+
+        if buttWink {
+            return fireCue(
+                CoachCue(
+                    text: "BUTT WINK — protect your lower back, stop the set",
+                    priority: .critical,
+                    metric: "buttWink",
+                    icon: "exclamationmark.shield.fill"
+                ),
+                key: "iron_buttwink",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if symmetry < 0.85 {
+            return fireCue(
+                CoachCue(
+                    text: "Left/right imbalance detected — focus on the weak side",
+                    priority: .warning,
+                    metric: "bilateralSymmetry",
+                    icon: "scale.3d"
+                ),
+                key: "iron_symmetry",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if vbt < 0.2, vbt > 0.01 {
+            return fireCue(
+                CoachCue(
+                    text: "Bar speed dying — reduce weight or you're grinding",
+                    priority: .warning,
+                    metric: "vbtVelocity",
+                    icon: "gauge.low"
+                ),
+                key: "iron_vbt_low",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if vbt > 0.8 {
+            return fireCue(
+                CoachCue(
+                    text: "Explosive tempo — excellent velocity-based training",
+                    priority: .info,
+                    metric: "vbtVelocity",
+                    icon: "gauge.high"
+                ),
+                key: "iron_vbt_high",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if repCount == 1 {
+            return fireCue(
+                CoachCue(
+                    text: "Rep 1 — full range of motion",
+                    priority: .info,
+                    metric: "autoRepCount",
+                    icon: "1.circle"
+                ),
+                key: "iron_rep_first",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if repCount > 0, repCount % 5 == 0 {
+            return fireCue(
+                CoachCue(
+                    text: "That's \(repCount) — keep breathing",
+                    priority: .info,
+                    metric: "autoRepCount",
+                    icon: "checkmark.circle"
+                ),
+                key: "iron_rep_milestone",
+                cooldowns: &cooldowns
+            )
+        }
+
+        return nil
+    }
+
+    // MARK: - Private: WallBeta Cues
+
+    private static func wallBetaCue(
+        metrics: LiveCoachingMetrics,
+        cooldowns: inout [String: Date]
+    ) -> CoachCue? {
+        let proximity = metrics.hipProximityScore ?? 50
+        let sag = metrics.sagDetected ?? false
+        let tut = metrics.timeUnderTensionAvg ?? 0
+
+        if sag {
+            return fireCue(
+                CoachCue(
+                    text: "Sag detected — engage your core and pull your hips up",
+                    priority: .warning,
+                    metric: "sagDetected",
+                    icon: "arrow.down.circle"
+                ),
+                key: "wall_sag",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if proximity < 30 {
+            return fireCue(
+                CoachCue(
+                    text: "Hips OFF the wall — you're all arms, get your hips in",
+                    priority: .warning,
+                    metric: "hipProximity",
+                    icon: "arrow.up.to.line.compact"
+                ),
+                key: "wall_proximity_low",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if tut > 5.0 {
+            return fireCue(
+                CoachCue(
+                    text: "Good static hold — controlled movement is the goal",
+                    priority: .info,
+                    metric: "timeUnderTension",
+                    icon: "clock"
+                ),
+                key: "wall_tut_high",
+                cooldowns: &cooldowns
+            )
+        }
+
+        if proximity > 70 {
+            return fireCue(
+                CoachCue(
+                    text: "Hips close — great technique, trust your feet",
+                    priority: .info,
+                    metric: "hipProximity",
+                    icon: "star.fill"
+                ),
+                key: "wall_proximity_high",
+                cooldowns: &cooldowns
+            )
+        }
+
+        return nil
+    }
+
+    // MARK: - Private: Cooldown Gate
+
+    /// Returns `cue` and stamps `cooldowns[key]` if the cooldown has elapsed.
+    /// Returns `nil` if the key fired within the cooldown window.
+    private static func fireCue(
+        _ cue: CoachCue,
+        key: String,
+        cooldowns: inout [String: Date]
+    ) -> CoachCue? {
+        let now = Date()
+        if let lastFired = cooldowns[key],
+           now.timeIntervalSince(lastFired) < cueCooldownSeconds {
+            return nil
+        }
+        cooldowns[key] = now
+        return cue
+    }
+
+    // MARK: - Post-Session Note Generation
 
     /// Generate up to four coaching notes for a completed session.
     ///
@@ -54,14 +489,10 @@ enum CoachingEngine {
     /// - Returns: A one-sentence motivational target for the athlete's next workout.
     static func nextSessionGoal(for result: SessionResult) -> String {
         switch result.sport {
-        case .striking:
-            return strikingGoal(for: result)
-        case .grappling:
-            return grapplingGoal(for: result)
-        case .ironTracker:
-            return ironTrackerGoal(for: result)
-        case .wallBeta:
-            return wallBetaGoal(for: result)
+        case .striking:    return strikingGoal(for: result)
+        case .grappling:   return grapplingGoal(for: result)
+        case .ironTracker: return ironTrackerGoal(for: result)
+        case .wallBeta:    return wallBetaGoal(for: result)
         }
     }
 
@@ -238,7 +669,7 @@ enum CoachingEngine {
     private static func ironTrackerNotes(for result: SessionResult) -> [CoachingNote] {
         var notes: [CoachingNote] = []
 
-        // bar_path_deviation_cm — key matches IronTrackerViewModel snapshot
+        // bar_path_deviation_cm
         if let deviation = result.metrics["bar_path_deviation_cm"] {
             let formatted = String(format: "%.1f", deviation)
             if deviation < 2 {
@@ -262,7 +693,7 @@ enum CoachingEngine {
             }
         }
 
-        // vbt_velocity_ms — key matches IronTrackerViewModel snapshot
+        // vbt_velocity_ms
         if let velocity = result.metrics["vbt_velocity_ms"] {
             if velocity > 0.8 {
                 let formatted = String(format: "%.2f", velocity)
@@ -277,7 +708,7 @@ enum CoachingEngine {
             }
         }
 
-        // bilateral_symmetry — stored as 0–1 fraction (1.0 = perfect)
+        // bilateral_symmetry
         if let symmetry = result.metrics["bilateral_symmetry"] {
             if symmetry < 0.85 {
                 notes.append(CoachingNote(
@@ -291,7 +722,7 @@ enum CoachingEngine {
             }
         }
 
-        // butt_wink_angle — key matches IronTrackerViewModel snapshot
+        // butt_wink_angle
         if let winkAngle = result.metrics["butt_wink_angle"] {
             if winkAngle > 15 {
                 let formatted = String(format: "%.0f", winkAngle)
@@ -426,7 +857,6 @@ enum CoachingEngine {
     }
 
     /// The single most representative metric for each sport module.
-    /// Keys must match those written by each module's ViewModel metrics snapshot.
     private static func primaryMetricKey(for sport: SportType) -> String {
         switch sport {
         case .striking:    "peak_velocity_mph"
@@ -438,7 +868,6 @@ enum CoachingEngine {
 
     /// Whether a higher value on the primary metric represents better performance.
     private static func primaryMetricHigherIsBetter(for sport: SportType) -> Bool {
-        // All four primary metrics are "higher is better".
         true
     }
 
@@ -462,11 +891,9 @@ enum CoachingEngine {
     }
 
     private static func ironTrackerGoal(for result: SessionResult) -> String {
-        // bilateral_symmetry is stored as 0–1 fraction
         if let symmetry = result.metrics["bilateral_symmetry"], symmetry < 0.9 {
             return "Close the symmetry gap — slow reps with mirror"
         }
-        // vbt_velocity_ms key matches IronTrackerViewModel snapshot
         if let velocity = result.metrics["vbt_velocity_ms"], velocity < 0.8 {
             return "Push bar velocity above 0.8 m/s"
         }
@@ -474,11 +901,9 @@ enum CoachingEngine {
     }
 
     private static func wallBetaGoal(for result: SessionResult) -> String {
-        // hip_proximity_score is stored as 0–1 fraction
         if let proximity = result.metrics["hip_proximity_score"], proximity < 0.65 {
             return "Focus entirely on hip proximity — quality over quantity"
         }
-        // time_under_tension_avg key matches WallBetaViewModel snapshot
         if let holdTime = result.metrics["time_under_tension_avg"], holdTime > 2.5 {
             return "Work on reducing hold time below 2.5s average"
         }

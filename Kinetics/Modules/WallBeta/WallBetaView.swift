@@ -52,7 +52,12 @@ struct WallBetaView: View {
             // ── Layer 4: Top HUD ──────────────────────────────────────────────────
             hudLayer
 
-            // ── Layer 5: Camera flip button ───────────────────────────────────────
+            // ── Layer 5: AI coach cue overlay — slides in from top ────────────────
+            CoachOverlayView(cue: viewModel.currentCoachCue)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, 108)
+
+            // ── Layer 6: Camera flip button ───────────────────────────────────────
             cameraFlipButton
         }
         .ignoresSafeArea()
@@ -432,13 +437,6 @@ struct WallBetaView: View {
                 }
                 .padding(.horizontal, 4)
 
-                // ── Coaching cue ───────────────────────────────────────────────────
-                Text(viewModel.coachingCue)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.65))
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 2)
-                    .animation(.easeInOut(duration: 0.4), value: viewModel.coachingCue)
             }
             .animation(.easeInOut(duration: 0.2), value: viewModel.metrics.movementPhase)
         }

@@ -23,6 +23,7 @@ enum SpeechPriority {
 /// ```swift
 /// CoachVoice.shared.speak("Hips first, then shoulders")
 /// CoachVoice.shared.speak("Stop — protect your lower back", priority: .high)
+/// CoachVoice.shared.speakIfChanged(cue: myCue)
 /// CoachVoice.shared.stop()
 /// ```
 @MainActor
@@ -35,6 +36,7 @@ final class CoachVoice {
     // MARK: - Private
 
     private let synthesizer = AVSpeechSynthesizer()
+    private var lastSpokenText: String = ""
 
     private var isEnabled: Bool {
         UserDefaults.standard.bool(forKey: "coach_voice_enabled")
@@ -50,7 +52,8 @@ final class CoachVoice {
     ///
     /// - Parameters:
     ///   - text: The string to synthesize. Empty strings are silently ignored.
-    ///   - priority: `.high` interrupts any ongoing utterance immediately.
+    ///   - priority: `.high` interrupts any ongoing utterance immediately,
+    ///     uses a lower pitch (0.95) and slower rate (0.45) for urgency.
     ///     `.normal` (default) is a no-op if the synthesizer is already speaking,
     ///     preventing cue pile-up at 30 fps.
     func speak(_ text: String, priority: SpeechPriority = .normal) {
@@ -65,17 +68,47 @@ final class CoachVoice {
 
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-        utterance.rate = 0.52           // Slightly faster than default (0.5)
-        utterance.pitchMultiplier = 1.1 // Slightly higher for energy
         utterance.volume = 0.9
         utterance.preUtteranceDelay = 0.1
 
+        if priority == .high {
+            // Critical cues: lower pitch and slower rate to convey urgency.
+            utterance.rate = 0.45
+            utterance.pitchMultiplier = 0.95
+        } else {
+            // Info cues: slightly faster and higher for energy.
+            utterance.rate = 0.52
+            utterance.pitchMultiplier = 1.1
+        }
+
         synthesizer.speak(utterance)
+    }
+
+    /// Speaks the cue only if it differs from the last spoken text.
+    ///
+    /// Handles deduplication so call sites don't need to track the previous value.
+    /// Critical cues always interrupt regardless of whether text is identical.
+    ///
+    /// - Parameter cue: The `CoachCue` to potentially speak.
+    func speakIfChanged(cue: CoachCue) {
+        guard isEnabled else { return }
+
+        let priority: SpeechPriority = cue.priority == .critical ? .high : .normal
+
+        if cue.priority == .critical {
+            // Critical warnings always fire immediately, even if text matches.
+            speak(cue.text, priority: .high)
+            lastSpokenText = cue.text
+        } else if cue.text != lastSpokenText {
+            lastSpokenText = cue.text
+            speak(cue.text, priority: priority)
+        }
     }
 
     /// Stops any in-progress speech at the next word boundary.
     func stop() {
         synthesizer.stopSpeaking(at: .word)
+        lastSpokenText = ""
     }
 }
 

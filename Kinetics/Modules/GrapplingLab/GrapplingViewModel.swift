@@ -42,18 +42,13 @@ final class GrapplingViewModel {
     /// The result of the most recently completed session; populated after `endSession` saves.
     var lastCompletedSession: SessionResult?
 
+    /// The current real-time coaching cue, derived from live metrics via `CoachingEngine`.
+    var currentCoachCue: CoachCue?
+
     /// Elapsed session time formatted as M:SS for display.
     var formattedDuration: String {
         let total = Int(sessionDuration)
         return String(format: "%d:%02d", total / 60, total % 60)
-    }
-
-    /// A real-time coaching cue derived from the current frame metrics.
-    var coachingCue: String {
-        if metrics.isPosturalAlert { return "Centre of mass is outside your base — widen your stance" }
-        if metrics.kuzushiIndex < 40 { return "Establish grips before engaging — create kuzushi first" }
-        if metrics.spineAngleDegrees > 30 { return "Stay upright — a tall spine gives you more leverage options" }
-        return "Good structure — look for the opening"
     }
 
     // MARK: - Private State
@@ -78,7 +73,9 @@ final class GrapplingViewModel {
     /// Retains the repeating timer task that ticks `sessionDuration` every second.
     private var timerTask: Task<Void, Never>?
 
-    /// Tracks the last cue text spoken so we only call CoachVoice when the cue changes.
+    /// Cue cooldown state: maps category key → last fire time.
+    private var cueCooldowns: [String: Date] = [:]
+    /// Tracks the last cue text spoken for CoachVoice deduplication.
     private var lastSpokenCue: String = ""
 
     // MARK: - Session Lifecycle
@@ -115,6 +112,8 @@ final class GrapplingViewModel {
         sessionStartDate = Date()
         previousPose = nil
         metrics = GrapplingMetrics()
+        cueCooldowns = [:]
+        currentCoachCue = nil
         lastSpokenCue = ""
 
         startTimer()
@@ -230,12 +229,20 @@ final class GrapplingViewModel {
             previousPose = pose
             metrics = updatedMetrics
 
-            // Speak the coaching cue only when it changes to avoid repetition at 30 fps.
-            let cue = coachingCue
-            if cue != lastSpokenCue {
-                lastSpokenCue = cue
-                let priority: SpeechPriority = cue.isHighPriorityCue ? .high : .normal
-                CoachVoice.shared.speak(cue, priority: priority)
+            // Build live metrics bag and evaluate for a coaching cue.
+            let liveMetrics = LiveCoachingMetrics(
+                isBaseStable: updatedMetrics.isBaseStable,
+                spineAngleDegrees: updatedMetrics.spineAngleDegrees,
+                kuzushiIndex: updatedMetrics.kuzushiIndex,
+                centerOfMassInBase: !updatedMetrics.isPosturalAlert
+            )
+            if let cue = CoachingEngine.evaluate(
+                metrics: liveMetrics,
+                sport: .grappling,
+                cooldowns: &cueCooldowns
+            ) {
+                currentCoachCue = cue
+                CoachVoice.shared.speakIfChanged(cue: cue)
             }
 
         } catch {

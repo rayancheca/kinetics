@@ -50,6 +50,11 @@ struct GrapplingView: View {
 
                 Spacer()
             }
+
+            // AI coach cue overlay — sits just below the module label row.
+            CoachOverlayView(cue: viewModel.currentCoachCue)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, 108)
         }
         .ignoresSafeArea()
         .background(Color.kineticsBackground)
@@ -370,12 +375,6 @@ struct GrapplingView: View {
                     color: Color.white.opacity(0.80)
                 )
             }
-            Text(viewModel.coachingCue)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.white.opacity(0.65))
-                .multilineTextAlignment(.center)
-                .padding(.top, 2)
-                .animation(.easeInOut(duration: 0.4), value: viewModel.coachingCue)
         }
     }
 

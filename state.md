@@ -1,16 +1,16 @@
 # Kinetics — Session State
 
-**Last updated:** Session 6 (2026-04-29) — MVP Phase 1 COMPLETE
-**Current phase:** Phase 1 — MVP ✅ DONE
-**Overall progress:** All Phase 1 deliverables built, committed, pushed. BUILD SUCCEEDED.
+**Last updated:** Session 7 (2026-04-29) — Phase 1+ enhancements complete
+**Current phase:** Phase 1+ — Post-MVP improvements ✅ DONE
+**Overall progress:** All Phase 1 deliverables + Session 7 enhancements built, committed, pushed. BUILD SUCCEEDED.
 
 ---
 
-## Status: PHASE 1 MVP COMPLETE — BUILD SUCCEEDED
+## Status: PHASE 1+ ENHANCEMENTS COMPLETE — BUILD SUCCEEDED
 
 `** BUILD SUCCEEDED **` on iPhone 17 Pro Simulator.
-Latest commit: `809c9f6`
-Total Swift files: 76 (main app) + 1 (widget extension)
+Latest commit: `95b89f1`
+Total Swift files: 80 (main app) + 1 (widget extension)
 
 ---
 
@@ -48,13 +48,25 @@ Total Swift files: 76 (main app) + 1 (widget extension)
 | Tab screen-time analytics | ✅ | `d7c025d` |
 | Session → social feed auto-post | ✅ | `809c9f6` |
 | StoreKit 2 subscription skeleton | ✅ | `809c9f6` |
+| **Session 7 Enhancements** | | |
+| Fix entitlements (free team compat) | ✅ | `79c4271` |
+| Widget UserDefaults fallback fix | ✅ | `79c4271` |
+| Video upload + AI analysis feature | ✅ | `539c5ef` |
+| Coach voice TTS (AVSpeechSynthesizer) | ✅ | `95b89f1` |
+| PR share card (ImageRenderer) | ✅ | `95b89f1` |
+| Firebase Crashlytics integration | ✅ | `95b89f1` |
+| Firestore offline persistence (100MB) | ✅ | `95b89f1` |
+| Auto rep counting (IronTracker) | ✅ | `95b89f1` |
+| Injury risk detection (5 flag types) | ✅ | `95b89f1` |
 
 ---
 
 ## Known Issues (require manual fix for device builds)
 
-### Entitlements hook stripping
-The project's post-tool-use hook strips `.entitlements` files to `<dict/>` on every `xcodegen generate` run. For device builds, manually re-add in Xcode Signing & Capabilities:
+### Entitlements — Free Personal Team
+Both `.entitlements` files are intentionally stripped to `<dict/>` for free personal team compatibility. HealthKit, App Groups, and Sign in with Apple require a paid $99/year Apple Developer account.
+
+**When you get a paid account, manually re-add in Xcode Signing & Capabilities:**
 
 **Kinetics target:**
 - HealthKit capability
@@ -63,6 +75,8 @@ The project's post-tool-use hook strips `.entitlements` files to `<dict/>` on ev
 
 **KineticsWidget target:**
 - App Groups: `group.com.rayancheca.kinetics`
+
+Until then: HealthKit returns empty data (graceful degradation), widgets show zeros (UserDefaults.standard fallback), Sign in with Apple falls back to anonymous auth.
 
 ### App Store Connect setup required before shipping
 - Register product IDs for StoreKit subscriptions:
@@ -108,6 +122,7 @@ The project's post-tool-use hook strips `.entitlements` files to `<dict/>` on ev
 | 4 | Front camera toggle, GPS Track module, color tokens, social layer, Gym Tracker Part A |
 | 5 | Gym Tracker Part B, HealthKit dashboard, notifications, WidgetKit extension |
 | 6 | App Store prep, permissions gate, Firebase Analytics depth, Sign in with Apple, streak tracking, deep links, tab analytics, session→feed pipeline, StoreKit 2 skeleton |
+| 7 | Entitlements fix (free team), widget fallback, video upload + AI analysis, coach voice TTS, PR share cards, Crashlytics, offline Firestore, auto rep counting, injury risk detection |
 
 ---
 

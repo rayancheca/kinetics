@@ -383,6 +383,7 @@
 			children = (
 				1BD8F79988934C12079F95AB /* CameraPreviewView.swift */,
 				F65BFB10A8F0BCC14D54EA7D /* CoachOverlayView.swift */,
+				BB223344556677889900CCDD /* GyroscopeParallaxModifier.swift */,
 				8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */,
 				AA12345678901234567890AB /* MuscleBodyDiagramView.swift */,
 				BB98765432109876543210FE /* GyroscopeParallaxModifier.swift */,
@@ -704,6 +705,7 @@
 				98C0AED100800BD8EA5FE78B /* SessionRepository.swift in Sources */,
 				CB6BECC8855AE1CEEABAA02E /* SessionResult.swift in Sources */,
 				7A44D12C512FF469EAC6FC10 /* ShareCardView.swift in Sources */,
+				AA112233445566778899AABB /* GyroscopeParallaxModifier.swift in Sources */,
 				0C296E87D17F3ABEF24D62CD /* SocialModels.swift in Sources */,
 				9598F6CA6662EC1F128A3F2A /* SocialRepository.swift in Sources */,
 				3AAECFFD09059C41182B79E5 /* StrikingAnalytics.swift in Sources */,

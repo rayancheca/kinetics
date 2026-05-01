@@ -58,8 +58,14 @@ struct KineticsApp: App {
     // Notification delegate must be retained for the lifetime of the app.
     private let notificationDelegate = KineticsNotificationDelegate()
 
-    // Firebase is configured inside AppState.init() via configureFirebaseIfReady().
-    // Do NOT call FirebaseApp.configure() here — it would double-configure and crash.
+    // Configure Firebase in the struct init — this runs before any SwiftUI lifecycle,
+    // before @State initialization, and before AppDelegate callbacks. The guard prevents
+    // double-configuration if AppState.init() also calls configureFirebaseIfReady().
+    init() {
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+    }
 
     private static let modelContainer: ModelContainer = {
         let schema = Schema([

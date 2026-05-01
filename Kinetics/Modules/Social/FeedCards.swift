@@ -246,7 +246,7 @@ struct ActivityFeedCard: View {
     @ViewBuilder
     private var routeMap: some View {
         if let coords = item.routeCoordinates, coords.count >= 2 {
-            RouteMapView(coordinates: coords)
+            FeedRouteMapView(coordinates: coords)
                 .frame(height: 130)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
@@ -384,11 +384,11 @@ struct ActivityFeedCard: View {
     }
 }
 
-// MARK: - RouteMapView
+// MARK: - FeedRouteMapView
 
 /// A non-interactive satellite map that draws a `MapPolyline` for a GPS route.
 /// Coordinates are `[[lat, lng]]` pairs matching the `FeedItem.routeCoordinates` format.
-private struct RouteMapView: View {
+private struct FeedRouteMapView: View {
 
     let coordinates: [[Double]]
 

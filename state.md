@@ -1,16 +1,16 @@
 # Kinetics — Session State
 
-**Last updated:** Session 9 (2026-05-01) — Feed overhaul, Gym UX fixes, Social seeder
+**Last updated:** Session 10 (2026-05-04) — Video Analysis & AI Coach feature
 **Current phase:** Phase 1+ — Post-MVP improvements ✅ DONE
-**Overall progress:** All Phase 1 deliverables + Session 7–9 enhancements built, committed, pushed. BUILD SUCCEEDED (zero errors, no warnings).
+**Overall progress:** All Phase 1 deliverables + Sessions 7–10 enhancements built, committed, pushed. BUILD SUCCEEDED (zero errors).
 
 ---
 
-## Status: PHASE 1+ ENHANCEMENTS COMPLETE — BUILD SUCCEEDED
+## Status: SESSION 10 COMPLETE — BUILD SUCCEEDED
 
-`** BUILD SUCCEEDED **` — zero errors, no duplicate file warnings.
-Latest commit: `fcb7738`
-Total Swift files: 83 (main app) + 1 (widget extension)
+`** BUILD SUCCEEDED **` — zero errors, no warnings.
+Latest commit: `e8d0b95`
+Total Swift files: 94 (main app) + 1 (widget extension)
 
 ---
 
@@ -132,6 +132,7 @@ Until then: HealthKit returns empty data (graceful degradation), widgets show ze
 | 7 | Entitlements fix (free team), widget fallback, video upload + AI analysis, coach voice TTS, PR share cards, Crashlytics, offline Firestore, auto rep counting, injury risk detection |
 | 8 | GPS Track dark map, location permission denied banner, deprecate UIScreen.main, HistoryView empty state, VideoLibrary force-unwrap crash fix, zero force-unwraps/casts project-wide |
 | 9 | Feed overhaul (pagination, real-time listener, 3-tab pill bar, infinite scroll, new posts banner, sport-gradient cards, kudos burst, comment sheet, reactions, search/discover, profile preview, post composer), Gym UX (resume banner, conflict alert, swipe delete/archive, filter chips, GymWorkoutHistoryView redesign, exercise card tap fix, SwiftData completeSession fix), FeedSeeder (follows/comments/kudos seeding, nested-array Firestore fix), CommentSheetView + SearchDiscoverView + UserProfilePreviewSheet added |
+| 10 | Video Analysis & AI Coach: FaceProfile (SwiftData + VNGenerateImageFeaturePrintRequest face ID), CoachReport (Codable report model), AICoachService (Claude API actor with sport-specific fallbacks), VideoStorageService (Firebase Storage + AVAssetExportSession compression), FaceSetupView/ViewModel (front-camera scan sheet, 2-retry flow), VideoPlayerView (AVPlayer UIViewRepresentable + controller), SkeletonOverlayView (Canvas multi-subject skeleton renderer), VideoAnalysisReportView (full 6-section report UI with tip timeline + video scrubbing), VideoReportViewModel, VideoAnalysisEngine enhanced (6-sport metrics + subject labeling + skeleton frame collection), VideoLibraryView now navigates to VideoAnalysisReportView, ProfileView gets Athlete section (face scan entry + body composition form), FirebaseStorage linked to target |
 
 ---
 

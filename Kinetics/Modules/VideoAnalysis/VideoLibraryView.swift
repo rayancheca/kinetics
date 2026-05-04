@@ -167,6 +167,13 @@ final class VideoLibraryViewModel {
                 session.metricsJSON = str
             }
 
+            session.subjectLabel = result.subjectLabel
+
+            if let data = try? JSONEncoder().encode(result.skeletonFrames),
+               let str = String(data: data, encoding: .utf8) {
+                session.skeletonFramesJSON = str
+            }
+
             if session.title.isEmpty {
                 let formatter = DateFormatter()
                 formatter.dateFormat = "MMM d"
@@ -378,7 +385,7 @@ struct VideoLibraryView: View {
         return ScrollView(.vertical, showsIndicators: false) {
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(viewModel.filteredSessions, id: \.id) { session in
-                    NavigationLink(destination: VideoDetailView(session: session, userId: userId)) {
+                    NavigationLink(destination: VideoAnalysisReportView(session: session, userId: userId)) {
                         VideoThumbnailCard(session: session)
                     }
                     .buttonStyle(.plain)

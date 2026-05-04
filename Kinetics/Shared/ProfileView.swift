@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 // MARK: - ProfileViewModel
@@ -45,11 +46,20 @@ final class ProfileViewModel {
 
 struct ProfileView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
     @State private var vm = ProfileViewModel()
     @State private var showSignIn = false
     @State private var confirmSignOut = false
+    @State private var showFaceSetup = false
     @AppStorage("preferred_units") private var preferredUnits = "mph"
     @AppStorage("coach_voice_enabled") private var coachVoiceEnabled = true
+
+    // Body composition editing state
+    @State private var heightCmText: String = ""
+    @State private var ageText: String = ""
+    @State private var weightKgText: String = ""
+    @State private var skeletalMuscleText: String = ""
+    @State private var hasFaceProfile = false
 
     private var isAnonymous: Bool { appState.authManager.currentUser?.isAnonymous == true }
 
@@ -76,6 +86,7 @@ struct ProfileView: View {
                 VStack(spacing: 28) {
                     avatarSection
                     statsGrid
+                    athleteSection
                     accountSection
                     preferencesSection
                     subscriptionSection
@@ -98,9 +109,178 @@ struct ProfileView: View {
             .task {
                 if let uid = appState.authManager.currentUser?.uid {
                     await vm.load(for: uid)
+                    loadBodyComposition(userId: uid)
+                    hasFaceProfile = faceProfileExists(userId: uid)
+                }
+            }
+            .fullScreenCover(isPresented: $showFaceSetup) {
+                if let uid = appState.authManager.currentUser?.uid {
+                    FaceSetupView(userId: uid)
+                        .onDisappear {
+                            hasFaceProfile = faceProfileExists(userId: uid)
+                        }
                 }
             }
         }
+    }
+
+    // MARK: - Athlete Section
+
+    private var athleteSection: some View {
+        SettingsGroup(header: "ATHLETE PROFILE") {
+            // Face ID row
+            Button { showFaceSetup = true } label: {
+                HStack(spacing: 12) {
+                    settingsIconBox(systemName: "person.crop.circle.fill.badge.checkmark", color: Color.kineticsBlue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Face Profile")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.white)
+                        Text(hasFaceProfile ? "Scan saved — tap to update" : "Set up for auto-tagging in videos")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.38))
+                    }
+                    Spacer()
+                    if hasFaceProfile {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color.kineticsGreen)
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.2))
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+            }
+
+            SettingsDivider()
+
+            // Height
+            HStack(spacing: 12) {
+                settingsIconBox(systemName: "ruler.fill", color: Color.kineticsGreen)
+                Text("Height (cm)")
+                    .font(.system(size: 15))
+                    .foregroundStyle(.white)
+                Spacer()
+                TextField("0", text: $heightCmText)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color.kineticsBlue)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.decimalPad)
+                    .frame(width: 64)
+                    .onChange(of: heightCmText) { _, _ in saveBodyComposition() }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            SettingsDivider()
+
+            // Age
+            HStack(spacing: 12) {
+                settingsIconBox(systemName: "calendar", color: Color.kineticsAmber)
+                Text("Age")
+                    .font(.system(size: 15))
+                    .foregroundStyle(.white)
+                Spacer()
+                TextField("0", text: $ageText)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color.kineticsBlue)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.numberPad)
+                    .frame(width: 64)
+                    .onChange(of: ageText) { _, _ in saveBodyComposition() }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            SettingsDivider()
+
+            // Weight
+            HStack(spacing: 12) {
+                settingsIconBox(systemName: "scalemass.fill", color: Color.kineticsPurple)
+                Text("Weight (kg)")
+                    .font(.system(size: 15))
+                    .foregroundStyle(.white)
+                Spacer()
+                TextField("0", text: $weightKgText)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color.kineticsBlue)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.decimalPad)
+                    .frame(width: 64)
+                    .onChange(of: weightKgText) { _, _ in saveBodyComposition() }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            SettingsDivider()
+
+            // Skeletal Muscle Mass
+            HStack(spacing: 12) {
+                settingsIconBox(systemName: "figure.strengthtraining.traditional", color: Color.kineticsRed)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Skeletal Muscle (kg)")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.white)
+                    Text("From InBody or DEXA scan")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.35))
+                }
+                Spacer()
+                TextField("0", text: $skeletalMuscleText)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color.kineticsBlue)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.decimalPad)
+                    .frame(width: 64)
+                    .onChange(of: skeletalMuscleText) { _, _ in saveBodyComposition() }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+        }
+    }
+
+    // MARK: - Body Composition Persistence
+
+    private func loadBodyComposition(userId: String) {
+        let descriptor = FetchDescriptor<BodyMeasurement>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.recordedAt, order: .reverse)]
+        )
+        guard let latest = (try? modelContext.fetch(descriptor))?.first else { return }
+        if latest.heightCm > 0 { heightCmText = String(format: "%.1f", latest.heightCm) }
+        if latest.ageYears > 0 { ageText = "\(latest.ageYears)" }
+        if latest.weightKg > 0 { weightKgText = String(format: "%.1f", latest.weightKg) }
+        if latest.skeletalMuscleMassKg > 0 { skeletalMuscleText = String(format: "%.1f", latest.skeletalMuscleMassKg) }
+    }
+
+    private func saveBodyComposition() {
+        guard let userId = appState.authManager.currentUser?.uid else { return }
+        let descriptor = FetchDescriptor<BodyMeasurement>(
+            predicate: #Predicate { $0.userId == userId },
+            sortBy: [SortDescriptor(\.recordedAt, order: .reverse)]
+        )
+        let entry: BodyMeasurement
+        if let existing = (try? modelContext.fetch(descriptor))?.first {
+            entry = existing
+        } else {
+            entry = BodyMeasurement(userId: userId)
+            modelContext.insert(entry)
+        }
+        entry.heightCm = Double(heightCmText) ?? entry.heightCm
+        entry.ageYears = Int(ageText) ?? entry.ageYears
+        entry.weightKg = Double(weightKgText) ?? entry.weightKg
+        entry.skeletalMuscleMassKg = Double(skeletalMuscleText) ?? entry.skeletalMuscleMassKg
+        try? modelContext.save()
+    }
+
+    private func faceProfileExists(userId: String) -> Bool {
+        let descriptor = FetchDescriptor<FaceProfile>(
+            predicate: #Predicate { $0.userId == userId }
+        )
+        return ((try? modelContext.fetch(descriptor))?.isEmpty == false)
     }
 
     // MARK: - Avatar

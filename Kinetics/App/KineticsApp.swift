@@ -78,6 +78,7 @@ struct KineticsApp: App {
             BodyMeasurement.self,
             VideoSession.self,
             WeeklyPlan.self,
+            FaceProfile.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {

@@ -526,12 +526,38 @@ final class PersonalRecord {
 /// in this entry", not a literal measurement of zero.
 @Model
 final class BodyMeasurement {
+
+    // MARK: - Core Fields
+
     var id: String
     var userId: String
     var recordedAt: Date
     var weightKg: Double
     var bodyFatPercent: Double
     var notes: String
+
+    // MARK: - Extended Composition Fields
+
+    /// Body height in centimetres. `0` means not recorded.
+    var heightCm: Double = 0
+
+    /// Age in whole years. `0` means not recorded.
+    var ageYears: Int = 0
+
+    /// Skeletal muscle mass in kilograms (e.g. from an InBody scan). `0` means not recorded.
+    var skeletalMuscleMassKg: Double = 0
+
+    /// Lean body mass in kilograms. `0` means not recorded.
+    var leanMassKg: Double = 0
+
+    /// Body Mass Index. `0` means not recorded; may be entered manually or
+    /// computed externally — not auto-derived here to avoid silent overrides.
+    var bmi: Double = 0
+
+    /// Data origin: `"manual"` (user-typed) or `"healthkit"` (pulled from HealthKit).
+    var source: String = "manual"
+
+    // MARK: - Init
 
     init(
         id: String = UUID().uuidString,
@@ -549,6 +575,25 @@ final class BodyMeasurement {
         self.notes = notes
     }
 
+    // MARK: - Computed Helpers
+
     /// Convenience alias for `recordedAt`.
     var date: Date { recordedAt }
+
+    /// `true` when both weight and height have been recorded (non-zero).
+    var isComplete: Bool { weightKg > 0 && heightCm > 0 }
+
+    /// Formatted weight string suitable for display, e.g. `"72.5 kg"`.
+    /// Returns `"—"` when weight has not been recorded.
+    var displayWeight: String {
+        guard weightKg > 0 else { return "—" }
+        return String(format: "%.1f kg", weightKg)
+    }
+
+    /// Formatted height string suitable for display, e.g. `"178 cm"`.
+    /// Returns `"—"` when height has not been recorded.
+    var displayHeight: String {
+        guard heightCm > 0 else { return "—" }
+        return String(format: "%.0f cm", heightCm)
+    }
 }

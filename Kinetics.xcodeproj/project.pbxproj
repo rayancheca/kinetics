@@ -93,6 +93,7 @@
 		B875E6380324D015BC9E9920 /* TrackViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8643CBD1C2B047956616ACC /* TrackViewModel.swift */; };
 		B948297D38FEBE9A3E257525 /* RepCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D04000D98CBD21248298A0 /* RepCounter.swift */; };
 		BB26387B878693EE71C9C95A /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 726CF430F8281EF13190F56B /* FirebaseCrashlytics */; };
+		AA11BB22CC33DD44EE55FF01 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = AA11BB22CC33DD44EE55FF02 /* FirebaseStorage */; };
 		BFB01F19B3C1C6EF05AFD455 /* CoachOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F65BFB10A8F0BCC14D54EA7D /* CoachOverlayView.swift */; };
 		C5CE24DAE9D544F78AF24B3B /* WeeklyPlannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA346D5771038C6F9E8A6D66 /* WeeklyPlannerView.swift */; };
 		C5CEBE44ACC1F2EA4743BAA7 /* FeedCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DBF71E832EBFB691D3BFC4 /* FeedCards.swift */; };
@@ -122,6 +123,17 @@
 		CC11DD22EE33FF44AA55BB04 /* SportDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11DD22EE33FF44AA55BB03 /* SportDetailView.swift */; };
 		CC11DD22EE33FF44AA55BB06 /* TrainPerformanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11DD22EE33FF44AA55BB05 /* TrainPerformanceView.swift */; };
 		CC11DD22EE33FF44AA55BB08 /* DrillLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11DD22EE33FF44AA55BB07 /* DrillLibraryView.swift */; };
+		FF11EE22DD33CC44BB55AA01 /* FaceProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF22AA33BB44CC55DD01 /* FaceProfile.swift */; };
+		FF11EE22DD33CC44BB55AA02 /* CoachReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF22AA33BB44CC55DD02 /* CoachReport.swift */; };
+		FF11EE22DD33CC44BB55AA03 /* FaceProfileEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF22AA33BB44CC55DD03 /* FaceProfileEngine.swift */; };
+		FF11EE22DD33CC44BB55AA04 /* AICoachService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF22AA33BB44CC55DD04 /* AICoachService.swift */; };
+		FF11EE22DD33CC44BB55AA05 /* VideoStorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF22AA33BB44CC55DD05 /* VideoStorageService.swift */; };
+		FF11EE22DD33CC44BB55AA06 /* FaceSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF22AA33BB44CC55DD06 /* FaceSetupView.swift */; };
+		FF11EE22DD33CC44BB55AA07 /* FaceSetupViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF22AA33BB44CC55DD07 /* FaceSetupViewModel.swift */; };
+		FF11EE22DD33CC44BB55AA08 /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF22AA33BB44CC55DD08 /* VideoPlayerView.swift */; };
+		FF11EE22DD33CC44BB55AA09 /* SkeletonOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF22AA33BB44CC55DD09 /* SkeletonOverlayView.swift */; };
+		FF11EE22DD33CC44BB55AA0A /* VideoReportViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF22AA33BB44CC55DD0A /* VideoReportViewModel.swift */; };
+		FF11EE22DD33CC44BB55AA0B /* VideoAnalysisReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF22AA33BB44CC55DD0B /* VideoAnalysisReportView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -263,6 +275,17 @@
 		CC11DD22EE33FF44AA55BB03 /* SportDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportDetailView.swift; sourceTree = "<group>"; };
 		CC11DD22EE33FF44AA55BB05 /* TrainPerformanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainPerformanceView.swift; sourceTree = "<group>"; };
 		CC11DD22EE33FF44AA55BB07 /* DrillLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrillLibraryView.swift; sourceTree = "<group>"; };
+		EE11FF22AA33BB44CC55DD01 /* FaceProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceProfile.swift; sourceTree = "<group>"; };
+		EE11FF22AA33BB44CC55DD02 /* CoachReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachReport.swift; sourceTree = "<group>"; };
+		EE11FF22AA33BB44CC55DD03 /* FaceProfileEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceProfileEngine.swift; sourceTree = "<group>"; };
+		EE11FF22AA33BB44CC55DD04 /* AICoachService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AICoachService.swift; sourceTree = "<group>"; };
+		EE11FF22AA33BB44CC55DD05 /* VideoStorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoStorageService.swift; sourceTree = "<group>"; };
+		EE11FF22AA33BB44CC55DD06 /* FaceSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceSetupView.swift; sourceTree = "<group>"; };
+		EE11FF22AA33BB44CC55DD07 /* FaceSetupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceSetupViewModel.swift; sourceTree = "<group>"; };
+		EE11FF22AA33BB44CC55DD08 /* VideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerView.swift; sourceTree = "<group>"; };
+		EE11FF22AA33BB44CC55DD09 /* SkeletonOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonOverlayView.swift; sourceTree = "<group>"; };
+		EE11FF22AA33BB44CC55DD0A /* VideoReportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoReportViewModel.swift; sourceTree = "<group>"; };
+		EE11FF22AA33BB44CC55DD0B /* VideoAnalysisReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoAnalysisReportView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -274,6 +297,7 @@
 				6AD7786B7AEE29FEE451DC22 /* FirebaseAuth in Frameworks */,
 				BB26387B878693EE71C9C95A /* FirebaseCrashlytics in Frameworks */,
 				9B5DE83DC117C96FE3165CC9 /* FirebaseFirestore in Frameworks */,
+				AA11BB22CC33DD44EE55FF01 /* FirebaseStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -314,6 +338,7 @@
 				43F7902015FAF42D59AEF1E6 /* CameraManager.swift */,
 				8AE95815B031AA4940A863EE /* PoseDetectionEngine.swift */,
 				3D3479AF90A2F3494B2D3F50 /* TrajectoryTracker.swift */,
+				EE11FF22AA33BB44CC55DD03 /* FaceProfileEngine.swift */,
 			);
 			path = Vision;
 			sourceTree = "<group>";
@@ -357,6 +382,8 @@
 				63DE416D081F3C588AC652A3 /* SessionResult.swift */,
 				931EAA20F1D0BE1F51C8ACAB /* TrajectoryPath.swift */,
 				EF82ED7BF717471259F1A6EB /* WorkoutResult.swift */,
+				EE11FF22AA33BB44CC55DD01 /* FaceProfile.swift */,
+				EE11FF22AA33BB44CC55DD02 /* CoachReport.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -463,6 +490,8 @@
 				1CFDEB608EE0C4C47FEA8440 /* NotificationService.swift */,
 				0CFFA101E73EC4F9738ACEED /* SubscriptionManager.swift */,
 				EFB185FD265C0A4E6E75368F /* WidgetDataStore.swift */,
+				EE11FF22AA33BB44CC55DD04 /* AICoachService.swift */,
+				EE11FF22AA33BB44CC55DD05 /* VideoStorageService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -513,6 +542,8 @@
 				C373127039F43C920BEF03AB /* VideoLibraryView.swift */,
 				E60C049ACD5028A62BCFBB96 /* VideoModels.swift */,
 				DD2701AFF10406B8A01AA70F /* VideoRepository.swift */,
+				EE11FF22AA33BB44CC55DD0C /* FaceSetup */,
+				EE11FF22AA33BB44CC55DD0D /* VideoReport */,
 			);
 			path = VideoAnalysis;
 			sourceTree = "<group>";
@@ -600,6 +631,26 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		EE11FF22AA33BB44CC55DD0C /* FaceSetup */ = {
+			isa = PBXGroup;
+			children = (
+				EE11FF22AA33BB44CC55DD06 /* FaceSetupView.swift */,
+				EE11FF22AA33BB44CC55DD07 /* FaceSetupViewModel.swift */,
+			);
+			path = FaceSetup;
+			sourceTree = "<group>";
+		};
+		EE11FF22AA33BB44CC55DD0D /* VideoReport */ = {
+			isa = PBXGroup;
+			children = (
+				EE11FF22AA33BB44CC55DD0B /* VideoAnalysisReportView.swift */,
+				EE11FF22AA33BB44CC55DD08 /* VideoPlayerView.swift */,
+				EE11FF22AA33BB44CC55DD0A /* VideoReportViewModel.swift */,
+				EE11FF22AA33BB44CC55DD09 /* SkeletonOverlayView.swift */,
+			);
+			path = VideoReport;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -640,6 +691,7 @@
 				C4CED923C35612DDE1BFAD9F /* FirebaseAuth */,
 				726CF430F8281EF13190F56B /* FirebaseCrashlytics */,
 				BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */,
+				AA11BB22CC33DD44EE55FF02 /* FirebaseStorage */,
 			);
 			productName = Kinetics;
 			productReference = 16DAA6C287CC5CDA16C313C2 /* Kinetics.app */;
@@ -817,6 +869,17 @@
 				ED04CA4FA88F26989DD1CDCF /* WorkoutRepository.swift in Sources */,
 				89D4093D6D3DD064C1066EBF /* WorkoutResult.swift in Sources */,
 				3DADA86E963133CAAB10C46F /* WorkoutSummaryView.swift in Sources */,
+				FF11EE22DD33CC44BB55AA01 /* FaceProfile.swift in Sources */,
+				FF11EE22DD33CC44BB55AA02 /* CoachReport.swift in Sources */,
+				FF11EE22DD33CC44BB55AA03 /* FaceProfileEngine.swift in Sources */,
+				FF11EE22DD33CC44BB55AA04 /* AICoachService.swift in Sources */,
+				FF11EE22DD33CC44BB55AA05 /* VideoStorageService.swift in Sources */,
+				FF11EE22DD33CC44BB55AA06 /* FaceSetupView.swift in Sources */,
+				FF11EE22DD33CC44BB55AA07 /* FaceSetupViewModel.swift in Sources */,
+				FF11EE22DD33CC44BB55AA08 /* VideoPlayerView.swift in Sources */,
+				FF11EE22DD33CC44BB55AA09 /* SkeletonOverlayView.swift in Sources */,
+				FF11EE22DD33CC44BB55AA0A /* VideoReportViewModel.swift in Sources */,
+				FF11EE22DD33CC44BB55AA0B /* VideoAnalysisReportView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1101,6 +1164,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
+		};
+		AA11BB22CC33DD44EE55FF02 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

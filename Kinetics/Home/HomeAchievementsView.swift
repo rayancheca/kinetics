@@ -134,7 +134,7 @@ final class AchievementsViewModel {
                   "star.fill", "#8B5CF6", allRounder),
             badge("century", "Century",
                   "Complete 100 total sessions",
-                  "100.circle.fill", "#FFB800", totalSessions >= 100),
+                  "crown.fill", "#FFB800", totalSessions >= 100),
             badge("iron_streak", "Iron Streak",
                   "Maintain a 14-day training streak",
                   "bolt.circle.fill", "#00C2FF", streakDays >= 14),

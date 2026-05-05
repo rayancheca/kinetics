@@ -82,7 +82,9 @@ final class FeedSeeder {
                 totalWorkouts: Int.random(in: 45...210),
                 totalDistanceMeters: Double.random(in: 80_000...650_000),
                 joinedAt: Date(timeIntervalSinceNow: -Double.random(in: 86_400 * 30...86_400 * 365)),
-                isPublic: true
+                isPublic: true,
+                isLive: false,
+                liveModule: ""
             )
             await writeUser(profile)
         }

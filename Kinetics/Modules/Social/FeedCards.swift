@@ -30,9 +30,11 @@ struct ActivityFeedCard: View {
             VStack(alignment: .leading, spacing: 12) {
                 // 3a. Caption
                 captionBlock
-                // 3b. Content block (sport-specific)
+                // 3b. Attached photo (shown above metrics when present)
+                photoBlock
+                // 3c. Content block (sport-specific)
                 contentBlock
-                // 3c. Stats row for gym / run
+                // 3d. Stats row for gym / run
                 statsRow
             }
             .padding(.horizontal, 14)
@@ -246,6 +248,46 @@ struct ActivityFeedCard: View {
                 .lineSpacing(3)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 2)
+        }
+    }
+
+    // MARK: - Photo Block
+
+    @ViewBuilder
+    private var photoBlock: some View {
+        if !item.imageURL.isEmpty, let url = URL(string: item.imageURL) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 220)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                case .failure:
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(white: 0.09))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 220)
+                        Image(systemName: "photo")
+                            .font(.system(size: 28))
+                            .foregroundStyle(Color.kineticsSubtext)
+                    }
+                case .empty:
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(white: 0.09))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 220)
+                        ProgressView().tint(Color.kineticsBlue)
+                    }
+                @unknown default:
+                    EmptyView()
+                }
+            }
         }
     }
 

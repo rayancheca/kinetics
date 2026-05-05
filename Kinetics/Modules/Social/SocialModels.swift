@@ -40,6 +40,64 @@ struct UserProfile: Codable, Identifiable, Sendable, Hashable {
     var joinedAt: Date
     /// When `false`, the feed only shows this user's activity to themselves.
     var isPublic: Bool
+
+    // MARK: Live Status
+
+    /// `true` while the user has an active camera session in any module.
+    /// Updated by `SocialRepository.setLiveStatus(_:isLive:module:)`.
+    var isLive: Bool
+    /// The module key the user is currently live in, e.g. "striking".
+    /// Empty string when `isLive` is `false`.
+    var liveModule: String
+
+    // MARK: Memberwise Init
+
+    init(
+        id: String,
+        displayName: String,
+        username: String,
+        bio: String,
+        avatarURL: String,
+        primarySport: String,
+        totalWorkouts: Int,
+        totalDistanceMeters: Double,
+        joinedAt: Date,
+        isPublic: Bool,
+        isLive: Bool = false,
+        liveModule: String = ""
+    ) {
+        self.id = id
+        self.displayName = displayName
+        self.username = username
+        self.bio = bio
+        self.avatarURL = avatarURL
+        self.primarySport = primarySport
+        self.totalWorkouts = totalWorkouts
+        self.totalDistanceMeters = totalDistanceMeters
+        self.joinedAt = joinedAt
+        self.isPublic = isPublic
+        self.isLive = isLive
+        self.liveModule = liveModule
+    }
+
+    // MARK: Decodable
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        displayName = try c.decode(String.self, forKey: .displayName)
+        username = try c.decode(String.self, forKey: .username)
+        bio = try c.decodeIfPresent(String.self, forKey: .bio) ?? ""
+        avatarURL = try c.decodeIfPresent(String.self, forKey: .avatarURL) ?? ""
+        primarySport = try c.decodeIfPresent(String.self, forKey: .primarySport) ?? ""
+        totalWorkouts = try c.decodeIfPresent(Int.self, forKey: .totalWorkouts) ?? 0
+        totalDistanceMeters = try c.decodeIfPresent(Double.self, forKey: .totalDistanceMeters) ?? 0
+        joinedAt = try c.decodeIfPresent(Date.self, forKey: .joinedAt) ?? Date()
+        isPublic = try c.decodeIfPresent(Bool.self, forKey: .isPublic) ?? true
+        // Backward-compatible defaults for new fields.
+        isLive = try c.decodeIfPresent(Bool.self, forKey: .isLive) ?? false
+        liveModule = try c.decodeIfPresent(String.self, forKey: .liveModule) ?? ""
+    }
 }
 
 // MARK: UserProfile + Preview
@@ -58,7 +116,9 @@ extension UserProfile {
             totalWorkouts: 142,
             totalDistanceMeters: 312_400,
             joinedAt: Date(timeIntervalSinceNow: -60 * 60 * 24 * 180),
-            isPublic: true
+            isPublic: true,
+            isLive: false,
+            liveModule: ""
         )
     }
 }
@@ -480,6 +540,9 @@ struct StoryModel: Codable, Identifiable, Sendable, Hashable {
     var createdAt: Date
     /// Whether the current user has already viewed this story ring.
     var seen: Bool
+    /// `true` when the user is currently live in a session.
+    /// Drives the pulsing red ring in the stories bar.
+    var isLive: Bool
 }
 
 // MARK: StoryModel + Preview
@@ -490,19 +553,19 @@ extension StoryModel {
         [
             StoryModel(id: "story_001", userId: "uid_001", displayName: "Rayan",
                        avatarEmoji: "🥊", sport: "striking", sessionId: "sess_001",
-                       createdAt: Date(timeIntervalSinceNow: -1_200), seen: false),
+                       createdAt: Date(timeIntervalSinceNow: -1_200), seen: false, isLive: true),
             StoryModel(id: "story_002", userId: "uid_002", displayName: "Alex",
                        avatarEmoji: "🤼", sport: "grappling", sessionId: "sess_002",
-                       createdAt: Date(timeIntervalSinceNow: -3_600), seen: false),
+                       createdAt: Date(timeIntervalSinceNow: -3_600), seen: false, isLive: false),
             StoryModel(id: "story_003", userId: "uid_003", displayName: "Jordan",
                        avatarEmoji: "🏋️", sport: "iron", sessionId: "sess_003",
-                       createdAt: Date(timeIntervalSinceNow: -7_200), seen: true),
+                       createdAt: Date(timeIntervalSinceNow: -7_200), seen: true, isLive: false),
             StoryModel(id: "story_004", userId: "uid_004", displayName: "Sam",
                        avatarEmoji: "🧗", sport: "wall", sessionId: "sess_004",
-                       createdAt: Date(timeIntervalSinceNow: -10_800), seen: true),
+                       createdAt: Date(timeIntervalSinceNow: -10_800), seen: true, isLive: false),
             StoryModel(id: "story_005", userId: "uid_005", displayName: "Casey",
                        avatarEmoji: "🏃", sport: "run", sessionId: "sess_005",
-                       createdAt: Date(timeIntervalSinceNow: -14_400), seen: false)
+                       createdAt: Date(timeIntervalSinceNow: -14_400), seen: false, isLive: false)
         ]
     }
 }

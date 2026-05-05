@@ -44,22 +44,24 @@ final class FeedViewModel {
 
     // MARK: - Following filter
 
+    private var currentUserId: String = ""
     private var followingIds: Set<String> = []
+    var followingFeedItems: [FeedItem] = []
+    var isLoadingFollowing = false
 
     var filteredItems: [FeedItem] {
         switch selectedFilter {
         case .forYou:
             return feedItems
         case .following:
-            guard !followingIds.isEmpty else { return [] }
-            return feedItems.filter { followingIds.contains($0.userId) }
+            return followingFeedItems
         case .trending:
             return trendingItems
         }
     }
 
     var isFollowingEmpty: Bool {
-        selectedFilter == .following && followingIds.isEmpty
+        selectedFilter == .following && followingFeedItems.isEmpty && !isLoadingFollowing
     }
 
     // MARK: - New posts banner
@@ -91,12 +93,17 @@ final class FeedViewModel {
     // MARK: - Load
 
     func load(currentUserId: String) async {
+        guard !currentUserId.isEmpty else {
+            reset()
+            return
+        }
         guard !isLoading else { return }
+        self.currentUserId = currentUserId
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            async let feedFetch    = SocialRepository.shared.fetchFeed(after: nil, limit: 15)
+            async let feedFetch    = SocialRepository.shared.fetchFeed(after: nil, limit: 15, currentUserId: currentUserId)
             async let storiesFetch = SocialRepository.shared.fetchStories(for: currentUserId)
             async let followFetch  = SocialRepository.shared.fetchFollowingIds(for: currentUserId)
             let (fetchedFeed, fetchedStories, followedIds) = try await (feedFetch, storiesFetch, followFetch)
@@ -112,9 +119,32 @@ final class FeedViewModel {
         }
     }
 
+    // MARK: - Following Feed
+
+    func loadFollowingFeed(currentUserId: String) async {
+        guard !currentUserId.isEmpty, !isLoadingFollowing else { return }
+        isLoadingFollowing = true
+        defer { isLoadingFollowing = false }
+        do {
+            let items = try await SocialRepository.shared.fetchFollowingFeed(
+                currentUserId: currentUserId,
+                after: nil,
+                limit: 20
+            )
+            followingFeedItems = items
+        } catch {
+            // Silent — following tab will show empty state
+        }
+    }
+
     // MARK: - Refresh
 
     func refresh(currentUserId: String) async {
+        guard !currentUserId.isEmpty else {
+            reset()
+            return
+        }
+        self.currentUserId = currentUserId
         isRefreshing      = true
         errorMessage      = nil
         showErrorBanner   = false
@@ -127,7 +157,7 @@ final class FeedViewModel {
             let generator = UIImpactFeedbackGenerator(style: .medium)
             generator.impactOccurred()
 
-            async let feedFetch    = SocialRepository.shared.fetchFeed(after: nil, limit: 15)
+            async let feedFetch    = SocialRepository.shared.fetchFeed(after: nil, limit: 15, currentUserId: currentUserId)
             async let storiesFetch = SocialRepository.shared.fetchStories(for: currentUserId)
             async let followFetch  = SocialRepository.shared.fetchFollowingIds(for: currentUserId)
             let (fetchedFeed, fetchedStories, followedIds) = try await (feedFetch, storiesFetch, followFetch)
@@ -136,10 +166,44 @@ final class FeedViewModel {
             followingIds  = Set(followedIds)
             trendingItems = fetchedFeed.sorted { $0.kudosCount > $1.kudosCount }
             hasMore       = fetchedFeed.count >= 15
+            // Refresh following feed if it was already loaded.
+            if !followingFeedItems.isEmpty {
+                let followingItems = try await SocialRepository.shared.fetchFollowingFeed(
+                    currentUserId: currentUserId,
+                    after: nil,
+                    limit: 20
+                )
+                followingFeedItems = followingItems
+            }
         } catch {
             errorMessage   = "Couldn't refresh. Check your connection."
             showErrorBanner = true
         }
+    }
+
+    // MARK: - Reset (called on sign-out)
+
+    /// Tears down the Firestore listener and clears all feed state.
+    /// Safe to call from any auth-change handler.
+    func reset() {
+        listenerRegistration?.remove()
+        listenerRegistration = nil
+        feedItems            = []
+        trendingItems        = []
+        followingFeedItems   = []
+        stories              = []
+        followingIds         = []
+        pendingNewPosts      = []
+        newPostsAvailable    = false
+        newPostsCount        = 0
+        hasMore              = true
+        isLoading            = false
+        isRefreshing         = false
+        isLoadingMore        = false
+        isLoadingFollowing   = false
+        errorMessage         = nil
+        showErrorBanner      = false
+        currentUserId        = ""
     }
 
     // MARK: - Pagination
@@ -150,7 +214,7 @@ final class FeedViewModel {
         isLoadingMore = true
         defer { isLoadingMore = false }
         do {
-            let older = try await SocialRepository.shared.fetchFeed(after: cursor, limit: 15)
+            let older = try await SocialRepository.shared.fetchFeed(after: cursor, limit: 15, currentUserId: currentUserId)
             let existingIds = Set(feedItems.map(\.id))
             let newItems = older.filter { !existingIds.contains($0.id) }
             feedItems.append(contentsOf: newItems)
@@ -271,6 +335,7 @@ final class FeedViewModel {
             kudosCount: item.kudosCount + kudosDelta,
             commentCount: item.commentCount,
             isLikedByCurrentUser: liked,
+            reactions: item.reactions,
             workoutId: item.workoutId,
             activityType: item.activityType
         )
@@ -348,9 +413,24 @@ struct FeedView: View {
                 await FeedSeeder.shared.seedIfNeeded()
                 await viewModel.load(currentUserId: currentUserId)
             }
+            .onChange(of: currentUserId) { _, newId in
+                if newId.isEmpty {
+                    // User signed out — tear down listener and clear feed
+                    viewModel.reset()
+                } else {
+                    // User signed in (or changed accounts) — reload feed
+                    Task { await viewModel.load(currentUserId: newId) }
+                }
+            }
             .onChange(of: viewModel.scrollToTopTrigger) { _, _ in
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     scrollProxy?.scrollTo("feed_top", anchor: .top)
+                }
+            }
+            .onChange(of: viewModel.selectedFilter) { _, newFilter in
+                // Lazily load the following feed the first time the tab is selected.
+                if newFilter == .following && viewModel.followingFeedItems.isEmpty {
+                    Task { await viewModel.loadFollowingFeed(currentUserId: currentUserId) }
                 }
             }
         }
@@ -753,8 +833,17 @@ private struct StoryBubble: View {
     let story: StoryModel
     let onTap: () -> Void
 
-    /// Ring color based on sport type — seen stories go gray.
+    @State private var isPulsing = false
+
+    /// Ring gradient based on live status / sport type / seen state.
     private var ringGradient: LinearGradient {
+        if story.isLive {
+            // Live ring is always red regardless of seen state.
+            return LinearGradient(
+                colors: [Color.kineticsRed, Color.kineticsRed.opacity(0.7)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+        }
         if story.seen {
             return LinearGradient(
                 colors: [Color.kineticsSubtext.opacity(0.4), Color.kineticsSubtext.opacity(0.2)],
@@ -769,17 +858,48 @@ private struct StoryBubble: View {
         Button(action: onTap) {
             VStack(spacing: 6) {
                 ZStack {
+                    // Pulsing outer ring for live users.
+                    if story.isLive {
+                        Circle()
+                            .stroke(Color.kineticsRed.opacity(isPulsing ? 0.0 : 0.55), lineWidth: 3)
+                            .frame(width: 68, height: 68)
+                            .scaleEffect(isPulsing ? 1.18 : 1.0)
+                            .onAppear {
+                                withAnimation(
+                                    .easeInOut(duration: 0.9)
+                                    .repeatForever(autoreverses: true)
+                                ) {
+                                    isPulsing = true
+                                }
+                            }
+                    }
                     Circle()
-                        .stroke(ringGradient, lineWidth: 2.5)
+                        .stroke(ringGradient, lineWidth: story.isLive ? 3 : 2.5)
                         .frame(width: 60, height: 60)
                     Circle()
                         .fill(Color.kineticsDark)
                         .frame(width: 54, height: 54)
                     Text(story.avatarEmoji).font(.system(size: 24))
+
+                    // "LIVE" label badge for live users.
+                    if story.isLive {
+                        VStack {
+                            Spacer()
+                            Text("LIVE")
+                                .font(.system(size: 7, weight: .black, design: .rounded))
+                                .foregroundStyle(.white)
+                                .tracking(0.5)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Color.kineticsRed, in: Capsule())
+                                .offset(y: 8)
+                        }
+                        .frame(width: 60, height: 60)
+                    }
                 }
                 Text(String(story.displayName.prefix(8)))
                     .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundStyle(story.seen ? Color.kineticsSubtext : .white)
+                    .foregroundStyle(story.seen && !story.isLive ? Color.kineticsSubtext : .white)
                     .lineLimit(1)
                     .frame(width: 62)
             }
@@ -837,6 +957,12 @@ struct ErrorBannerView: View {
 
 // MARK: - ComposePostSheet
 
+private struct MoodChip: Identifiable {
+    let id: String
+    let emoji: String
+    let label: String
+}
+
 struct ComposePostSheet: View {
 
     let currentUserId: String
@@ -846,7 +972,21 @@ struct ComposePostSheet: View {
     @State private var caption = ""
     @State private var isPosting = false
     @State private var errorMessage: String?
+    @State private var selectedSport: SportChip?
+    @State private var selectedMood: MoodChip?
     @Environment(\.dismiss) private var dismiss
+
+    private let moods: [MoodChip] = [
+        MoodChip(id: "grinding",  emoji: "😤", label: "Grinding"),
+        MoodChip(id: "onfire",    emoji: "🔥", label: "On Fire"),
+        MoodChip(id: "strong",    emoji: "💪", label: "Strong"),
+        MoodChip(id: "recovery",  emoji: "😴", label: "Recovery"),
+        MoodChip(id: "prday",     emoji: "🏆", label: "PR Day")
+    ]
+
+    private var effectiveActivityType: String {
+        selectedSport?.activityType ?? "general"
+    }
 
     private var canPost: Bool {
         !caption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isPosting
@@ -856,56 +996,141 @@ struct ComposePostSheet: View {
         NavigationStack {
             ZStack {
                 Color.kineticsBackground.ignoresSafeArea()
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .top, spacing: 12) {
-                        ZStack {
-                            LinearGradient(
-                                colors: [Color.kineticsPurple, Color.kineticsBlue],
-                                startPoint: .topLeading, endPoint: .bottomTrailing
-                            )
-                            Text(String(currentDisplayName.prefix(1)).uppercased())
-                                .font(.system(size: 16, weight: .black, design: .rounded))
-                                .foregroundStyle(.white)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        // Author + caption row
+                        HStack(alignment: .top, spacing: 12) {
+                            ZStack {
+                                LinearGradient(
+                                    colors: [Color.kineticsPurple, Color.kineticsBlue],
+                                    startPoint: .topLeading, endPoint: .bottomTrailing
+                                )
+                                Text(String(currentDisplayName.prefix(1)).uppercased())
+                                    .font(.system(size: 16, weight: .black, design: .rounded))
+                                    .foregroundStyle(.white)
+                            }
+                            .frame(width: 44, height: 44)
+                            .clipShape(Circle())
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(currentDisplayName)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                TextField("What did you train today?", text: $caption, axis: .vertical)
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(.white)
+                                    .tint(Color.kineticsBlue)
+                                    .lineLimit(6, reservesSpace: false)
+                            }
                         }
-                        .frame(width: 44, height: 44)
-                        .clipShape(Circle())
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(currentDisplayName)
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(.white)
-                            TextField("What did you train today?", text: $caption, axis: .vertical)
-                                .font(.system(size: 16))
-                                .foregroundStyle(.white)
-                                .tint(Color.kineticsBlue)
-                                .lineLimit(6, reservesSpace: false)
-                        }
-                    }
-                    .padding(20)
-                    Divider().background(.white.opacity(0.07))
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(activitySuggestions, id: \.0) { label, icon in
-                                Button { if caption.isEmpty { caption = label + " " } } label: {
-                                    Label(label, systemImage: icon)
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundStyle(.white.opacity(0.7))
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 7)
-                                        .background(.white.opacity(0.07))
-                                        .clipShape(Capsule())
+                        .padding(20)
+
+                        Divider().background(.white.opacity(0.07))
+
+                        // Mood / feeling selector
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("FEELING")
+                                .font(.system(size: 10, weight: .semibold))
+                                .tracking(1.0)
+                                .foregroundStyle(Color.kineticsSubtext)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(moods) { mood in
+                                        Button {
+                                            withAnimation(.spring(duration: 0.2)) {
+                                                if selectedMood?.id == mood.id {
+                                                    selectedMood = nil
+                                                } else {
+                                                    selectedMood = mood
+                                                }
+                                            }
+                                        } label: {
+                                            HStack(spacing: 5) {
+                                                Text(mood.emoji).font(.system(size: 14))
+                                                Text(mood.label)
+                                                    .font(.system(size: 12, weight: selectedMood?.id == mood.id ? .semibold : .regular))
+                                                    .foregroundStyle(selectedMood?.id == mood.id ? .black : Color.kineticsSubtext)
+                                            }
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 7)
+                                            .background(
+                                                Capsule()
+                                                    .fill(selectedMood?.id == mood.id
+                                                          ? Color.kineticsAmber
+                                                          : Color(white: 0.1))
+                                            )
+                                            .overlay(
+                                                Capsule()
+                                                    .strokeBorder(
+                                                        selectedMood?.id == mood.id
+                                                            ? Color.clear
+                                                            : Color.kineticsAmber.opacity(0.2),
+                                                        lineWidth: 1
+                                                    )
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
+                                        .animation(.spring(duration: 0.2), value: selectedMood?.id)
+                                    }
                                 }
+                                .padding(.vertical, 2)
                             }
                         }
                         .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
+                        .padding(.top, 14)
+                        .padding(.bottom, 10)
+
+                        Divider().background(.white.opacity(0.07))
+
+                        // Sport selector chips
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("SPORT")
+                                .font(.system(size: 10, weight: .semibold))
+                                .tracking(1.0)
+                                .foregroundStyle(Color.kineticsSubtext)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(SportChip.allCases, id: \.activityType) { chip in
+                                        Button {
+                                            withAnimation(.spring(duration: 0.22)) {
+                                                selectedSport = selectedSport == chip ? nil : chip
+                                            }
+                                        } label: {
+                                            Text(chip.label)
+                                                .font(.system(size: 12, weight: selectedSport == chip ? .semibold : .regular))
+                                                .foregroundStyle(selectedSport == chip ? .black : Color.kineticsSubtext)
+                                                .padding(.horizontal, 14)
+                                                .padding(.vertical, 8)
+                                                .background(
+                                                    Capsule()
+                                                        .fill(selectedSport == chip ? chip.color : Color(white: 0.1))
+                                                )
+                                                .overlay(
+                                                    Capsule()
+                                                        .strokeBorder(
+                                                            selectedSport == chip ? Color.clear : chip.color.opacity(0.25),
+                                                            lineWidth: 1
+                                                        )
+                                                )
+                                                .animation(.spring(duration: 0.2), value: selectedSport == chip)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.vertical, 2)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 14)
+                        .padding(.bottom, 10)
+
+                        if let error = errorMessage {
+                            Text(error)
+                                .font(.system(size: 13))
+                                .foregroundStyle(Color.kineticsRed)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
+                        }
                     }
-                    if let error = errorMessage {
-                        Text(error)
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color.kineticsRed)
-                            .padding(.horizontal, 20)
-                    }
-                    Spacer()
                 }
             }
             .navigationTitle("New Post")
@@ -937,22 +1162,25 @@ struct ComposePostSheet: View {
         }
     }
 
-    private let activitySuggestions: [(String, String)] = [
-        ("Morning Run", "figure.run"), ("Striking Session", "figure.boxing"),
-        ("Grappling Lab", "figure.martial.arts"), ("Iron Tracker", "dumbbell.fill"),
-        ("Wall Beta", "figure.climbing"), ("Gym Session", "flame.fill")
-    ]
-
     private func post() async {
         let trimmed = caption.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         isPosting = true
         errorMessage = nil
+
+        // Prepend mood opener to caption if a mood was selected.
+        let fullCaption: String
+        if let mood = selectedMood {
+            fullCaption = "\(mood.emoji) \(mood.label) — \(trimmed)"
+        } else {
+            fullCaption = trimmed
+        }
+
         let item = FeedItem(
             id: UUID().uuidString, userId: currentUserId, displayName: currentDisplayName,
-            username: "", avatarURL: "", itemType: .workout, title: trimmed, subtitle: "",
+            username: "", avatarURL: "", itemType: .workout, title: fullCaption, subtitle: "",
             metrics: [], imageURL: "", postedAt: Date(), kudosCount: 0, commentCount: 0,
-            isLikedByCurrentUser: false, workoutId: "", activityType: "general"
+            isLikedByCurrentUser: false, workoutId: "", activityType: effectiveActivityType
         )
         do { try await SocialRepository.shared.postActivity(item); onPost(item) }
         catch { errorMessage = "Couldn't post. Check your connection and try again." }

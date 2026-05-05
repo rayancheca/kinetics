@@ -1,6 +1,7 @@
 import FirebaseAnalytics
 import FirebaseCore
 import FirebaseFirestore
+import FirebaseStorage
 import Foundation
 
 // MARK: - SocialRepository
@@ -55,7 +56,7 @@ final class SocialRepository {
     /// document cannot surface an error to the UI.
     ///
     /// Returns an empty array when Firebase is not configured.
-    func fetchFeed(after lastPostedAt: Double? = nil, limit: Int = 15) async throws -> [FeedItem] {
+    func fetchFeed(after lastPostedAt: Double? = nil, limit: Int = 15, currentUserId: String = "") async throws -> [FeedItem] {
         guard isFirebaseReady else { return [] }
 
         var query = db
@@ -69,9 +70,65 @@ final class SocialRepository {
 
         let snapshot = try await query.getDocuments()
 
-        return snapshot.documents.compactMap { document in
+        var items = snapshot.documents.compactMap { document in
             try? decodeFeedItem(from: document.data())
         }
+
+        // Resolve isLikedByCurrentUser for each item when a user is signed in.
+        if !currentUserId.isEmpty && !items.isEmpty {
+            items = await resolveKudosState(for: items, currentUserId: currentUserId)
+        }
+
+        return items
+    }
+
+    /// Fetches the most recent `limit` feed items from users that `currentUserId` follows.
+    ///
+    /// - Reads `users/{currentUserId}/following` to get the followed user IDs.
+    /// - Chunks them into groups of 30 to stay within Firestore `whereIn` limits.
+    /// - Merges and sorts results by `postedAt` descending.
+    ///
+    /// Returns an empty array when Firebase is not configured or no one is followed.
+    func fetchFollowingFeed(currentUserId: String, after lastPostedAt: Double? = nil, limit: Int = 20) async throws -> [FeedItem] {
+        guard isFirebaseReady else { return [] }
+
+        let followingSnap = try await db
+            .collection("users").document(currentUserId)
+            .collection("following")
+            .getDocuments()
+
+        let followingIds = followingSnap.documents.compactMap { $0.data()["userId"] as? String }
+        guard !followingIds.isEmpty else { return [] }
+
+        // Chunk into groups of 30 (Firestore whereIn limit).
+        let chunks = stride(from: 0, to: followingIds.count, by: 30).map {
+            Array(followingIds[$0..<min($0 + 30, followingIds.count)])
+        }
+
+        var allItems: [FeedItem] = []
+
+        // Query each chunk serially — Firestore `whereIn` supports max 30 items per query.
+        for chunk in chunks {
+            var q = db
+                .collection("activity")
+                .whereField("data.userId", in: chunk)
+                .order(by: "postedAt", descending: true)
+                .limit(to: limit)
+
+            if let cursor = lastPostedAt {
+                q = q.whereField("postedAt", isLessThan: cursor)
+            }
+
+            let snap = try await q.getDocuments()
+            let chunkItems = snap.documents.compactMap { try? decodeFeedItem(from: $0.data()) }
+            allItems.append(contentsOf: chunkItems)
+        }
+
+        // Sort merged results and resolve liked state.
+        allItems.sort { $0.postedAt > $1.postedAt }
+        let page = Array(allItems.prefix(limit))
+
+        return await resolveKudosState(for: page, currentUserId: currentUserId)
     }
 
     /// Fetches the user IDs that `userId` is following.
@@ -137,6 +194,43 @@ final class SocialRepository {
         try await postActivity(item)
     }
 
+    // MARK: - Image Upload
+
+    /// Uploads raw JPEG data to `posts/{postId}/images/{index}.jpg` in Firebase Storage.
+    ///
+    /// Returns the download URL string on success.
+    /// Throws when Firebase Storage is not configured or the upload fails.
+    func uploadPostImage(_ data: Data, postId: String, index: Int) async throws -> String {
+        guard isFirebaseReady else { throw SocialRepositoryError.firebaseNotReady }
+        let path = "posts/\(postId)/images/\(index).jpg"
+        let ref = Storage.storage().reference().child(path)
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+        _ = try await ref.putDataAsync(data, metadata: metadata)
+        let url = try await ref.downloadURL()
+        return url.absoluteString
+    }
+
+    // MARK: - Partner Mirror Post
+
+    /// Writes a mirrored copy of `item` that will appear on the tagged partner's profile.
+    ///
+    /// The mirror document is written to `activity/{mirrorId}` with
+    /// `sharedWith: [partnerUid]` so a future query can surface it.
+    ///
+    /// No-ops when Firebase is not configured or `partnerUid` is empty.
+    func mirrorPostForPartner(_ item: FeedItem, partnerUid: String) async throws {
+        guard isFirebaseReady, !partnerUid.isEmpty else { return }
+        var dict = try encodeFeedItem(item)
+        dict["sharedWith"] = [partnerUid]
+        dict["isMirror"] = true
+        let mirrorId = "\(item.id)_mirror_\(partnerUid)"
+        try await db
+            .collection("activity")
+            .document(mirrorId)
+            .setData(["data": dict, "postedAt": item.postedAt.timeIntervalSince1970 * 1_000])
+    }
+
     // MARK: - Delete Activity
 
     /// Deletes the `activity/{activityId}` document.
@@ -191,8 +285,14 @@ final class SocialRepository {
 
         let existing = try await kudosRef.getDocument()
 
+        let activityRef = db.collection("activity").document(activityId)
+
         if existing.exists {
             try await kudosRef.delete()
+            // Decrement the denormalised counter on the activity document.
+            try await activityRef.updateData([
+                "data.kudosCount": FieldValue.increment(Int64(-1))
+            ])
             logActivity(event: "kudos_removed", parameters: [
                 "activity_id": activityId as NSString
             ])
@@ -201,6 +301,10 @@ final class SocialRepository {
             try await kudosRef.setData([
                 "userId": fromUserId,
                 "likedAt": Date().timeIntervalSince1970 * 1_000
+            ])
+            // Increment the denormalised counter on the activity document.
+            try await activityRef.updateData([
+                "data.kudosCount": FieldValue.increment(Int64(1))
             ])
             logActivity(event: "kudos_added", parameters: [
                 "activity_id": activityId as NSString
@@ -240,6 +344,12 @@ final class SocialRepository {
             .collection("comments")
             .document(comment.id)
             .setData(["data": dict])
+
+        // Keep commentCount in sync on the parent activity document.
+        try await db
+            .collection("activity")
+            .document(activityId)
+            .updateData(["data.commentCount": FieldValue.increment(Int64(1))])
 
         logActivity(event: "comment_posted", parameters: [
             "activity_id": activityId as NSString
@@ -295,6 +405,12 @@ final class SocialRepository {
             .collection("comments")
             .document(comment.id)
             .setData(["data": dict])
+
+        // Keep commentCount in sync on the parent activity document.
+        try await db
+            .collection("activity")
+            .document(postId)
+            .updateData(["data.commentCount": FieldValue.increment(Int64(1))])
     }
 
     /// Fetches all `CommentModel` comments for `postId`, ordered by `createdAt` ascending.
@@ -426,6 +542,8 @@ final class SocialRepository {
             seen.insert(item.userId)
 
             let emoji = sportEmoji(for: item.activityType)
+            // Fetch live status from user profile (best-effort; defaults to false on failure).
+            let profile = try? await fetchUserProfile(userId: item.userId)
             let story = StoryModel(
                 id: "story_\(item.id)",
                 userId: item.userId,
@@ -434,12 +552,33 @@ final class SocialRepository {
                 sport: item.activityType,
                 sessionId: item.id,
                 createdAt: item.postedAt,
-                seen: false
+                seen: false,
+                isLive: profile?.isLive ?? false
             )
             stories.append(story)
         }
 
         return stories
+    }
+
+    // MARK: - Live Status
+
+    /// Updates the `isLive` and `liveModule` fields on the user document.
+    ///
+    /// Called from `CameraManager.startSession()` / `stopSession()` so story
+    /// bubbles can show a pulsing live ring in the feed.
+    ///
+    /// No-ops when Firebase is not configured.
+    func setLiveStatus(userId: String, isLive: Bool, module: String = "") async {
+        guard isFirebaseReady else { return }
+        let data: [String: Any] = [
+            "data.isLive": isLive,
+            "data.liveModule": isLive ? module : ""
+        ]
+        try? await db
+            .collection("users")
+            .document(userId)
+            .updateData(data)
     }
 
     // MARK: - Social Graph
@@ -618,6 +757,43 @@ final class SocialRepository {
     }
 
     // MARK: - Private Helpers
+
+    /// Checks the kudos sub-collection for each item and returns an updated array
+    /// with `isLikedByCurrentUser` set correctly.
+    ///
+    /// Runs checks serially to stay on `@MainActor` and avoid Sendable issues with
+    /// the non-Sendable `Firestore` type.
+    private func resolveKudosState(for items: [FeedItem], currentUserId: String) async -> [FeedItem] {
+        var resolved = items
+        for (index, item) in items.enumerated() {
+            let kudosRef = db
+                .collection("activity")
+                .document(item.id)
+                .collection("kudos")
+                .document(currentUserId)
+            let doc = try? await kudosRef.getDocument()
+            if doc?.exists == true {
+                let original = resolved[index]
+                resolved[index] = FeedItem(
+                    id: original.id, userId: original.userId,
+                    displayName: original.displayName, username: original.username,
+                    avatarURL: original.avatarURL, itemType: original.itemType,
+                    title: original.title, subtitle: original.subtitle,
+                    caption: original.caption, metrics: original.metrics,
+                    exerciseSummaries: original.exerciseSummaries,
+                    routeCoordinates: original.routeCoordinates,
+                    imageURL: original.imageURL, postedAt: original.postedAt,
+                    kudosCount: original.kudosCount,
+                    commentCount: original.commentCount,
+                    isLikedByCurrentUser: true,
+                    reactions: original.reactions,
+                    workoutId: original.workoutId,
+                    activityType: original.activityType
+                )
+            }
+        }
+        return resolved
+    }
 
     private func decodeFollowRelationship(from d: [String: Any]) -> FollowRelationship? {
         guard

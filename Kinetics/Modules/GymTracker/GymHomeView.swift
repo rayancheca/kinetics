@@ -229,7 +229,7 @@ struct GymHomeView: View {
                         .zIndex(100)
                 }
             }
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
             .task {
                 viewModel.archivedSessionIds = archivedSessionIds
                 await viewModel.load(userId: uid)

@@ -34,13 +34,17 @@ final class FeedSeeder {
     }
 
     /// Unconditionally writes all demo users, posts, follows, comments, and kudos to Firestore.
+    /// Only runs in DEBUG builds and only when the SEED_DATA environment variable equals "1".
     func seed() async {
+        #if DEBUG
+        guard ProcessInfo.processInfo.environment["SEED_DATA"] == "1" else { return }
         guard FirebaseApp.app() != nil else { return }
         await seedUsers()
         await seedPosts()
         await seedFollows()
         await seedComments()
         await seedKudos()
+        #endif
     }
 
     // MARK: - Demo User Data

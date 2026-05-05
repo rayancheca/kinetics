@@ -129,6 +129,12 @@ struct TrainPerformanceView: View {
     @State private var selectedSport: SportType = .striking
     @Namespace private var pillNS
 
+    private static let monthAbbreviationFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM"
+        return f
+    }()
+
     private var uid: String {
         appState.authManager.currentUser?.uid ?? "preview-user"
     }
@@ -151,7 +157,7 @@ struct TrainPerformanceView: View {
                 .padding(.bottom, 80)
             }
             .background(Color.kineticsBackground)
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
             .task { await vm.load(userId: uid) }
         }
     }
@@ -339,9 +345,7 @@ struct TrainPerformanceView: View {
             ) else { labels.append(""); continue }
             let month = calendar.component(.month, from: date)
             if month != lastMonth {
-                let fmt = DateFormatter()
-                fmt.dateFormat = "MMM"
-                labels.append(fmt.string(from: date))
+                labels.append(Self.monthAbbreviationFormatter.string(from: date))
                 lastMonth = month
             } else {
                 labels.append("")

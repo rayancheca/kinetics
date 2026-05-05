@@ -568,8 +568,12 @@ struct FeedView: View {
             if !viewModel.filteredItems.isEmpty {
                 GeometryReader { geo -> Color in
                     let frame = geo.frame(in: .global)
+                    let screenHeight = (UIApplication.shared.connectedScenes
+                        .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene)
+                        .flatMap { $0.windows.first }
+                        .map { $0.bounds.height } ?? 852
                     DispatchQueue.main.async {
-                        if frame.maxY < UIScreen.main.bounds.height + 200 {
+                        if frame.maxY < screenHeight + 200 {
                             Task { await viewModel.loadMore() }
                         }
                     }

@@ -42,7 +42,9 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Kinetics tracks your route, pace, and distance during outdoor workouts.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Kinetics may use the microphone for future audio coaching features.</string>
+	<string>Kinetics uses the microphone for real-time coaching audio during live training sessions.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kinetics uses your photo library to import workout videos for AI analysis.</string>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>Kinetics sends workout reminders and achievement alerts to keep you on track.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

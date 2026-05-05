@@ -61,7 +61,7 @@ struct GrapplingView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             metricsPanel
         }
-        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .task {
             await viewModel.startProcessing(with: appState.cameraManager)
         }

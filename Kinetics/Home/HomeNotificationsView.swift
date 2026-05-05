@@ -91,7 +91,7 @@ struct HomeNotificationsView: View {
                 }
             }
             .background(Color.kineticsBackground)
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(Color.kineticsBackground)

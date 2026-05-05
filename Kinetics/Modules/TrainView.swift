@@ -1,4 +1,5 @@
 import FirebaseAnalytics
+import PhotosUI
 import SwiftUI
 
 // MARK: - TrainView
@@ -9,6 +10,18 @@ struct TrainView: View {
     @State private var vm = TrainViewModel()
     @State private var showPerformance = false
 
+    // Module entry sheet state
+    @State private var pendingModule: SportType? = nil
+    @State private var showModuleEntrySheet = false
+
+    // Programmatic navigation path for NavigationStack
+    @State private var navPath = NavigationPath()
+
+    // Video import state
+    @State private var showVideoPicker = false
+    @State private var selectedVideoItem: PhotosPickerItem? = nil
+    @State private var navigateToVideoLibrary = false
+
     private var uid: String {
         appState.authManager.currentUser?.uid ?? "preview-user"
     }
@@ -16,7 +29,7 @@ struct TrainView: View {
     // MARK: - Body
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navPath) {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     headerBlock
@@ -37,15 +50,52 @@ struct TrainView: View {
                 }
             }
             .background(Color.kineticsBackground)
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: SportType.self) { sport in
                 SportDetailView(
                     sport: sport,
                     sessions: vm.sessions.filter { $0.sport == sport }
                 )
             }
+            .navigationDestination(isPresented: $navigateToVideoLibrary) {
+                VideoLibraryView(userId: uid)
+            }
             .sheet(isPresented: $showPerformance) {
                 TrainPerformanceView()
+            }
+            .sheet(isPresented: $showModuleEntrySheet) {
+                if let module = pendingModule {
+                    ModuleEntrySheet(
+                        sport: module,
+                        onLiveSession: {
+                            showModuleEntrySheet = false
+                            // Small delay so the sheet dismiss animation completes
+                            // before pushing the new destination.
+                            Task {
+                                try? await Task.sleep(for: .seconds(0.35))
+                                await MainActor.run { navPath.append(module) }
+                            }
+                        },
+                        onAnalyzeVideo: {
+                            showModuleEntrySheet = false
+                            showVideoPicker = true
+                        }
+                    )
+                    .presentationDetents([.height(260)])
+                    .presentationBackground(Color.kineticsDark)
+                    .presentationCornerRadius(24)
+                }
+            }
+            .photosPicker(
+                isPresented: $showVideoPicker,
+                selection: $selectedVideoItem,
+                matching: .videos,
+                photoLibrary: .shared()
+            )
+            .onChange(of: selectedVideoItem) { _, item in
+                guard item != nil else { return }
+                selectedVideoItem = nil
+                navigateToVideoLibrary = true
             }
             .task {
                 await vm.load(userId: uid)
@@ -96,14 +146,16 @@ struct TrainView: View {
                 spacing: 12
             ) {
                 ForEach(SportType.allCases, id: \.self) { sport in
-                    NavigationLink(value: sport) {
+                    Button {
+                        pendingModule = sport
+                        showModuleEntrySheet = true
+                    } label: {
                         SportBentoCard(
                             sport: sport,
                             sessionCount: vm.sessionCount(for: sport),
                             lastSessionDate: vm.lastSessionDate(for: sport),
                             bestMetric: vm.bestMetric(for: sport)?.value,
-                            bestMetricLabel: vm.bestMetric(for: sport)?.label ?? "",
-                            onTap: {}
+                            bestMetricLabel: vm.bestMetric(for: sport)?.label ?? ""
                         )
                     }
                     .buttonStyle(ScaleButtonStyle())

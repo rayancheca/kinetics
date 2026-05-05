@@ -42,7 +42,7 @@ struct TrackView: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $isNavigatingToWorkout) {
                 ActiveWorkoutView(viewModel: viewModel)
             }

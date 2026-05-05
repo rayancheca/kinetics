@@ -513,6 +513,12 @@ private struct HeatDayCell: View {
     let maxVolume: Double
     let isHighlighted: Bool
 
+    private static let dayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d"
+        return f
+    }()
+
     private var intensity: Double {
         guard maxVolume > 0, day.volumeKg > 0 else { return 0 }
         return min(1.0, day.volumeKg / maxVolume)
@@ -524,9 +530,7 @@ private struct HeatDayCell: View {
     }
 
     private var dayLabel: String {
-        let f = DateFormatter()
-        f.dateFormat = "d"
-        return f.string(from: day.date)
+        Self.dayFormatter.string(from: day.date)
     }
 
     private var isToday: Bool {
@@ -571,21 +575,29 @@ private struct GymHistorySessionRow: View {
     let onDelete: () -> Void
     let onShare: () -> Void
 
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE, MMM d"
+        return f
+    }()
+
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        return f
+    }()
+
     // MARK: Computed
 
     private var dateText: String {
         let cal = Calendar.current
         if cal.isDateInToday(session.startedAt) { return "Today" }
         if cal.isDateInYesterday(session.startedAt) { return "Yesterday" }
-        let f = DateFormatter()
-        f.dateFormat = "EEEE, MMM d"
-        return f.string(from: session.startedAt)
+        return Self.dateFormatter.string(from: session.startedAt)
     }
 
     private var timeText: String {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return f.string(from: session.startedAt)
+        Self.timeFormatter.string(from: session.startedAt)
     }
 
     private var durationText: String {

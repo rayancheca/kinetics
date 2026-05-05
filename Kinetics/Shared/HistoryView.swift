@@ -172,7 +172,7 @@ struct HistoryView: View {
                 }
             }
             .background(Color.kineticsBackground)
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $selectedSession) { session in
                 SessionDetailView(session: session)
                     .environment(appState)

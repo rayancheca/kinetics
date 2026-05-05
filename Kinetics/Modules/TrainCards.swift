@@ -11,63 +11,60 @@ struct SportBentoCard: View {
     let lastSessionDate: Date?
     let bestMetric: Double?
     let bestMetricLabel: String
-    let onTap: () -> Void
 
     private var accent: Color { Color.moduleColor(for: sport) }
 
     var body: some View {
-        Button(action: onTap) {
-            ZStack(alignment: .bottomLeading) {
-                // Base card surface
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.kineticsDark)
+        ZStack(alignment: .bottomLeading) {
+            // Base card surface
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.kineticsDark)
 
-                // Sport-color diagonal gradient wash
-                LinearGradient(
-                    colors: [accent.opacity(0.15), .clear],
-                    startPoint: .bottomLeading,
-                    endPoint: .topTrailing
+            // Sport-color diagonal gradient wash
+            LinearGradient(
+                colors: [accent.opacity(0.15), .clear],
+                startPoint: .bottomLeading,
+                endPoint: .topTrailing
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+
+            // Faded oversized icon — decorative only
+            Image(systemName: sport.systemImage)
+                .font(.system(size: 80, weight: .black))
+                .foregroundStyle(accent.opacity(0.08))
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: .infinity,
+                    alignment: .topTrailing
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .padding(.top, 10)
+                .padding(.trailing, 8)
 
-                // Faded oversized icon — decorative only
-                Image(systemName: sport.systemImage)
-                    .font(.system(size: 80, weight: .black))
-                    .foregroundStyle(accent.opacity(0.08))
-                    .frame(
-                        maxWidth: .infinity,
-                        maxHeight: .infinity,
-                        alignment: .topTrailing
-                    )
-                    .padding(.top, 10)
-                    .padding(.trailing, 8)
+            // Sport-color border
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(accent.opacity(0.2), lineWidth: 0.75)
 
-                // Sport-color border
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .strokeBorder(accent.opacity(0.2), lineWidth: 0.75)
+            // Content stack pinned to bottom-leading
+            VStack(alignment: .leading, spacing: 4) {
+                Text(sport.displayName)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
 
-                // Content stack pinned to bottom-leading
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(sport.displayName)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
+                Text(sport.tagline)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    Text(sport.tagline)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.45))
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+                Spacer().frame(height: 6)
 
-                    Spacer().frame(height: 6)
-
-                    statPill
-                }
-                .padding(14)
+                statPill
             }
-            .frame(width: 170, height: 170)
+            .padding(14)
         }
-        .buttonStyle(ScaleButtonStyle())
+        .frame(width: 170, height: 170)
+        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     // MARK: - Stat Pill
@@ -379,16 +376,14 @@ struct TrainStatPill: View {
             sessionCount: 12,
             lastSessionDate: Date(),
             bestMetric: 34.7,
-            bestMetricLabel: "mph",
-            onTap: {}
+            bestMetricLabel: "mph"
         )
         SportBentoCard(
             sport: .wallBeta,
             sessionCount: 0,
             lastSessionDate: nil,
             bestMetric: nil,
-            bestMetricLabel: "sessions",
-            onTap: {}
+            bestMetricLabel: "sessions"
         )
     }
     .padding()

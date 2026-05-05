@@ -47,7 +47,7 @@ struct ActiveWorkoutView: View {
             topToolbar
         }
         .ignoresSafeArea(edges: .bottom)
-        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .task {
             await viewModel.requestPermissions()
         }

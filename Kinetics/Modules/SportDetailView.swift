@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 // MARK: - TrendDirection
@@ -97,6 +98,9 @@ struct SportDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var showLiveSession = false
+    @State private var showVideoPicker = false
+    @State private var selectedVideoItem: PhotosPickerItem? = nil
+    @State private var navigateToVideoLibrary = false
     @State private var vm: SportDetailViewModel
 
     init(sport: SportType, sessions: [SessionResult]) {
@@ -127,6 +131,20 @@ struct SportDetailView: View {
         .fullScreenCover(isPresented: $showLiveSession) {
             moduleView(for: sport)
                 .environment(appState)
+        }
+        .navigationDestination(isPresented: $navigateToVideoLibrary) {
+            VideoLibraryView(userId: appState.authManager.currentUser?.uid ?? "anonymous")
+        }
+        .photosPicker(
+            isPresented: $showVideoPicker,
+            selection: $selectedVideoItem,
+            matching: .videos,
+            photoLibrary: .shared()
+        )
+        .onChange(of: selectedVideoItem) { _, item in
+            guard item != nil else { return }
+            selectedVideoItem = nil
+            navigateToVideoLibrary = true
         }
     }
 
@@ -469,16 +487,43 @@ struct SportDetailView: View {
 
     private var bottomCTA: some View {
         VStack(spacing: 10) {
+            // Primary CTA: start a live camera session
             Button {
                 showLiveSession = true
             } label: {
-                Text("START SESSION")
-                    .font(.system(size: 16, weight: .black))
-                    .tracking(2)
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(accent, in: Capsule())
+                HStack(spacing: 8) {
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("START SESSION")
+                        .font(.system(size: 16, weight: .black))
+                        .tracking(2)
+                }
+                .foregroundStyle(.black)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(accent, in: Capsule())
+            }
+            .buttonStyle(ScaleButtonStyle())
+
+            // Secondary CTA: import a video for analysis
+            Button {
+                showVideoPicker = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "film.stack")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("ANALYZE A VIDEO")
+                        .font(.system(size: 14, weight: .bold))
+                        .tracking(1.5)
+                }
+                .foregroundStyle(Color.kineticsPurple)
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(Color.kineticsPurple.opacity(0.12), in: Capsule())
+                .overlay(
+                    Capsule()
+                        .strokeBorder(Color.kineticsPurple.opacity(0.30), lineWidth: 0.75)
+                )
             }
             .buttonStyle(ScaleButtonStyle())
         }

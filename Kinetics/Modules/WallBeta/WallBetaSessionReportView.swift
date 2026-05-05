@@ -122,7 +122,7 @@ struct WallBetaSessionReportView: View {
                 .padding(.top, 16)
             }
         }
-        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .task {
             coachingNotes = CoachingEngine.generateNotes(
                 for: result,

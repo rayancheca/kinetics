@@ -53,6 +53,7 @@ struct ProfileView: View {
     @State private var showFaceSetup = false
     @AppStorage("preferred_units") private var preferredUnits = "mph"
     @AppStorage("coach_voice_enabled") private var coachVoiceEnabled = true
+    @AppStorage("onboarding_complete") private var onboardingComplete = true
 
     // Body composition editing state
     @State private var heightCmText: String = ""
@@ -95,7 +96,7 @@ struct ProfileView: View {
                 .padding(.bottom, 48)
             }
             .background(Color.kineticsBackground)
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showSignIn) {
                 SignInSheet().environment(appState)
             }
@@ -549,6 +550,20 @@ struct ProfileView: View {
                 Task { await FeedSeeder.shared.seed() }
             } label: {
                 Text("Seed Demo Data")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.3))
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+
+            SettingsDivider()
+
+            // Debug: reset onboarding walkthrough
+            Button {
+                onboardingComplete = false
+            } label: {
+                Text("Reset Onboarding")
                     .font(.system(size: 13))
                     .foregroundStyle(.white.opacity(0.3))
                     .frame(maxWidth: .infinity, alignment: .center)

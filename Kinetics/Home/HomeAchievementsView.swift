@@ -177,7 +177,7 @@ struct HomeAchievementsView: View {
                 .padding(.top, 24)
             }
             .background(Color.kineticsBackground)
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationDetents([.large])
         .presentationBackground(Color.kineticsBackground)

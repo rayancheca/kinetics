@@ -20,6 +20,12 @@ struct ActivityFeedCard: View {
     @State private var burstParticles: [BurstParticle] = []
     @State private var showReactionPicker = false
 
+    private static let shortDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f
+    }()
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // 1. Header row (avatar + name + sport badge)
@@ -597,9 +603,12 @@ struct ActivityFeedCard: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
             heartScale = 1.4
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                heartScale = 1.0
+        Task {
+            try? await Task.sleep(for: .seconds(0.3))
+            await MainActor.run {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    heartScale = 1.0
+                }
             }
         }
 
@@ -628,8 +637,11 @@ struct ActivityFeedCard: View {
                 )
             }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            burstParticles = []
+        Task {
+            try? await Task.sleep(for: .seconds(0.6))
+            await MainActor.run {
+                burstParticles = []
+            }
         }
     }
 
@@ -702,9 +714,7 @@ struct ActivityFeedCard: View {
         case 172_800..<604_800:
             return "\(seconds / 86_400)d"
         default:
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMM d"
-            return formatter.string(from: date)
+            return Self.shortDateFormatter.string(from: date)
         }
     }
 }

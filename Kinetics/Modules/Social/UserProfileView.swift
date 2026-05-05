@@ -701,6 +701,18 @@ private struct CommentRow: View {
 
 extension Date {
 
+    private static let relativeShortFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f
+    }()
+
+    private static let monthYearFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM yyyy"
+        return f
+    }()
+
     var relativeFormatted: String {
         let seconds = Int(Date().timeIntervalSince(self))
         switch seconds {
@@ -709,15 +721,11 @@ extension Date {
         case 3_600..<86_400:   return "\(seconds / 3_600)h"
         case 86_400..<604_800: return "\(seconds / 86_400)d"
         default:
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMM d"
-            return formatter.string(from: self)
+            return Self.relativeShortFormatter.string(from: self)
         }
     }
 
     var monthYear: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM yyyy"
-        return formatter.string(from: self)
+        Self.monthYearFormatter.string(from: self)
     }
 }

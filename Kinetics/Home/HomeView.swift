@@ -1,4 +1,5 @@
 import AuthenticationServices
+import PhotosUI
 import SwiftUI
 
 // MARK: - HomeView
@@ -22,10 +23,22 @@ struct HomeView: View {
     @State private var showAchievements = false
     @State private var showNotifications = false
 
+    // Module entry sheet state
+    @State private var pendingModule: SportType? = nil
+    @State private var showModuleEntrySheet = false
+
+    // Programmatic navigation path for NavigationStack
+    @State private var navPath = NavigationPath()
+
+    // Video import state
+    @State private var showVideoPicker = false
+    @State private var selectedVideoItem: PhotosPickerItem? = nil
+    @State private var navigateToVideoLibrary = false
+
     // MARK: - Body
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navPath) {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     // 1. Hero header
@@ -87,9 +100,44 @@ struct HomeView: View {
                 }
             }
             .background(Color.kineticsBackground)
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: SportType.self) { sport in
                 moduleView(for: sport)
+            }
+            .navigationDestination(isPresented: $navigateToVideoLibrary) {
+                VideoLibraryView(userId: uid)
+            }
+            .sheet(isPresented: $showModuleEntrySheet) {
+                if let module = pendingModule {
+                    ModuleEntrySheet(
+                        sport: module,
+                        onLiveSession: {
+                            showModuleEntrySheet = false
+                            Task {
+                                try? await Task.sleep(for: .seconds(0.35))
+                                await MainActor.run { navPath.append(module) }
+                            }
+                        },
+                        onAnalyzeVideo: {
+                            showModuleEntrySheet = false
+                            showVideoPicker = true
+                        }
+                    )
+                    .presentationDetents([.height(260)])
+                    .presentationBackground(Color.kineticsDark)
+                    .presentationCornerRadius(24)
+                }
+            }
+            .photosPicker(
+                isPresented: $showVideoPicker,
+                selection: $selectedVideoItem,
+                matching: .videos,
+                photoLibrary: .shared()
+            )
+            .onChange(of: selectedVideoItem) { _, item in
+                guard item != nil else { return }
+                selectedVideoItem = nil
+                navigateToVideoLibrary = true
             }
             .sheet(isPresented: $showSignIn) {
                 SignInSheet()
@@ -217,7 +265,10 @@ struct HomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(SportType.allCases, id: \.self) { sport in
-                        NavigationLink(value: sport) {
+                        Button {
+                            pendingModule = sport
+                            showModuleEntrySheet = true
+                        } label: {
                             HomeQuickLaunchCard(
                                 sport: sport,
                                 lastSession: viewModel.recentSessions

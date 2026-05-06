@@ -22,6 +22,8 @@
 	<string>1</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Kinetics reads your heart rate during workouts to display live metrics on your watch.</string>
+	<key>WKApplication</key>
+	<true/>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
 	<false/>
 	<key>WKWatchOnly</key>

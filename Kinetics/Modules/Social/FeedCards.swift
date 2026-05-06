@@ -12,6 +12,7 @@ struct ActivityFeedCard: View {
     let onComment: () -> Void
     var onDelete: (() async -> Void)? = nil
     var onAvatarTap: (() -> Void)? = nil
+    var onSportTap: (() -> Void)? = nil
 
     @State private var showDeleteConfirm = false
     @State private var heartScale: CGFloat = 1.0
@@ -123,7 +124,12 @@ struct ActivityFeedCard: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 4) {
-                sportBadgePill
+                if let tap = onSportTap {
+                    Button(action: tap) { sportBadgePill }
+                        .buttonStyle(.plain)
+                } else {
+                    sportBadgePill
+                }
                 Text(relativeTimestamp(item.postedAt))
                     .font(.system(size: 11, design: .rounded))
                     .foregroundStyle(Color.kineticsSubtext)

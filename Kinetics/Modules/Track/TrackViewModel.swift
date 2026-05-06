@@ -91,6 +91,34 @@ final class TrackViewModel {
     /// Per-km pace values collected as each split completes. Parallel to `splits`.
     var splitPaces: [Double] = []
 
+    // MARK: - Today Stats
+
+    /// Number of workouts completed today.
+    var todayWorkoutCount: Int = 0
+
+    /// Total distance covered today, in kilometres.
+    var todayDistanceKm: Double = 0
+
+    /// Total workout duration today, in seconds.
+    var todayDurationSeconds: TimeInterval = 0
+
+    /// Human-readable today distance, e.g. `"8.3 km"` or `"840m"`.
+    var formattedTodayDistance: String {
+        todayDistanceKm < 1.0
+            ? String(format: "%.0fm", todayDistanceKm * 1000)
+            : String(format: "%.1f km", todayDistanceKm)
+    }
+
+    /// Human-readable today total duration, e.g. `"42:17"` or `"1:02:05"`.
+    var formattedTodayDuration: String {
+        let total = Int(todayDurationSeconds)
+        let h = total / 3_600
+        let m = (total % 3_600) / 60
+        let s = total % 60
+        if h > 0 { return String(format: "%d:%02d:%02d", h, m, s) }
+        return String(format: "%d:%02d", m, s)
+    }
+
     // MARK: - Permission State
 
     /// `true` when the user has explicitly denied location access. Used to surface
@@ -197,6 +225,26 @@ final class TrackViewModel {
         let granted = await locationService.requestAuthorization()
         locationPermissionDenied = !granted
         try? await healthKit.requestAuthorization()
+    }
+
+    // MARK: Today Stats
+
+    /// Loads today's aggregate workout stats (count, distance, duration) from Firestore
+    /// and updates the three `today*` properties.
+    ///
+    /// Uses `Calendar.startOfDay` to bucket workouts by the device's local calendar day.
+    /// Silently no-ops when `WorkoutRepository.fetchAll` throws or returns an empty array
+    /// (e.g. Firebase not configured in development builds).
+    ///
+    /// - Parameter userId: Firebase Auth UID of the current user.
+    func loadTodayStats(userId: String) async {
+        guard let workouts = try? await WorkoutRepository.shared.fetchAll(userId: userId) else { return }
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let todayWorkouts = workouts.filter { cal.startOfDay(for: $0.startedAt) == today }
+        todayWorkoutCount = todayWorkouts.count
+        todayDistanceKm = todayWorkouts.reduce(0) { $0 + $1.distance / 1_000 }
+        todayDurationSeconds = todayWorkouts.reduce(0) { $0 + $1.duration }
     }
 
     // MARK: Start

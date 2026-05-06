@@ -80,7 +80,9 @@ struct StrikingSessionReportView: View {
     // MARK: State
 
     @State private var coachingNotes: [CoachingNote] = []
+    @State private var showFeedComposer = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppState.self) private var appState
 
     // MARK: Derived Metrics
 
@@ -131,6 +133,26 @@ struct StrikingSessionReportView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: $showFeedComposer) {
+            PostComposerView(
+                currentUserId: appState.authManager.currentUser?.uid ?? "preview-user",
+                currentDisplayName: appState.authManager.currentUser?.displayName ?? "Athlete",
+                username: appState.authManager.currentUser?.displayName?.lowercased().replacingOccurrences(of: " ", with: "_") ?? "athlete",
+                initialCaption: "Striking Clinic session · \(result.formattedDuration)",
+                initialActivity: PostComposerActivity(
+                    kind: .sport(
+                        type: result.sport.rawValue,
+                        metrics: [
+                    FeedMetric(label: "VELOCITY", value: String(format: "%.0f", result.metrics["peak_velocity_mph"] ?? 0), unit: "mph"),
+                    FeedMetric(label: "STRIKES", value: String(format: "%.0f", result.metrics["strike_count"] ?? 0), unit: ""),
+                    FeedMetric(label: "CHAIN", value: String(format: "%.0f", result.metrics["kinematic_score"] ?? 0), unit: "/100")
+                ]
+                    ),
+                    sessionTitle: "\(result.sport.displayName) Session"
+                ),
+                onPost: { _ in }
+            )
+        }
         .task {
             coachingNotes = CoachingEngine.generateNotes(
                 for: result,
@@ -330,24 +352,40 @@ struct StrikingSessionReportView: View {
         \(coachingNotes.first?.headline ?? "")
         """
 
-        return HStack(spacing: 12) {
-            Button { dismiss() } label: {
-                Text("Done")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.kineticsRed)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+        return VStack(spacing: 10) {
+            Button { showFeedComposer = true } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.2.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Share to Feed")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundStyle(Color.kineticsDark)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Color.kineticsRed)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
 
-            ShareLink(item: shareText) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 50, height: 50)
-                    .background(Color(red: 0.12, green: 0.12, blue: 0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            HStack(spacing: 12) {
+                Button { dismiss() } label: {
+                    Text("Done")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.kineticsRed)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
+                ShareLink(item: shareText) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 50, height: 50)
+                        .background(Color(red: 0.12, green: 0.12, blue: 0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             }
         }
         .padding(.bottom, 40)

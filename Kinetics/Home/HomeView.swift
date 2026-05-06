@@ -35,6 +35,9 @@ struct HomeView: View {
     // Sport session detail sheet state
     @State private var selectedSportSession: SessionResult? = nil
 
+    // Milestone detail sheet
+    @State private var showMilestoneDetail = false
+
     // Video import state
     @State private var showVideoPicker = false
     @State private var selectedVideoItem: PhotosPickerItem? = nil
@@ -77,6 +80,12 @@ struct HomeView: View {
                     quickLaunchSection
                         .padding(.bottom, 20)
 
+                    // 4.5. Your week strip (authenticated + has sessions)
+                    if appState.authManager.isSignedIn && !viewModel.recentSessions.isEmpty {
+                        yourWeekStrip
+                            .padding(.bottom, 16)
+                    }
+
                     // 5. AI coach card
                     HomeCoachInsightCard(insight: viewModel.coachInsight)
                         .padding(.horizontal, 16)
@@ -91,7 +100,7 @@ struct HomeView: View {
 
                     // 7. Next milestone (authenticated only)
                     if let milestone = viewModel.nextMilestone {
-                        HomeMilestoneCard(milestone: milestone)
+                        HomeMilestoneCard(milestone: milestone, onTap: { showMilestoneDetail = true })
                             .padding(.horizontal, 16)
                             .padding(.bottom, 20)
                     }
@@ -173,6 +182,11 @@ struct HomeView: View {
             }
             .sheet(item: $selectedSportSession) { session in
                 SportSessionDetailSheet(session: session)
+            }
+            .sheet(isPresented: $showMilestoneDetail) {
+                if let milestone = viewModel.nextMilestone {
+                    MilestoneDetailSheet(milestone: milestone)
+                }
             }
             .confirmationDialog(
                 "Account",
@@ -307,6 +321,28 @@ struct HomeView: View {
                     }
                 }
                 .padding(.horizontal, 16)
+            }
+        }
+    }
+
+    // MARK: - Section 4.5: Your Week Strip
+
+    private var yourWeekStrip: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("YOUR WEEK")
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(2.5)
+                .foregroundStyle(Color.kineticsSubtext)
+                .padding(.horizontal, 20)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(viewModel.recentSessions.prefix(8)) { session in
+                        WeekActivityChip(session: session)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 2)
             }
         }
     }
@@ -1267,6 +1303,136 @@ private struct SportDetailStatCell: View {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .strokeBorder(color.opacity(0.2), lineWidth: 1)
                 )
+        )
+    }
+}
+
+// MARK: - MilestoneDetailSheet
+
+private struct MilestoneDetailSheet: View {
+    let milestone: HomeMilestoneData
+    @Environment(\.dismiss) private var dismiss
+
+    private var accent: Color { Color(hex: milestone.accentColorHex) }
+    private var progress: Double {
+        guard milestone.target > 0 else { return 0 }
+        return min(Double(milestone.current) / Double(milestone.target), 1.0)
+    }
+    private var remaining: Int { milestone.target - milestone.current }
+
+    var body: some View {
+        ZStack {
+            Color.kineticsBackground.ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 24) {
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundStyle(.white.opacity(0.35))
+                    }
+                    Spacer()
+                    Text("NEXT MILESTONE")
+                        .font(.system(size: 10, weight: .semibold))
+                        .tracking(2)
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+                // Big number
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(milestone.title)
+                        .font(.system(size: 28, weight: .black))
+                        .foregroundStyle(.white)
+                    Text(milestone.description)
+                        .font(.system(size: 15))
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+                // Progress
+                VStack(alignment: .leading, spacing: 10) {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(.white.opacity(0.08))
+                                .frame(height: 10)
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(LinearGradient(colors: [accent, accent.opacity(0.6)],
+                                    startPoint: .leading, endPoint: .trailing))
+                                .frame(width: geo.size.width * progress, height: 10)
+                                .animation(.spring(response: 0.6, dampingFraction: 0.75), value: progress)
+                        }
+                    }
+                    .frame(height: 10)
+                    HStack {
+                        Text("\(milestone.current) sessions completed")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.5))
+                        Spacer()
+                        Text("\(remaining) to go")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(accent)
+                    }
+                }
+                // Reward teaser
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("REWARD")
+                        .font(.system(size: 9, weight: .semibold))
+                        .tracking(2)
+                        .foregroundStyle(.white.opacity(0.35))
+                    HStack(spacing: 10) {
+                        Image(systemName: "trophy.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(Color.kineticsGoldPremium)
+                        Text("Unlock \(milestone.title) badge")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.kineticsGoldPremium.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Color.kineticsGoldPremium.opacity(0.25), lineWidth: 0.75))
+                }
+                Spacer()
+            }
+            .padding(24)
+        }
+        .presentationDetents([.medium])
+        .presentationBackground(Color.kineticsBackground)
+        .presentationCornerRadius(24)
+    }
+}
+
+// MARK: - WeekActivityChip
+
+private struct WeekActivityChip: View {
+    let session: SessionResult
+
+    private var accent: Color { Color.moduleColor(for: session.sport) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: session.sport.systemImage)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(accent)
+                Text(session.sport.displayName)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            Text(session.startedAt.formatted(.dateTime.weekday(.abbreviated).day()))
+                .font(.system(size: 10))
+                .foregroundStyle(.white.opacity(0.45))
+            Text(session.formattedDuration)
+                .font(.system(size: 14, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(accent.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(accent.opacity(0.22), lineWidth: 0.75)
         )
     }
 }

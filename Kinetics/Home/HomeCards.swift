@@ -557,6 +557,7 @@ struct HomeActivityRow: View {
 struct HomeMilestoneCard: View {
 
     let milestone: HomeMilestoneData
+    var onTap: (() -> Void)? = nil
 
     // MARK: Computed
 
@@ -568,6 +569,15 @@ struct HomeMilestoneCard: View {
     }
 
     var body: some View {
+        if let tapAction = onTap {
+            Button { tapAction() } label: { cardContent }
+                .buttonStyle(ScaleButtonStyle())
+        } else {
+            cardContent
+        }
+    }
+
+    private var cardContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 ZStack {
@@ -583,6 +593,11 @@ struct HomeMilestoneCard: View {
                     .tracking(1.8)
                     .foregroundStyle(.white.opacity(0.40))
                 Spacer()
+                if onTap != nil {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.30))
+                }
             }
             Text(milestone.title)
                 .font(.system(size: 16, weight: .bold))

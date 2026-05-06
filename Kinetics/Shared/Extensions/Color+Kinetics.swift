@@ -39,6 +39,18 @@ extension Color {
     /// Secondary / muted text: #8E8E93.
     static let kineticsSubtext = Color(red: 0.557, green: 0.557, blue: 0.576)
 
+    /// Premium violet for advanced features and AI elements: #7B2FFF.
+    static let kineticsViolet = Color(red: 0.482, green: 0.184, blue: 1.0)
+
+    /// Danger / destructive actions (richer than kineticsRed): #FF3A5C.
+    static let kineticsDanger = Color(red: 1.0, green: 0.227, blue: 0.361)
+
+    /// Success confirmation and positive results: #23D160.
+    static let kineticsSuccess = Color(red: 0.137, green: 0.820, blue: 0.376)
+
+    /// Premium gold for PRs, achievements, and milestone unlocks: #F5C842.
+    static let kineticsGoldPremium = Color(red: 0.961, green: 0.784, blue: 0.259)
+
     // MARK: Module Colors
 
     /// Returns the accent color assigned to the given sport module.
@@ -114,5 +126,21 @@ extension Color {
             blue: Double(blue) / 255.0,
             opacity: Double(alpha) / 255.0
         )
+    }
+}
+
+// MARK: - Glass Card Modifier
+
+extension View {
+    /// Applies the Kinetics premium glass card style:
+    /// ultra-thin material background, a subtle white border, and a standard corner radius.
+    func glassCard(cornerRadius: CGFloat = 16, borderOpacity: Double = 0.1) -> some View {
+        self
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(.white.opacity(borderOpacity), lineWidth: 0.75)
+            )
     }
 }

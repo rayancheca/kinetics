@@ -505,6 +505,21 @@ struct GymHomeView: View {
             HStack {
                 GymSectionHeader(title: "Quick Start")
                 Spacer()
+                NavigationLink(destination: WeeklyPlanListView()) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "list.bullet.rectangle")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.kineticsBlue)
+                        Text("Manage Plans")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.kineticsBlue)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Color.kineticsBlue.opacity(0.10))
+                    .clipShape(Capsule())
+                }
+                .padding(.trailing, 16)
                 Button {
                     navigationPath.append("routines")
                 } label: {

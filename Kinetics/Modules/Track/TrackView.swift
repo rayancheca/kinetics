@@ -19,6 +19,8 @@ struct TrackView: View {
     @State private var isNavigatingToWorkout = false
     @State private var isStarting = false
 
+    @Environment(AppState.self) private var appState
+
     // MARK: - Body
 
     var body: some View {
@@ -48,6 +50,10 @@ struct TrackView: View {
             }
             .task {
                 await viewModel.requestPermissions()
+            }
+            .task {
+                let uid = appState.authManager.currentUser?.uid ?? "preview-user"
+                await viewModel.loadTodayStats(userId: uid)
             }
             .fullScreenCover(isPresented: $viewModel.showSummary) {
                 if let result = viewModel.lastCompletedWorkout {
@@ -245,9 +251,9 @@ struct TrackView: View {
                 .padding(.horizontal, 20)
 
             HStack(spacing: 12) {
-                TodayStatCard(value: "2", label: "Workouts", icon: "bolt.fill", color: Color.kineticsBlue)
-                TodayStatCard(value: "8.3 km", label: "Distance", icon: "location.fill", color: Color.kineticsGreen)
-                TodayStatCard(value: "42:17", label: "Time", icon: "timer", color: Color.kineticsOrange)
+                TodayStatCard(value: "\(viewModel.todayWorkoutCount)", label: "Workouts", icon: "bolt.fill", color: Color.kineticsBlue)
+                TodayStatCard(value: viewModel.formattedTodayDistance, label: "Distance", icon: "location.fill", color: Color.kineticsGreen)
+                TodayStatCard(value: viewModel.formattedTodayDuration, label: "Time", icon: "timer", color: Color.kineticsOrange)
             }
             .padding(.horizontal, 20)
         }

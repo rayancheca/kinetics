@@ -38,6 +38,10 @@ final class FeedViewModel {
 
     var selectedFilter: FeedFilter = .forYou
 
+    /// When non-nil, only posts whose `activityType` matches this value are shown.
+    /// Tap the same sport badge again to clear the filter.
+    var sportFilter: String? = nil
+
     // MARK: - Trending
 
     var trendingItems: [FeedItem] = []
@@ -50,14 +54,17 @@ final class FeedViewModel {
     var isLoadingFollowing = false
 
     var filteredItems: [FeedItem] {
+        let base: [FeedItem]
         switch selectedFilter {
         case .forYou:
-            return feedItems
+            base = feedItems
         case .following:
-            return followingFeedItems
+            base = followingFeedItems
         case .trending:
-            return trendingItems
+            base = trendingItems
         }
+        guard let sport = sportFilter else { return base }
+        return base.filter { $0.activityType.lowercased() == sport.lowercased() }
     }
 
     var isFollowingEmpty: Bool {
@@ -559,6 +566,15 @@ struct FeedView: View {
                     } : nil,
                     onAvatarTap: {
                         profilePreviewUserId = item.userId
+                    },
+                    onSportTap: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            if viewModel.sportFilter?.lowercased() == item.activityType.lowercased() {
+                                viewModel.sportFilter = nil
+                            } else {
+                                viewModel.sportFilter = item.activityType
+                            }
+                        }
                     }
                 )
                 .padding(.horizontal, 16)

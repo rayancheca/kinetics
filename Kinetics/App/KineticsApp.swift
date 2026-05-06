@@ -53,6 +53,7 @@ final class KineticsNotificationDelegate: NSObject, UNUserNotificationCenterDele
 struct KineticsApp: App {
 
     @State private var appState = AppState()
+    @State private var showSplash = true
     @AppStorage("permissions_requested") private var permissionsRequested = false
     @AppStorage("onboarding_complete") private var onboardingComplete = false
 
@@ -110,6 +111,11 @@ struct KineticsApp: App {
 
     var body: some Scene {
         WindowGroup {
+            if showSplash {
+                SplashScreenView {
+                    showSplash = false
+                }
+            } else {
             MainTabView()
                 .environment(appState)
                 .preferredColorScheme(.dark)
@@ -147,6 +153,7 @@ struct KineticsApp: App {
                 )) {
                     OnboardingView()
                 }
+            } // end else
         }
     }
 }

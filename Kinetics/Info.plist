@@ -31,6 +31,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>CLAUDE_API_KEY</key>
+	<string></string>
 	<key>NSCameraUsageDescription</key>
 	<string>Kinetics uses your camera to analyze movement and provide real-time biomechanics coaching feedback.</string>
 	<key>NSHealthShareUsageDescription</key>
@@ -52,8 +54,6 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
-		<string>fetch</string>
-		<string>processing</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict>

@@ -38,11 +38,7 @@ targets:
       - path: Kinetics/Shared
       - path: Kinetics/Firebase
       - path: Kinetics/Home
-    resources:
-      - path: Kinetics/Resources/Assets.xcassets
-      - path: Kinetics/Resources/GoogleService-Info.plist
-      - path: Kinetics/Resources/PrivacyInfo.xcprivacy
-      - path: Kinetics/Resources/Lottie
+      - path: Kinetics/Resources
     info:
       path: Kinetics/Info.plist
       properties:
@@ -142,6 +138,9 @@ targets:
         CFBundleDisplayName: Kinetics
         CFBundleShortVersionString: "1.0"
         CFBundleVersion: "1"
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.rayancheca.kinetics
+        WKRunsIndependentlyOfCompanionApp: false
         WKWatchOnly: false
         NSHealthShareUsageDescription: "Kinetics reads your heart rate during workouts to display live metrics on your watch."
     entitlements:

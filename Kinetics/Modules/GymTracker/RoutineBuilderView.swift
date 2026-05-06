@@ -64,7 +64,7 @@ struct RoutineListView: View {
             }
             .buttonStyle(.plain)
             .padding(.trailing, 20)
-            .padding(.bottom, 24)
+            .padding(.bottom, 96)
         }
         .navigationTitle("MY ROUTINES")
         .navigationBarTitleDisplayMode(.inline)

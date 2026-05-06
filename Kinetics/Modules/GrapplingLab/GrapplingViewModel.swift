@@ -39,6 +39,12 @@ final class GrapplingViewModel {
     /// Non-nil when an unrecoverable error occurs (camera denied, Vision failure).
     private(set) var errorMessage: String?
 
+    /// `true` while the session is paused (active but not processing frames).
+    var isPaused: Bool = false
+
+    /// Accumulated duration from previous segments before the current resume point.
+    private var accumulatedDuration: TimeInterval = 0
+
     /// The result of the most recently completed session; populated after `endSession` saves.
     var lastCompletedSession: SessionResult?
 
@@ -155,10 +161,12 @@ final class GrapplingViewModel {
         timerTask = nil
 
         isSessionActive = false
+        accumulatedDuration = 0
+        isPaused = false
         CoachVoice.shared.stop()
 
         // Capture final duration before clearing the start date.
-        let finalDuration = sessionStartDate.map { Date().timeIntervalSince($0) } ?? sessionDuration
+        let finalDuration = sessionStartDate.map { accumulatedDuration + Date().timeIntervalSince($0) } ?? sessionDuration
 
         let result = SessionResult(
             sport: .grappling,
@@ -202,6 +210,36 @@ final class GrapplingViewModel {
                                unit: "/100"),
                 ]
             )
+        }
+    }
+
+    /// Pauses an active session without ending it. Cancels the processing and timer tasks
+    /// but preserves all accumulated metrics so the session can be resumed.
+    func pauseSession() {
+        guard isSessionActive && !isPaused else { return }
+        accumulatedDuration = sessionDuration
+        processingTask?.cancel()
+        processingTask = nil
+        timerTask?.cancel()
+        timerTask = nil
+        isPaused = true
+        CoachVoice.shared.stop()
+    }
+
+    /// Resumes a previously paused session, restarting the timer and frame processing loop.
+    ///
+    /// - Parameter cameraManager: The shared `CameraManager` from `AppState`.
+    func resumeSession(with cameraManager: CameraManager) {
+        guard isSessionActive && isPaused else { return }
+        isPaused = false
+        sessionStartDate = Date()
+        startTimer()
+        processingTask = Task { [weak self] in
+            guard let self else { return }
+            for await buffer in cameraManager.frameStream {
+                guard !Task.isCancelled else { break }
+                await self.processFrame(buffer)
+            }
         }
     }
 
@@ -276,7 +314,7 @@ final class GrapplingViewModel {
                 guard !Task.isCancelled else { break }
                 guard let self else { break }
                 if let startDate = self.sessionStartDate {
-                    self.sessionDuration = Date().timeIntervalSince(startDate)
+                    self.sessionDuration = self.accumulatedDuration + Date().timeIntervalSince(startDate)
                 }
             }
         }

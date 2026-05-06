@@ -471,18 +471,16 @@ struct ActiveGymSessionView: View {
             isPresented: $showExitConfirm,
             titleVisibility: .visible
         ) {
-            Button("Save & Finish", role: .destructive) {
-                // Mark complete so the timer stops and the resume banner disappears.
+            Button("Save & Finish") {
                 try? viewModel.completeSession(userId: session.userId)
                 dismiss()
             }
-            Button("Pause — Resume Later", role: .none) {
-                // Dismiss without completing — banner will let user resume.
+            Button("Pause — Resume Later") {
                 dismiss()
             }
             Button("Keep Going", role: .cancel) {}
         } message: {
-            Text("Your progress will be saved. Save & Finish records the session now, or Pause to resume later.")
+            Text("Save & Finish records the session. Pause keeps it open to resume later.")
         }
         .interactiveDismissDisabled(true)
         .animation(.spring(duration: 0.3), value: viewModel.showRestTimer)

@@ -161,12 +161,12 @@ struct SplashScreenView: View {
         }
 
         // 6. Everything fades out
-        withAnimation(.easeIn(duration: 0.45).delay(2.1)) {
+        withAnimation(.easeIn(duration: 0.5).delay(3.2)) {
             exitOpacity = 0
         }
 
         // 7. Notify parent
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.65) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.8) {
             onComplete()
         }
     }

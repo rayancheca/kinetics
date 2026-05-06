@@ -30,6 +30,9 @@ final class StrikingViewModel {
     var isSessionActive: Bool = false
     /// Non-nil when a Vision or camera error has occurred.
     var errorMessage: String?
+    /// True when the session is temporarily paused (tasks cancelled, timer stopped).
+    var isPaused: Bool = false
+    private var accumulatedDuration: TimeInterval = 0
 
     /// The result of the most recently completed session; populated after `endSession` saves.
     var lastCompletedSession: SessionResult?
@@ -119,6 +122,8 @@ final class StrikingViewModel {
         guard isSessionActive else { return }
 
         isSessionActive = false
+        accumulatedDuration = 0
+        isPaused = false
         processingTask?.cancel()
         processingTask = nil
         durationTask?.cancel()
@@ -183,6 +188,33 @@ final class StrikingViewModel {
         previousSessions = all.filter { $0.sport == .striking }
     }
 
+    /// Pauses an active session: cancels processing and timer tasks without saving.
+    func pauseSession() {
+        guard isSessionActive && !isPaused else { return }
+        accumulatedDuration = sessionDuration
+        processingTask?.cancel()
+        processingTask = nil
+        durationTask?.cancel()
+        durationTask = nil
+        isPaused = true
+        CoachVoice.shared.stop()
+    }
+
+    /// Resumes a paused session: restarts the timer and frame-processing pipeline.
+    func resumeSession(with cameraManager: CameraManager) {
+        guard isSessionActive && isPaused else { return }
+        isPaused = false
+        sessionStartTime = Date()
+        startDurationTimer()
+        processingTask = Task { [weak self] in
+            guard let self else { return }
+            for await buffer in cameraManager.frameStream {
+                guard !Task.isCancelled else { break }
+                await self.processFrame(buffer)
+            }
+        }
+    }
+
     /// Cancels the active processing and duration tasks and clears session state
     /// without saving to Firestore. Call this when navigating back mid-session.
     func stopProcessing() {
@@ -243,7 +275,7 @@ final class StrikingViewModel {
                 try? await Task.sleep(for: .seconds(1))
                 guard let self, !Task.isCancelled else { return }
                 guard let start = self.sessionStartTime else { return }
-                self.sessionDuration = Date().timeIntervalSince(start)
+                self.sessionDuration = self.accumulatedDuration + Date().timeIntervalSince(start)
             }
         }
     }

@@ -45,6 +45,12 @@ final class WallBetaViewModel {
     /// Non-nil when an unrecoverable camera or Vision error has occurred.
     private(set) var errorMessage: String?
 
+    /// `true` while the session is active but temporarily paused.
+    var isPaused: Bool = false
+
+    /// Accumulated duration before the most recent pause, so the timer resumes correctly.
+    private var accumulatedDuration: TimeInterval = 0
+
     /// The result of the most recently completed session; populated after `endSession` saves.
     var lastCompletedSession: SessionResult?
 
@@ -211,6 +217,8 @@ final class WallBetaViewModel {
 
         // Reset the Vision engine's temporal state before the next session.
         await poseEngine.reset()
+        accumulatedDuration = 0
+        isPaused = false
         sessionStartDate = nil
 
         Analytics.logEvent("module_session_completed", parameters: [
@@ -243,6 +251,35 @@ final class WallBetaViewModel {
                                unit: ""),
                 ]
             )
+        }
+    }
+
+    // MARK: - Pause / Resume
+
+    /// Pauses an active session: cancels the frame loop and timer, preserving elapsed time.
+    func pauseSession() {
+        guard isSessionActive && !isPaused else { return }
+        accumulatedDuration = sessionDuration
+        processingTask?.cancel()
+        processingTask = nil
+        timerTask?.cancel()
+        timerTask = nil
+        isPaused = true
+        CoachVoice.shared.stop()
+    }
+
+    /// Resumes a paused session: resets the start timestamp and restarts frame processing.
+    func resumeSession(with cameraManager: CameraManager) {
+        guard isSessionActive && isPaused else { return }
+        isPaused = false
+        sessionStartDate = Date()
+        startTimer()
+        processingTask = Task { [weak self] in
+            guard let self else { return }
+            for await buffer in cameraManager.frameStream {
+                guard !Task.isCancelled else { break }
+                await self.processFrame(buffer)
+            }
         }
     }
 
@@ -346,7 +383,7 @@ final class WallBetaViewModel {
                 try? await Task.sleep(for: .seconds(1))
                 guard !Task.isCancelled, let self else { break }
                 if let startDate = self.sessionStartDate {
-                    self.sessionDuration = Date().timeIntervalSince(startDate)
+                    self.sessionDuration = self.accumulatedDuration + Date().timeIntervalSince(startDate)
                 }
             }
         }

@@ -439,6 +439,51 @@ struct WallBetaView: View {
                 }
                 .padding(.horizontal, 4)
 
+                // ── Session controls ───────────────────────────────────────────────
+                HStack(spacing: 10) {
+                    Button {
+                        Task {
+                            let uid = appState.authManager.currentUser?.uid ?? "anonymous"
+                            await viewModel.endSession(userId: uid)
+                            if viewModel.lastCompletedSession != nil {
+                                await viewModel.loadPreviousSessions(userId: uid)
+                                showReport = true
+                            } else {
+                                dismiss()
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "stop.fill").font(.system(size: 11, weight: .bold))
+                            Text("END").font(.system(size: 12, weight: .bold)).tracking(1)
+                        }
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.kineticsGreen, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        if viewModel.isPaused {
+                            viewModel.resumeSession(with: appState.cameraManager)
+                        } else {
+                            viewModel.pauseSession()
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: viewModel.isPaused ? "play.fill" : "pause.fill").font(.system(size: 11, weight: .bold))
+                            Text(viewModel.isPaused ? "RESUME" : "PAUSE").font(.system(size: 12, weight: .bold)).tracking(1)
+                        }
+                        .foregroundStyle(viewModel.isPaused ? Color.kineticsGreen : .white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 4)
+
             }
             .animation(.easeInOut(duration: 0.2), value: viewModel.metrics.movementPhase)
         }

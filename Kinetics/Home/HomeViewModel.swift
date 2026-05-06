@@ -2,6 +2,65 @@ import Foundation
 import Observation
 import SwiftUI
 
+// MARK: - ReadinessBreakdown
+
+/// Per-component scores that add up to the composite readiness score.
+struct ReadinessBreakdown: Sendable {
+    /// 0–40 pts based on sleep hours vs 8 hr target.
+    let sleepPts: Int
+    /// 0–20 pts — lower resting HR than baseline = more points.
+    let heartRatePts: Int
+    /// 0–20 pts — higher HRV = more points.
+    let hrvPts: Int
+    /// 0–20 pts — training load management.
+    let trainingLoadPts: Int
+
+    var total: Int { sleepPts + heartRatePts + hrvPts + trainingLoadPts }
+    var isHealthKitAvailable: Bool { sleepPts > 0 || heartRatePts > 0 || hrvPts > 0 }
+
+    init(from stats: HealthKitDashboardStats, sessions: [SessionResult]) {
+        // Sleep: 0–40 pts. Target = 8 hr (28 800 s).
+        let sleepHours = stats.sleepSeconds / 3_600
+        if stats.sleepSeconds > 0 {
+            let ratio = min(sleepHours / 8.0, 1.0)
+            sleepPts = Int(ratio * 40)
+        } else {
+            sleepPts = 0
+        }
+
+        // Resting HR: 0–20 pts. Baseline 65 bpm — each bpm below adds 1 pt (max 20).
+        if stats.restingHeartRate > 0 {
+            let baseline = 65.0
+            let delta = baseline - stats.restingHeartRate // positive = below baseline
+            heartRatePts = max(0, min(20, 10 + Int(delta)))
+        } else {
+            heartRatePts = 0
+        }
+
+        // HRV: 0–20 pts. 50 ms → full score; linear below.
+        if stats.hrv > 0 {
+            let ratio = min(stats.hrv / 50.0, 1.0)
+            hrvPts = Int(ratio * 20)
+        } else {
+            hrvPts = 0
+        }
+
+        // Training load: days since last session. Sweet spot = 1–2 days.
+        let daysSince = sessions.first.map { s -> Int in
+            Calendar.current.dateComponents([.day], from: s.startedAt, to: Date()).day ?? 99
+        } ?? 99
+        switch daysSince {
+        case 0:     trainingLoadPts = 10  // same-day — slightly reduced
+        case 1:     trainingLoadPts = 20  // perfect recovery window
+        case 2:     trainingLoadPts = 18
+        case 3:     trainingLoadPts = 14
+        case 4:     trainingLoadPts = 8
+        case 5...:  trainingLoadPts = 4
+        default:    trainingLoadPts = 20  // no sessions yet — assume fresh
+        }
+    }
+}
+
 // MARK: - Shared Home Types
 
 struct HomeCoachInsight: Sendable {
@@ -65,6 +124,11 @@ final class HomeViewModel {
         case 40..<85:  return .kineticsAmber
         default:       return .kineticsRed
         }
+    }
+
+    /// Per-component breakdown used in ReadinessDetailSheet.
+    var readinessBreakdown: ReadinessBreakdown {
+        ReadinessBreakdown(from: dashboardStats, sessions: recentSessions)
     }
 
     // MARK: - Public Accessors

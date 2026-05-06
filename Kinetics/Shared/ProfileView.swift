@@ -61,6 +61,8 @@ struct ProfileView: View {
     @State private var weightKgText: String = ""
     @State private var skeletalMuscleText: String = ""
     @State private var hasFaceProfile = false
+    @State private var badgesVM = AchievementsViewModel()
+    @State private var selectedBadge: KineticsAchievementBadge? = nil
 
     private var isAnonymous: Bool { appState.authManager.currentUser?.isAnonymous == true }
 
@@ -87,6 +89,7 @@ struct ProfileView: View {
                 VStack(spacing: 28) {
                     avatarSection
                     statsGrid
+                    badgesSection
                     athleteSection
                     accountSection
                     preferencesSection
@@ -112,7 +115,11 @@ struct ProfileView: View {
                     await vm.load(for: uid)
                     loadBodyComposition(userId: uid)
                     hasFaceProfile = faceProfileExists(userId: uid)
+                    await badgesVM.load(userId: uid)
                 }
+            }
+            .sheet(item: $selectedBadge) { badge in
+                BadgeDetailSheet(badge: badge)
             }
             .fullScreenCover(isPresented: $showFaceSetup) {
                 if let uid = appState.authManager.currentUser?.uid {
@@ -121,6 +128,55 @@ struct ProfileView: View {
                             hasFaceProfile = faceProfileExists(userId: uid)
                         }
                 }
+            }
+        }
+    }
+
+    // MARK: - Badges Section
+
+    private var badgesSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("BADGES")
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(2.5)
+                .foregroundStyle(.white.opacity(0.38))
+                .padding(.horizontal, 22)
+                .padding(.bottom, 8)
+
+            let allBadges = badgesVM.unlockedBadges + badgesVM.lockedBadges
+            if allBadges.isEmpty {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "trophy")
+                            .font(.system(size: 28, weight: .thin))
+                            .foregroundStyle(Color.kineticsBlue.opacity(0.40))
+                        Text("Complete sessions to earn badges")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.35))
+                    }
+                    .padding(.vertical, 28)
+                    Spacer()
+                }
+                .background(Color.kineticsDark)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .padding(.horizontal, 16)
+            } else {
+                LazyVGrid(
+                    columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ],
+                    spacing: 10
+                ) {
+                    ForEach(allBadges) { badge in
+                        ProfileBadgeChip(badge: badge) {
+                            selectedBadge = badge
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
             }
         }
     }
@@ -721,5 +777,171 @@ struct SettingsRow: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
         }
+    }
+}
+
+// MARK: - ProfileBadgeChip
+
+/// Compact 3-column badge chip used in the Profile badges grid.
+/// Earned badges show full color; locked ones are dimmed with a lock overlay.
+private struct ProfileBadgeChip: View {
+
+    let badge: KineticsAchievementBadge
+    let onTap: () -> Void
+
+    private var accent: Color { Color(hex: badge.accentHex) }
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 6) {
+                ZStack(alignment: .bottomTrailing) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(
+                                badge.isUnlocked
+                                    ? accent.opacity(0.18)
+                                    : Color.white.opacity(0.05)
+                            )
+                            .frame(width: 44, height: 44)
+                        Image(systemName: badge.icon)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(
+                                badge.isUnlocked
+                                    ? accent
+                                    : Color.white.opacity(0.22)
+                            )
+                            .opacity(badge.isUnlocked ? 1.0 : 0.4)
+                    }
+                    if !badge.isUnlocked {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.50))
+                            .padding(3)
+                            .background(Color.kineticsMidGray)
+                            .clipShape(Circle())
+                            .offset(x: 4, y: 4)
+                    }
+                }
+
+                Text(badge.title)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(
+                        badge.isUnlocked ? .white : Color.white.opacity(0.28)
+                    )
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 6)
+            .background(Color.kineticsDark)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(
+                        badge.isUnlocked
+                            ? accent.opacity(0.28)
+                            : Color.white.opacity(0.06),
+                        lineWidth: 0.75
+                    )
+            )
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
+// MARK: - BadgeDetailSheet
+
+/// Mini sheet explaining a badge — how it was earned or how to unlock it.
+struct BadgeDetailSheet: View {
+
+    let badge: KineticsAchievementBadge
+    @Environment(\.dismiss) private var dismiss
+
+    private var accent: Color { Color(hex: badge.accentHex) }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Drag indicator area
+            Capsule()
+                .fill(.white.opacity(0.18))
+                .frame(width: 36, height: 4)
+                .padding(.top, 12)
+                .padding(.bottom, 24)
+
+            // Badge icon
+            ZStack {
+                Circle()
+                    .fill(
+                        badge.isUnlocked
+                            ? accent.opacity(0.14)
+                            : Color.white.opacity(0.05)
+                    )
+                    .frame(width: 88, height: 88)
+                Image(systemName: badge.icon)
+                    .font(.system(size: 38, weight: .semibold))
+                    .foregroundStyle(
+                        badge.isUnlocked ? accent : Color.white.opacity(0.25)
+                    )
+                    .opacity(badge.isUnlocked ? 1.0 : 0.5)
+                if !badge.isUnlocked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.55))
+                        .frame(width: 88, height: 88, alignment: .bottomTrailing)
+                        .offset(x: 4, y: 4)
+                }
+            }
+            .padding(.bottom, 16)
+
+            // Title + status
+            Text(badge.title)
+                .font(.system(size: 22, weight: .black))
+                .foregroundStyle(.white)
+                .padding(.bottom, 4)
+
+            Text(badge.isUnlocked ? "EARNED" : "LOCKED")
+                .font(.system(size: 10, weight: .bold))
+                .tracking(2)
+                .foregroundStyle(
+                    badge.isUnlocked ? Color.kineticsGreen : Color.white.opacity(0.35)
+                )
+                .padding(.bottom, 20)
+
+            // Description
+            Text(badge.description)
+                .font(.system(size: 15))
+                .foregroundStyle(.white.opacity(0.65))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 32)
+                .padding(.bottom, 28)
+
+            // How to unlock (locked only)
+            if !badge.isUnlocked {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.kineticsBlue)
+                    Text("Keep training to unlock this badge")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(Color.kineticsBlue.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .padding(.horizontal, 24)
+                .padding(.bottom, 28)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .background(Color.kineticsBackground)
+        .presentationDetents([.height(380)])
+        .presentationBackground(Color.kineticsBackground)
+        .presentationCornerRadius(24)
     }
 }

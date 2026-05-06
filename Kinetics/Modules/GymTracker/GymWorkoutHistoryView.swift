@@ -154,6 +154,12 @@ final class GymWorkoutHistoryViewModel {
             errorMessage = error.localizedDescription
         }
     }
+
+    // MARK: - Repeat
+
+    func repeatSession(_ session: WorkoutSession, userId: String) throws -> WorkoutSession {
+        try GymRepository.shared.repeatSession(session, userId: userId)
+    }
 }
 
 // MARK: - GymWorkoutHistoryView
@@ -166,8 +172,11 @@ struct GymWorkoutHistoryView: View {
     @State private var viewModel = GymWorkoutHistoryViewModel()
     @State private var path = NavigationPath()
     @State private var scrollProxy: ScrollViewProxy? = nil
+    @State private var heatmapScrollProxy: ScrollViewProxy? = nil
     @State private var highlightedDay: Date? = nil
     @State private var sessionToShare: WorkoutSession?
+    @State private var sessionToRepeat: WorkoutSession?
+    @State private var sessionForDetail: WorkoutSession?
 
     // MARK: - Share helpers
 
@@ -207,6 +216,27 @@ struct GymWorkoutHistoryView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .task { await viewModel.load(userId: userId) }
+        .navigationDestination(item: $sessionForDetail) { session in
+            GymWorkoutDetailView(
+                session: session,
+                userId: userId,
+                onDelete: { deleted in
+                    viewModel.delete(deleted)
+                    sessionForDetail = nil
+                }
+            )
+        }
+        .onChange(of: sessionToRepeat) { _, session in
+            guard let session else { return }
+            sessionToRepeat = nil
+            Task {
+                do {
+                    _ = try viewModel.repeatSession(session, userId: userId)
+                } catch {
+                    viewModel.errorMessage = error.localizedDescription
+                }
+            }
+        }
         .sheet(item: $sessionToShare) { session in
             PostComposerView(
                 currentUserId: userId,
@@ -374,27 +404,36 @@ struct GymWorkoutHistoryView: View {
             }
             .padding(.horizontal, 20)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 4) {
-                    Spacer().frame(width: 12)
-                    ForEach(viewModel.heatDays) { day in
-                        HeatDayCell(
-                            day: day,
-                            maxVolume: viewModel.maxVolumeInHeatmap,
-                            isHighlighted: highlightedDay.map {
-                                Calendar.current.isDate($0, inSameDayAs: day.date)
-                            } ?? false
-                        )
-                        .id("heat-\(day.id)")
-                        .onTapGesture {
-                            scrollToDay(day.date)
+            ScrollViewReader { heatProxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 4) {
+                        Spacer().frame(width: 12)
+                        ForEach(viewModel.heatDays) { day in
+                            HeatDayCell(
+                                day: day,
+                                maxVolume: viewModel.maxVolumeInHeatmap,
+                                isHighlighted: highlightedDay.map {
+                                    Calendar.current.isDate($0, inSameDayAs: day.date)
+                                } ?? false
+                            )
+                            .id("heat-\(day.id)")
+                            .onTapGesture {
+                                scrollToDay(day.date)
+                            }
                         }
+                        Spacer().frame(width: 12)
                     }
-                    Spacer().frame(width: 12)
+                    .padding(.vertical, 4)
                 }
-                .padding(.vertical, 4)
+                .frame(height: 44)
+                .onAppear {
+                    heatmapScrollProxy = heatProxy
+                    // Scroll to today's cell so the most recent activity is visible
+                    if let todayDay = viewModel.heatDays.last {
+                        heatProxy.scrollTo("heat-\(todayDay.id)", anchor: .trailing)
+                    }
+                }
             }
-            .frame(height: 44)
         }
     }
 
@@ -439,13 +478,15 @@ struct GymWorkoutHistoryView: View {
                     GymHistorySessionRow(
                         session: session,
                         isExpanded: viewModel.expandedSessionIds.contains(session.id),
-                        onTap: {
+                        onTap: { sessionForDetail = session },
+                        onExpand: {
                             withAnimation(.spring(duration: 0.3)) {
                                 viewModel.toggleExpansion(for: session)
                             }
                         },
                         onDelete: { viewModel.delete(session) },
-                        onShare: { sessionToShare = session }
+                        onShare: { sessionToShare = session },
+                        onRepeat: { sessionToRepeat = session }
                     )
                     .id("session-\(session.id)")
                     .padding(.horizontal, 16)
@@ -571,9 +612,13 @@ private struct GymHistorySessionRow: View {
 
     let session: WorkoutSession
     let isExpanded: Bool
+    /// Called when the main card body is tapped — navigates to session detail.
     let onTap: () -> Void
+    /// Called when the expand chevron is tapped — toggles inline exercise list.
+    let onExpand: () -> Void
     let onDelete: () -> Void
     let onShare: () -> Void
+    let onRepeat: () -> Void
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -637,7 +682,7 @@ private struct GymHistorySessionRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Main row — tappable to expand
+            // Main row — tappable to view detail
             Button(action: onTap) {
                 HStack(alignment: .top, spacing: 0) {
                     // Left: date / time / muscle dots
@@ -664,31 +709,37 @@ private struct GymHistorySessionRow: View {
 
                     Spacer()
 
-                    // Right: duration + volume + chevron
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(durationText)
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.kineticsBlue)
-                        Text(volumeText)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.kineticsGreen)
+                    // Right: duration + volume + expand chevron
+                    HStack(alignment: .top, spacing: 10) {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text(durationText)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color.kineticsBlue)
+                            Text(volumeText)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.kineticsGreen)
 
-                        if session.isCompleted {
-                            Text("Completed")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(Color.kineticsGreen.opacity(0.7))
-                                .padding(.top, 2)
+                            if session.isCompleted {
+                                Text("Completed")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(Color.kineticsGreen.opacity(0.7))
+                                    .padding(.top, 2)
+                            }
                         }
-                    }
 
-                    // Expand chevron
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.kineticsSubtext)
-                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                        .animation(.spring(duration: 0.25), value: isExpanded)
-                        .padding(.leading, 10)
-                        .padding(.top, 2)
+                        // Expand/collapse chevron — separate tappable area
+                        Button(action: onExpand) {
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.kineticsSubtext)
+                                .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                                .animation(.spring(duration: 0.25), value: isExpanded)
+                                .padding(6)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, -2)
+                    }
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 14)
@@ -712,12 +763,18 @@ private struct GymHistorySessionRow: View {
                         )
                 )
         )
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive, action: onDelete) {
                 Label("Delete", systemImage: "trash.fill")
             }
             Button(action: onShare) {
                 Label("Share", systemImage: "square.and.arrow.up")
+            }
+            .tint(Color.kineticsBlue)
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            Button(action: onRepeat) {
+                Label("Repeat", systemImage: "arrow.counterclockwise")
             }
             .tint(Color.kineticsBlue)
         }

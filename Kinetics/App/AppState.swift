@@ -15,6 +15,8 @@ final class AppState {
 
     var selectedModule: SportType?
     var isSessionActive: Bool = false
+    /// Drives the custom tab bar in MainTabView so any view can switch tabs.
+    var selectedTab: KineticsTab = .home
 
     // MARK: - Shared Services
 

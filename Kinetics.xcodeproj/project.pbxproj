@@ -65,7 +65,6 @@
 		64C054DF49CA406C1D29117F /* VideoAnalysisEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1FDE6C1FE8B56A89DE042BF /* VideoAnalysisEngine.swift */; };
 		65AF90F6886E1FB4A948F130 /* PoseDetectionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE95815B031AA4940A863EE /* PoseDetectionEngine.swift */; };
 		6AD7786B7AEE29FEE451DC22 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = C4CED923C35612DDE1BFAD9F /* FirebaseAuth */; };
-		AA11BB22CC33DD44EE55FF01 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = AA11BB22CC33DD44EE55FF02 /* FirebaseStorage */; };
 		6CD08C691718A9FEE0CCAE01 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FFEBB8C2B0C91041461E63 /* OnboardingView.swift */; };
 		6DB9F094B9B3D5F739C3FC27 /* GrapplingAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB1F0F7FD8AD724C05CEEBE /* GrapplingAnalytics.swift */; };
 		71464CCA100C4F34CAC9633B /* OnboardingMetricRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91AF016B55595E5A3008382C /* OnboardingMetricRow.swift */; };
@@ -97,6 +96,7 @@
 		A70F65FBDE4CF6DAE811721F /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B1FF2C59121834922C934E /* LocationService.swift */; };
 		A7EB212670DDD460DB8E7437 /* WorkoutHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FEEAE8C16C0B711D260D1FF /* WorkoutHistoryView.swift */; };
 		A81689BDCC1B4FBBA1A44A00 /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A86F0EB463772C47FFDF8B /* OnboardingCoordinator.swift */; };
+		AA11BB22CC33DD44EE55FF01 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = AA11BB22CC33DD44EE55FF02 /* FirebaseStorage */; };
 		AA6BC3F080A242F41C7D41AE /* VideoLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C373127039F43C920BEF03AB /* VideoLibraryView.swift */; };
 		AD1940CAB68916B38A79570F /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9EC3A501E98D2D04B904ABB /* MainTabView.swift */; };
 		ADDD4F6B55D3F9E1E5611FED /* PermissionsGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514D783F0279F09D15F268E7 /* PermissionsGateView.swift */; };
@@ -173,7 +173,7 @@
 		0DC032562411DDDC1ED7D376 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		121AC521FEFB5BC065773CAB /* InjuryRiskDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjuryRiskDetector.swift; sourceTree = "<group>"; };
 		13DBF71E832EBFB691D3BFC4 /* FeedCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedCards.swift; sourceTree = "<group>"; };
-		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerViewModel.swift; sourceTree = "<group>"; };
 		17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
 		17CCE96B7C847EF00BEF33CE /* GymRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymRootView.swift; sourceTree = "<group>"; };
@@ -251,7 +251,7 @@
 		C02189BFFE321D7C74D13DCC /* HomeCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCards.swift; sourceTree = "<group>"; };
 		C18D64B47167CC6B91712D56 /* KineticsWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KineticsWidget.entitlements; sourceTree = "<group>"; };
 		C19FEB8C998F1CF53FF5240E /* ActiveGymSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveGymSessionView.swift; sourceTree = "<group>"; };
-		C302C404B5BD0B3928CB0E8C /* KineticsWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KineticsWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C302C404B5BD0B3928CB0E8C /* KineticsWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = KineticsWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingView.swift; sourceTree = "<group>"; };
 		C373127039F43C920BEF03AB /* VideoLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoLibraryView.swift; sourceTree = "<group>"; };
 		C47432F57057C58AB5AF1802 /* GrapplingSessionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingSessionReportView.swift; sourceTree = "<group>"; };
@@ -704,11 +704,9 @@
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					4E104892220093A4B2F8B724 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					9BB8A80AA6448CB87A29DDBD = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -957,7 +955,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = Kinetics/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1037,7 +1035,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = Kinetics/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1057,7 +1055,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = KineticsWidget/KineticsWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = KineticsWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1077,7 +1075,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = KineticsWidget/KineticsWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = KineticsWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1146,6 +1144,11 @@
 			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCrashlytics;
 		};
+		AA11BB22CC33DD44EE55FF02 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
 		BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
@@ -1155,11 +1158,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
-		};
-		AA11BB22CC33DD44EE55FF02 /* FirebaseStorage */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseStorage;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

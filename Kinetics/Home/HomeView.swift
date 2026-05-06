@@ -22,6 +22,8 @@ struct HomeView: View {
     @State private var confirmSignOut = false
     @State private var showAchievements = false
     @State private var showNotifications = false
+    @State private var showReadinessDetail = false
+    @State private var showStreakDetail = false
 
     // Module entry sheet state
     @State private var pendingModule: SportType? = nil
@@ -49,7 +51,7 @@ struct HomeView: View {
 
                     // 2. Streak badge
                     if viewModel.streakDays > 0 {
-                        Button { showAchievements = true } label: {
+                        Button { showStreakDetail = true } label: {
                             streakBadge
                         }
                         .buttonStyle(ScaleButtonStyle())
@@ -62,9 +64,11 @@ struct HomeView: View {
                     }
 
                     // 3. Readiness card
-                    HomeReadinessCard(vm: viewModel)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 20)
+                    HomeReadinessCard(vm: viewModel) {
+                        showReadinessDetail = true
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 20)
 
                     // 4. Quick launch
                     quickLaunchSection
@@ -91,9 +95,13 @@ struct HomeView: View {
 
                     // 8. Social preview (authenticated only)
                     if appState.authManager.isSignedIn {
-                        HomeSocialPreviewCard()
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 32)
+                        HomeSocialPreviewCard {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                appState.selectedTab = .feed
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 32)
                     }
 
                     Spacer(minLength: 32)
@@ -150,6 +158,15 @@ struct HomeView: View {
             .sheet(isPresented: $showNotifications) {
                 HomeNotificationsView()
                     .environment(appState)
+            }
+            .sheet(isPresented: $showReadinessDetail) {
+                ReadinessDetailSheet(vm: viewModel)
+            }
+            .sheet(isPresented: $showStreakDetail) {
+                HomeStreakDetailSheet(
+                    streakDays: viewModel.streakDays,
+                    recentSessions: viewModel.recentSessions
+                )
             }
             .confirmationDialog(
                 "Account",
@@ -632,6 +649,158 @@ private struct SkeletonRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+    }
+}
+
+// MARK: - HomeStreakDetailSheet
+
+/// Compact sheet showing the current streak, 30-day frequency, and next badge milestone.
+struct HomeStreakDetailSheet: View {
+
+    let streakDays: Int
+    let recentSessions: [SessionResult]
+
+    @Environment(\.dismiss) private var dismiss
+
+    private var trainedLast30Days: Int {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+        return recentSessions.filter { $0.startedAt >= cutoff }.count
+    }
+
+    /// Days remaining until next streak milestone: 7, 14, 30, 60, 100.
+    private var nextMilestone: (target: Int, remaining: Int)? {
+        let milestones = [7, 14, 30, 60, 100]
+        guard let next = milestones.first(where: { $0 > streakDays }) else { return nil }
+        return (next, next - streakDays)
+    }
+
+    private var badgeNameFor: (Int) -> String {{ days in
+        switch days {
+        case 7:   return "Week Warrior"
+        case 14:  return "Iron Streak"
+        case 30:  return "Month Grind"
+        case 60:  return "Two-Month Titan"
+        default:  return "Century Streak"
+        }
+    }}
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text("YOUR STREAK")
+                        .font(.system(size: 13, weight: .bold))
+                        .tracking(3)
+                        .foregroundStyle(.white.opacity(0.40))
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.55))
+                            .frame(width: 32, height: 32)
+                            .background(Color.kineticsMidGray)
+                            .clipShape(Circle())
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                .padding(.bottom, 28)
+
+                // Big flame + number
+                VStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.kineticsAmber.opacity(0.12))
+                            .frame(width: 100, height: 100)
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 44, weight: .bold))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color.kineticsAmber, Color.kineticsRed],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    }
+                    Text("\(streakDays)")
+                        .font(.system(size: 72, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text(streakDays == 1 ? "day streak" : "day streak")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.45))
+                }
+                .padding(.bottom, 32)
+
+                // Stats pills
+                HStack(spacing: 12) {
+                    streakStat(
+                        value: "\(trainedLast30Days)",
+                        label: "sessions\nlast 30 days"
+                    )
+                    if let milestone = nextMilestone {
+                        streakStat(
+                            value: "\(milestone.remaining)",
+                            label: "days to\n\(badgeNameFor(milestone.target))"
+                        )
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+
+                // Milestone hint
+                if let milestone = nextMilestone {
+                    HStack(spacing: 10) {
+                        Image(systemName: "lock.open.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Color.kineticsAmber)
+                        Text(
+                            "\(milestone.remaining) more \(milestone.remaining == 1 ? "day" : "days") " +
+                            "to unlock **\(badgeNameFor(milestone.target))** badge"
+                        )
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.65))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                    .background(Color.kineticsAmber.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Color.kineticsAmber.opacity(0.20), lineWidth: 0.5)
+                    )
+                    .padding(.horizontal, 24)
+                }
+
+                Spacer()
+            }
+            .toolbar(.hidden, for: .navigationBar)
+            .background(Color.kineticsBackground)
+        }
+        .presentationDetents([.height(500)])
+        .presentationBackground(Color.kineticsBackground)
+        .presentationCornerRadius(24)
+        .presentationDragIndicator(.visible)
+    }
+
+    private func streakStat(value: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            Text(value)
+                .font(.system(size: 32, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+            Text(label)
+                .font(.system(size: 11, weight: .regular))
+                .foregroundStyle(.white.opacity(0.45))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 18)
+        .background(Color.kineticsDark)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(.white.opacity(0.07), lineWidth: 0.5)
+        )
     }
 }
 

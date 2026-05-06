@@ -20,6 +20,7 @@ struct IronTrackerView: View {
     // MARK: Environment
 
     @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
 
     // MARK: State
 
@@ -64,16 +65,8 @@ struct IronTrackerView: View {
             isLivePulsing = true
         }
         .onDisappear {
-            Task {
-                let uid = appState.authManager.currentUser?.uid ?? "anonymous"
-                // endSession must be called BEFORE stopProcessing so isSessionActive is
-                // still true when endSession's guard runs. stopProcessing is a no-op
-                // if endSession already cleared the session.
-                await viewModel.endSession(userId: uid)
-                viewModel.stopProcessing()
-                appState.cameraManager.stopSession()
-                if viewModel.lastCompletedSession != nil { showReport = true }
-            }
+            viewModel.stopProcessing()
+            appState.cameraManager.stopSession()
         }
         .sheet(isPresented: $showOnboarding) {
             IronTrackerOnboardingView(onDismiss: {
@@ -81,7 +74,9 @@ struct IronTrackerView: View {
                 showOnboarding = false
             })
         }
-        .fullScreenCover(isPresented: $showReport) {
+        .fullScreenCover(isPresented: $showReport, onDismiss: {
+            dismiss()
+        }) {
             if let s = viewModel.lastCompletedSession {
                 NavigationStack {
                     IronTrackerSessionReportView(result: s, previousSessions: [])
@@ -388,13 +383,36 @@ struct IronTrackerView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarLeading) {
+            Button {
+                Task {
+                    let uid = appState.authManager.currentUser?.uid ?? "anonymous"
+                    // endSession must be called BEFORE stopProcessing so isSessionActive is
+                    // still true when endSession's guard runs.
+                    await viewModel.endSession(userId: uid)
+                    if viewModel.lastCompletedSession != nil {
+                        showReport = true
+                    } else {
+                        dismiss()
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("End")
+                        .font(.system(size: 15, weight: .medium))
+                }
+                .foregroundStyle(Color.kineticsBlue)
+            }
+        }
         ToolbarItem(placement: .topBarTrailing) {
             StatusBadge(
                 text: viewModel.isSessionActive ? "Live" : "Ready",
                 isActive: viewModel.isSessionActive
             )
         }
-        ToolbarItem(placement: .topBarLeading) {
+        ToolbarItem(placement: .topBarTrailing) {
             Button {
                 showOnboarding = true
             } label: {

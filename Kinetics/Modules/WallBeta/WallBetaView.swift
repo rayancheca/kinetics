@@ -83,7 +83,9 @@ struct WallBetaView: View {
                 showOnboarding = false
             })
         }
-        .fullScreenCover(isPresented: $showReport) {
+        .fullScreenCover(isPresented: $showReport, onDismiss: {
+            dismiss()
+        }) {
             if let s = viewModel.lastCompletedSession {
                 NavigationStack {
                     WallBetaSessionReportView(result: s, previousSessions: [])
@@ -501,8 +503,11 @@ struct WallBetaView: View {
                 Task {
                     let uid = appState.authManager.currentUser?.uid ?? "anonymous"
                     await viewModel.endSession(userId: uid)
-                    if viewModel.lastCompletedSession != nil { showReport = true }
-                    dismiss()
+                    if viewModel.lastCompletedSession != nil {
+                        showReport = true
+                    } else {
+                        dismiss()
+                    }
                 }
             } label: {
                 HStack(spacing: 4) {

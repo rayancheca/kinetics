@@ -63,7 +63,7 @@ struct SportBentoCard: View {
             }
             .padding(14)
         }
-        .frame(width: 170, height: 170)
+        .frame(maxWidth: .infinity, minHeight: 170)
         .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 

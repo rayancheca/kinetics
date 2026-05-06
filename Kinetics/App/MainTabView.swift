@@ -49,8 +49,9 @@ enum KineticsTab: Int, CaseIterable {
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
-    @State private var selectedTab: KineticsTab = .home
     @State private var tabEnteredAt: Date = .init()
+
+    private var selectedTab: KineticsTab { appState.selectedTab }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -129,7 +130,7 @@ struct MainTabView: View {
 
         return Button {
             withAnimation(.easeInOut(duration: 0.18)) {
-                selectedTab = tab
+                appState.selectedTab = tab
             }
         } label: {
             VStack(spacing: 3) {
@@ -155,18 +156,18 @@ struct MainTabView: View {
         withAnimation(.easeInOut(duration: 0.18)) {
             switch link {
             case .home, .todayStats, .notifications, .history:
-                selectedTab = .home
+                appState.selectedTab = .home
             case .train:
-                selectedTab = .train
+                appState.selectedTab = .train
             case .gym, .gymPRs:
-                selectedTab = .gym
+                appState.selectedTab = .gym
             case .feed:
-                selectedTab = .feed
+                appState.selectedTab = .feed
             case .profile:
-                selectedTab = .profile
+                appState.selectedTab = .profile
             case .track:
                 // Track module is accessible via Train tab
-                selectedTab = .train
+                appState.selectedTab = .train
             }
         }
     }

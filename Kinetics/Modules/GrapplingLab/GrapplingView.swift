@@ -75,7 +75,9 @@ struct GrapplingView: View {
                 showOnboarding = false
             })
         }
-        .fullScreenCover(isPresented: $showReport) {
+        .fullScreenCover(isPresented: $showReport, onDismiss: {
+            dismiss()
+        }) {
             if let s = viewModel.lastCompletedSession {
                 NavigationStack {
                     GrapplingSessionReportView(result: s, previousSessions: [])
@@ -271,8 +273,11 @@ struct GrapplingView: View {
                 )
                 viewModel.stopProcessing()
                 appState.cameraManager.stopSession()
-                if viewModel.lastCompletedSession != nil { showReport = true }
-                dismiss()
+                if viewModel.lastCompletedSession != nil {
+                    showReport = true
+                } else {
+                    dismiss()
+                }
             }
         } label: {
             HStack(spacing: 4) {

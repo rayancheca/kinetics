@@ -3,21 +3,28 @@ import SwiftUI
 // MARK: - HomeReadinessCard
 
 /// Hero card: readiness score, HealthKit stats, and weekly progress rings.
+/// Tap anywhere on the card to open `ReadinessDetailSheet`.
 struct HomeReadinessCard: View {
 
     let vm: HomeViewModel
+    var onTap: (() -> Void)? = nil
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            backgroundLayers
-            content
+        Button {
+            onTap?()
+        } label: {
+            ZStack(alignment: .topLeading) {
+                backgroundLayers
+                content
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(Color.kineticsBlue.opacity(0.18), lineWidth: 0.75)
+            )
+            .frame(minHeight: 200)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(Color.kineticsBlue.opacity(0.18), lineWidth: 0.75)
-        )
-        .frame(minHeight: 200)
+        .buttonStyle(ScaleButtonStyle())
     }
 
     // MARK: - Background
@@ -621,8 +628,10 @@ struct HomeMilestoneCard: View {
 
 // MARK: - HomeSocialPreviewCard
 
-/// Community teaser card — visual only; navigation happens via the tab bar.
+/// Community teaser card — tapping switches to the Feed tab.
 struct HomeSocialPreviewCard: View {
+
+    var onTap: (() -> Void)? = nil
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -664,6 +673,274 @@ struct HomeSocialPreviewCard: View {
             .padding(.vertical, 18)
         }
         .frame(minHeight: 90)
-        .onTapGesture {}
+        .onTapGesture { onTap?() }
+    }
+}
+
+// MARK: - ReadinessDetailSheet
+
+/// Full breakdown of the readiness score's four components.
+struct ReadinessDetailSheet: View {
+
+    let vm: HomeViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    private var breakdown: ReadinessBreakdown { vm.readinessBreakdown }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    scoreHero
+                    componentRows
+                    interpretationCard
+                    recommendationCard
+                    Spacer(minLength: 40)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 24)
+            }
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.04, green: 0.08, blue: 0.20),
+                        Color.kineticsBackground
+                    ],
+                    startPoint: .top,
+                    endPoint: .center
+                )
+            )
+            .toolbar(.hidden, for: .navigationBar)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.55))
+                            .frame(width: 32, height: 32)
+                            .background(Color.kineticsMidGray)
+                            .clipShape(Circle())
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+                .background(Color.clear)
+            }
+        }
+        .presentationDetents([.large])
+        .presentationBackground(Color.kineticsBackground)
+        .presentationCornerRadius(24)
+        .presentationDragIndicator(.visible)
+    }
+
+    // MARK: - Score Hero
+
+    private var scoreHero: some View {
+        VStack(spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("\(vm.readinessScore)")
+                    .font(.system(size: 72, weight: .black, design: .rounded))
+                    .foregroundStyle(vm.readinessColor)
+                Text("/ 100")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.30))
+                    .padding(.bottom, 6)
+            }
+            Text(vm.readinessLabel.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .tracking(3)
+                .foregroundStyle(vm.readinessColor.opacity(0.85))
+            if !breakdown.isHealthKitAvailable {
+                Text("Connect HealthKit for personalized scoring")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.38))
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 2)
+            }
+        }
+    }
+
+    // MARK: - Component Rows
+
+    private var componentRows: some View {
+        VStack(spacing: 1) {
+            componentRow(
+                emoji: "😴",
+                label: "Sleep Quality",
+                pts: breakdown.sleepPts,
+                maxPts: 40,
+                detail: breakdown.isHealthKitAvailable
+                    ? sleepDetail
+                    : "No HealthKit data"
+            )
+            componentRow(
+                emoji: "💓",
+                label: "Resting Heart Rate",
+                pts: breakdown.heartRatePts,
+                maxPts: 20,
+                detail: breakdown.isHealthKitAvailable && vm.dashboardStats.restingHeartRate > 0
+                    ? "\(Int(vm.dashboardStats.restingHeartRate)) bpm"
+                    : "No HealthKit data"
+            )
+            componentRow(
+                emoji: "🧠",
+                label: "HRV Trend",
+                pts: breakdown.hrvPts,
+                maxPts: 20,
+                detail: breakdown.isHealthKitAvailable && vm.dashboardStats.hrv > 0
+                    ? String(format: "%.0f ms SDNN", vm.dashboardStats.hrv)
+                    : "No HealthKit data"
+            )
+            componentRow(
+                emoji: "🏃",
+                label: "Training Load",
+                pts: breakdown.trainingLoadPts,
+                maxPts: 20,
+                detail: trainingLoadDetail
+            )
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(.white.opacity(0.07), lineWidth: 0.5)
+        )
+    }
+
+    private func componentRow(
+        emoji: String,
+        label: String,
+        pts: Int,
+        maxPts: Int,
+        detail: String
+    ) -> some View {
+        HStack(spacing: 14) {
+            Text(emoji)
+                .font(.system(size: 26))
+                .frame(width: 36)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(label)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text(detail)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.45))
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(pts)")
+                    .font(.system(size: 20, weight: .black, design: .rounded))
+                    .foregroundStyle(scoreColor(pts: pts, max: maxPts))
+                Text("/ \(maxPts) pts")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.30))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color.kineticsDark)
+    }
+
+    // MARK: - Interpretation
+
+    private var interpretationCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("What this means", systemImage: "brain.head.profile")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(1.5)
+                .foregroundStyle(.white.opacity(0.40))
+
+            Text(interpretationText)
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(.white.opacity(0.75))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.kineticsDark)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(.white.opacity(0.07), lineWidth: 0.5)
+        )
+    }
+
+    // MARK: - Recommendation
+
+    private var recommendationCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Today's Recommendation", systemImage: "lightbulb.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(1.5)
+                .foregroundStyle(Color.kineticsAmber.opacity(0.70))
+
+            Text(recommendationText)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.kineticsAmber.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.kineticsAmber.opacity(0.20), lineWidth: 0.5)
+        )
+    }
+
+    // MARK: - Helpers
+
+    private func scoreColor(pts: Int, max: Int) -> Color {
+        let ratio = Double(pts) / Double(max)
+        if ratio >= 0.75 { return .kineticsGreen }
+        if ratio >= 0.40 { return .kineticsAmber }
+        return .kineticsRed
+    }
+
+    private var sleepDetail: String {
+        let hrs = vm.dashboardStats.sleepSeconds / 3_600
+        if hrs == 0 { return "No data" }
+        return String(format: "%.1f hrs last night", hrs)
+    }
+
+    private var trainingLoadDetail: String {
+        guard let last = vm.recentSessions.first else { return "No sessions yet" }
+        let days = Calendar.current
+            .dateComponents([.day], from: last.startedAt, to: Date()).day ?? 0
+        switch days {
+        case 0:  return "Trained today"
+        case 1:  return "Rest day yesterday — optimal"
+        case 2:  return "2 days since last session"
+        case 3:  return "3 days since last session"
+        default: return "\(days) days since last session"
+        }
+    }
+
+    private var interpretationText: String {
+        let score = vm.readinessScore
+        switch score {
+        case 85...100:
+            return "Your body is primed for peak output. All indicators are in the green — " +
+                   "this is the ideal day to push hard or attempt a personal record."
+        case 65..<85:
+            return "You're well-recovered and ready to train. Some room to optimize further, " +
+                   "but there's no reason to hold back on your planned session."
+        case 40..<65:
+            return "Moderate readiness. Consider keeping intensity at 70–80% of max. " +
+                   "Prioritize sleep tonight and stay well hydrated."
+        default:
+            return "Your body is asking for recovery. A rest day or light active recovery " +
+                   "(mobility, walking, stretching) will serve you better than a hard session."
+        }
+    }
+
+    private var recommendationText: String {
+        switch vm.readinessScore {
+        case 85...100: return "Push hard — great day for a PR attempt."
+        case 65..<85:  return "Train as planned at full intensity."
+        case 50..<65:  return "Light training — keep effort below 75%."
+        case 30..<50:  return "Active recovery: mobility or light cardio only."
+        default:       return "Rest day — prioritize sleep and nutrition."
+        }
     }
 }

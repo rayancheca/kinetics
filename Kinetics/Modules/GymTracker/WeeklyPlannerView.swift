@@ -94,18 +94,15 @@ struct WeeklyPlanListView: View {
                     planList
                 }
             }
-            // FAB
-            VStack {
+        }
+        .safeAreaInset(edge: .bottom) {
+            HStack {
                 Spacer()
-                HStack {
-                    Spacer()
-                    createButton
-                        .padding(.trailing, 20)
-                        // 34pt home indicator + extra breathing room
-                        .padding(.bottom, 34)
-                }
+                createButton
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 12)
             }
-            .ignoresSafeArea(edges: .bottom)
+            .background(Color.clear)
         }
         .onAppear { viewModel.load(userId: uid) }
         .sheet(isPresented: $showCreatePlan, onDismiss: { viewModel.load(userId: uid) }) {
@@ -762,28 +759,45 @@ private struct DaySlotRow: View {
 struct DayAssignmentSheet: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppState.self) private var appState
 
     let slot: WeeklyDaySlot
-    let routines: [Routine]
     let onSave: (WeeklyDaySlot) -> Void
 
+    @State private var routines: [Routine]
     @State private var selectedDayOfWeek: Int
     @State private var label: String
     @State private var selectedRoutineId: String?
     @State private var selectedRoutineName: String?
     @State private var muscleGroups: [String]
+    @State private var showCreateRoutine = false
 
     private static let dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
+    private var uid: String {
+        appState.authManager.currentUser?.uid ?? "preview-user"
+    }
+
     init(slot: WeeklyDaySlot, routines: [Routine], onSave: @escaping (WeeklyDaySlot) -> Void) {
         self.slot = slot
-        self.routines = routines
         self.onSave = onSave
+        _routines = State(initialValue: routines)
         _selectedDayOfWeek = State(initialValue: slot.dayOfWeek)
         _label = State(initialValue: slot.label == "Rest" ? "" : slot.label)
         _selectedRoutineId = State(initialValue: slot.routineId)
         _selectedRoutineName = State(initialValue: slot.routineName)
         _muscleGroups = State(initialValue: slot.muscleGroups)
+    }
+
+    private func reloadRoutines() {
+        guard let container = GymRepository.shared.modelContainer else { return }
+        let context = ModelContext(container)
+        let uidVal = uid
+        let descriptor = FetchDescriptor<Routine>(
+            predicate: #Predicate { $0.userId == uidVal },
+            sortBy: [SortDescriptor(\.name)]
+        )
+        routines = (try? context.fetch(descriptor)) ?? []
     }
 
     var body: some View {
@@ -831,6 +845,9 @@ struct DayAssignmentSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(Color.black)
+        .sheet(isPresented: $showCreateRoutine, onDismiss: reloadRoutines) {
+            RoutineBuilderView(userId: uid) {}
+        }
     }
 
     // MARK: - Sections
@@ -886,6 +903,39 @@ struct DayAssignmentSheet: View {
     private var routinePicker: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionLabel("ROUTINE")
+
+            // Create New Routine shortcut
+            Button {
+                showCreateRoutine = true
+            } label: {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.kineticsPurple.opacity(0.18))
+                            .frame(width: 28, height: 28)
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(Color.kineticsPurple)
+                    }
+
+                    Text("+ Create New Routine")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.kineticsPurple)
+
+                    Spacer()
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.kineticsPurple.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(Color.kineticsPurple.opacity(0.25), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
 
             // Rest day option
             routineOption(id: nil, name: "Rest Day", subtitle: "No workout", isRest: true)

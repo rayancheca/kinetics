@@ -157,6 +157,7 @@ struct TrainView: View {
                             bestMetric: vm.bestMetric(for: sport)?.value,
                             bestMetricLabel: vm.bestMetric(for: sport)?.label ?? ""
                         )
+                        .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(ScaleButtonStyle())
                 }

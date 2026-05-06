@@ -31,8 +31,6 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>LSApplicationCategoryType</key>
-	<string></string>
 	<key>NSCameraUsageDescription</key>
 	<string>Kinetics uses your camera to analyze movement and provide real-time biomechanics coaching feedback.</string>
 	<key>NSHealthShareUsageDescription</key>
@@ -61,8 +59,6 @@
 		<string>LaunchBackground</string>
 		<key>UIImageName</key>
 		<string>LaunchLogo</string>
-		<key>UIImageRespectsSafeAreaInsets</key>
-		<false/>
 	</dict>
 	<key>UIRequiresFullScreen</key>
 	<true/>

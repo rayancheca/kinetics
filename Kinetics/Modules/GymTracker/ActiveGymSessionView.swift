@@ -467,7 +467,7 @@ struct ActiveGymSessionView: View {
             Text(viewModel.errorMessage ?? "")
         }
         .confirmationDialog(
-            "End this workout?",
+            "End Workout?",
             isPresented: $showExitConfirm,
             titleVisibility: .visible
         ) {
@@ -482,7 +482,7 @@ struct ActiveGymSessionView: View {
             }
             Button("Keep Going", role: .cancel) {}
         } message: {
-            Text("Save & Finish records your session. Pause lets you resume from the home screen.")
+            Text("Your progress will be saved. Save & Finish records the session now, or Pause to resume later.")
         }
         .interactiveDismissDisabled(true)
         .animation(.spring(duration: 0.3), value: viewModel.showRestTimer)
@@ -493,15 +493,27 @@ struct ActiveGymSessionView: View {
 
     private var headerBar: some View {
         HStack(spacing: 12) {
-            // Exit button — shows confirmation before dismissing
+            // End workout button — red, shows confirmation before dismissing
             Button {
                 showExitConfirm = true
             } label: {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.kineticsSubtext)
-                    .padding(8)
-                    .background(Circle().fill(Color(white: 0.13)))
+                HStack(spacing: 5) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .bold))
+                    Text("End")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+                .foregroundStyle(Color.kineticsRed)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 7)
+                .background(
+                    Capsule()
+                        .fill(Color.kineticsRed.opacity(0.12))
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(Color.kineticsRed.opacity(0.30), lineWidth: 0.75)
+                        )
+                )
             }
             .buttonStyle(.plain)
 

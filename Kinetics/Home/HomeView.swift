@@ -32,6 +32,9 @@ struct HomeView: View {
     // Programmatic navigation path for NavigationStack
     @State private var navPath = NavigationPath()
 
+    // Sport session detail sheet state
+    @State private var selectedSportSession: SessionResult? = nil
+
     // Video import state
     @State private var showVideoPicker = false
     @State private var selectedVideoItem: PhotosPickerItem? = nil
@@ -167,6 +170,9 @@ struct HomeView: View {
                     streakDays: viewModel.streakDays,
                     recentSessions: viewModel.recentSessions
                 )
+            }
+            .sheet(item: $selectedSportSession) { session in
+                SportSessionDetailSheet(session: session)
             }
             .confirmationDialog(
                 "Account",
@@ -332,10 +338,15 @@ struct HomeView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(viewModel.recentSessions.prefix(5)) { session in
-                        HomeActivityRow(
-                            session: session,
-                            isPR: viewModel.isPersonalRecord(session)
-                        )
+                        Button {
+                            selectedSportSession = session
+                        } label: {
+                            HomeActivityRow(
+                                session: session,
+                                isPR: viewModel.isPersonalRecord(session)
+                            )
+                        }
+                        .buttonStyle(ScaleButtonStyle())
                         Divider()
                             .opacity(0.08)
                             .padding(.horizontal, 14)
@@ -1004,6 +1015,259 @@ struct KineticsTextFieldStyle: TextFieldStyle {
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .strokeBorder(.white.opacity(0.08), lineWidth: 0.5)
             )
+    }
+}
+
+// MARK: - SportSessionDetailSheet
+
+/// Inline detail sheet for a sport (non-gym) SessionResult.
+/// Shown when the user taps a recent activity row for a sport session.
+struct SportSessionDetailSheet: View {
+
+    let session: SessionResult
+
+    @Environment(\.dismiss) private var dismiss
+
+    private var accent: Color { Color.moduleColor(for: session.sport) }
+
+    private var durationText: String {
+        let total = Int(session.duration)
+        let minutes = total / 60
+        let seconds = total % 60
+        if minutes >= 60 {
+            return "\(minutes / 60)h \(minutes % 60)m"
+        }
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.kineticsBackground.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 24) {
+
+                        // MARK: Header
+                        HStack(spacing: 14) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(accent.opacity(0.15))
+                                    .frame(width: 56, height: 56)
+                                Image(systemName: session.sport.systemImage)
+                                    .font(.system(size: 26, weight: .semibold))
+                                    .foregroundStyle(accent)
+                            }
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(session.sport.displayName)
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundStyle(.white)
+                                Text(session.formattedDate)
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Color.kineticsSubtext)
+                            }
+                            Spacer()
+                        }
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color.kineticsDark)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .strokeBorder(accent.opacity(0.22), lineWidth: 0.75)
+                                )
+                        )
+
+                        // MARK: Quick stats
+                        HStack(spacing: 12) {
+                            SportDetailStatCell(
+                                value: durationText,
+                                label: "Duration",
+                                color: accent
+                            )
+                            SportDetailStatCell(
+                                value: "Session \(session.sessionNumber)",
+                                label: "Lifetime",
+                                color: Color.kineticsBlue
+                            )
+                        }
+
+                        // MARK: Key metrics
+                        if !session.metrics.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("METRICS")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .tracking(2.0)
+                                    .foregroundStyle(Color.kineticsSubtext)
+
+                                VStack(spacing: 0) {
+                                    ForEach(
+                                        session.metrics.sorted(by: { $0.key < $1.key }),
+                                        id: \.key
+                                    ) { key, value in
+                                        HStack {
+                                            Text(friendlyMetricName(key))
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundStyle(.white.opacity(0.80))
+                                            Spacer()
+                                            Text(formattedMetric(key: key, value: value))
+                                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                                .foregroundStyle(accent)
+                                        }
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 11)
+
+                                        if key != session.metrics.sorted(by: { $0.key < $1.key }).last?.key {
+                                            Divider()
+                                                .background(Color.white.opacity(0.07))
+                                                .padding(.horizontal, 14)
+                                        }
+                                    }
+                                }
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(Color.kineticsDark)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                .strokeBorder(.white.opacity(0.07), lineWidth: 0.5)
+                                        )
+                                )
+                            }
+                        }
+
+                        // MARK: Coach tips
+                        if !session.coachingNotes.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("COACH TIPS")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .tracking(2.0)
+                                    .foregroundStyle(Color.kineticsSubtext)
+
+                                VStack(spacing: 8) {
+                                    ForEach(session.coachingNotes) { note in
+                                        HStack(alignment: .top, spacing: 12) {
+                                            Image(systemName: note.icon)
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundStyle(accent)
+                                                .frame(width: 22)
+                                                .padding(.top, 1)
+                                            VStack(alignment: .leading, spacing: 3) {
+                                                Text(note.headline)
+                                                    .font(.system(size: 13, weight: .semibold))
+                                                    .foregroundStyle(.white)
+                                                Text(note.detail)
+                                                    .font(.system(size: 12))
+                                                    .foregroundStyle(.white.opacity(0.55))
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
+                                        }
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 11)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .fill(Color.kineticsDark)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                        .strokeBorder(accent.opacity(0.15), lineWidth: 0.5)
+                                                )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(minLength: 32)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                }
+            }
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.55))
+                            .frame(width: 30, height: 30)
+                            .background(Color.kineticsMidGray)
+                            .clipShape(Circle())
+                    }
+                }
+            }
+            .toolbarBackground(Color.kineticsBackground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+        }
+        .presentationDetents([.medium, .large])
+        .presentationBackground(Color.kineticsBackground)
+        .presentationCornerRadius(24)
+        .presentationDragIndicator(.visible)
+    }
+
+    // MARK: - Helpers
+
+    private func friendlyMetricName(_ key: String) -> String {
+        switch key {
+        case "strikeVelocityMPH":  return "Strike Velocity"
+        case "kuzushiIndex":        return "Kuzushi Index"
+        case "barVelocityMS":       return "Bar Velocity"
+        case "barPathDeviationCM":  return "Bar Path Deviation"
+        case "hipProximityScore":   return "Hip Proximity"
+        case "stanceRecoveryS":     return "Stance Recovery"
+        case "hipShoulderSep":      return "Hip-Shoulder Sep."
+        case "cogStability":        return "CoG Stability"
+        default:
+            return key
+                .replacingOccurrences(of: "([A-Z])", with: " $1", options: .regularExpression)
+                .trimmingCharacters(in: .whitespaces)
+                .capitalized
+        }
+    }
+
+    private func formattedMetric(key: String, value: Double) -> String {
+        switch key {
+        case "strikeVelocityMPH":  return String(format: "%.1f mph", value)
+        case "kuzushiIndex":        return String(format: "%.2f", value)
+        case "barVelocityMS":       return String(format: "%.2f m/s", value)
+        case "barPathDeviationCM":  return String(format: "%.1f cm", value)
+        case "hipProximityScore":   return String(format: "%.0f%%", value * 100)
+        case "stanceRecoveryS":     return String(format: "%.2f s", value)
+        default:                    return String(format: "%.2f", value)
+        }
+    }
+}
+
+// MARK: - SportDetailStatCell
+
+private struct SportDetailStatCell: View {
+    let value: String
+    let label: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.kineticsSubtext)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.kineticsDark)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(color.opacity(0.2), lineWidth: 1)
+                )
+        )
     }
 }
 

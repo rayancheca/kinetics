@@ -17,6 +17,10 @@ struct GymWorkoutDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirm = false
     @State private var personalRecords: [PersonalRecord] = []
+    @State private var showShareComposer = false
+    @State private var showRepeatSession = false
+    /// Volume delta vs. the previous completed session (nil = no prior session found).
+    @State private var volumeDelta: Double? = nil
 
     // MARK: - Computed
 
@@ -66,6 +70,9 @@ struct GymWorkoutDetailView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     headerCard
                     statsRow
+                    if let delta = volumeDelta {
+                        volumeDeltaBadge(delta: delta)
+                    }
                     exerciseBreakdown
                     if let notes = session.notes, !notes.isEmpty { notesSection }
                     deleteButton
@@ -80,7 +87,42 @@ struct GymWorkoutDetailView: View {
         .toolbarBackground(Color.black, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .task { loadPersonalRecords() }
+        .toolbar {
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                Button {
+                    showShareComposer = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.kineticsBlue)
+                }
+
+                Button {
+                    showRepeatSession = true
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.kineticsGreen)
+                }
+            }
+        }
+        .task {
+            loadPersonalRecords()
+            await loadVolumeDelta()
+        }
+        .sheet(isPresented: $showShareComposer) {
+            PostComposerView(
+                currentUserId: userId,
+                currentDisplayName: session.notes ?? "Workout",
+                username: "",
+                initialCaption: buildShareCaption(),
+                initialActivity: buildShareActivity(),
+                onPost: { _ in }
+            )
+        }
+        .navigationDestination(isPresented: $showRepeatSession) {
+            ActiveGymSessionView(session: buildRepeatSession())
+        }
         .confirmationDialog(
             "Delete this workout?",
             isPresented: $showDeleteConfirm,
@@ -227,10 +269,121 @@ struct GymWorkoutDetailView: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: - Volume Delta Badge
+
+    @ViewBuilder
+    private func volumeDeltaBadge(delta: Double) -> some View {
+        let isUp = delta >= 0
+        let percent = abs(delta) * 100
+        let color: Color = isUp ? Color.kineticsGreen : Color.kineticsRed
+        let icon = isUp ? "arrow.up" : "arrow.down"
+        let label = isUp
+            ? String(format: "+%.0f%% volume vs last session", percent)
+            : String(format: "−%.0f%% volume vs last session", percent)
+
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(color)
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(color)
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(color.opacity(0.10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(color.opacity(0.22), lineWidth: 0.75)
+                )
+        )
+    }
+
     // MARK: - Helpers
 
     private func loadPersonalRecords() {
         personalRecords = (try? GymRepository.shared.fetchPersonalRecords(userId: userId)) ?? []
+    }
+
+    private func loadVolumeDelta() async {
+        let sessions = await GymRepository.shared.fetchWorkoutSessions(userId: userId)
+        // Find the most recent completed session before this one that shares at least
+        // one exercise with the current session, as a proxy for "same workout".
+        let thisExerciseIds = Set(session.entries.map(\.exerciseId))
+        let thisVolume = totalVolumeKg
+        guard thisVolume > 0 else { return }
+
+        let prior = sessions
+            .filter {
+                $0.isCompleted
+                && $0.id != session.id
+                && $0.startedAt < session.startedAt
+            }
+            .sorted { $0.startedAt > $1.startedAt }
+            .first { candidate in
+                let candidateIds = Set(candidate.entries.map(\.exerciseId))
+                return !thisExerciseIds.isDisjoint(with: candidateIds)
+            }
+
+        guard let prior, prior.totalVolumeKg > 0 else { return }
+        let delta = (thisVolume - prior.totalVolumeKg) / prior.totalVolumeKg
+        // Only show the badge if the difference is at least 1% — avoids noise.
+        if abs(delta) >= 0.01 {
+            volumeDelta = delta
+        }
+    }
+
+    private func buildShareCaption() -> String {
+        "Just crushed \(session.notes ?? "a workout")! \(formattedVolume) total volume 💪"
+    }
+
+    private func buildShareActivity() -> PostComposerActivity {
+        let exercises: [ExerciseSummary] = session.entries.map { entry in
+            let completedSets = entry.sets.filter { $0.isCompleted }
+            let topWeight = completedSets.map(\.weight).max() ?? 0
+            return ExerciseSummary(
+                name: entry.exerciseName,
+                sets: completedSets.count,
+                topWeightKg: topWeight,
+                totalReps: completedSets.reduce(0) { $0 + $1.reps },
+                muscleGroup: ""
+            )
+        }
+        let start = session.startedAt
+        let end = session.endedAt ?? Date()
+        let durationMinutes = max(0, Int(end.timeIntervalSince(start)) / 60)
+        return PostComposerActivity(
+            kind: .gym(
+                exercises: exercises,
+                totalVolume: totalVolumeKg,
+                durationMinutes: durationMinutes
+            ),
+            sessionTitle: session.notes ?? "Workout"
+        )
+    }
+
+    /// Creates a fresh, empty `WorkoutSession` pre-populated with the same exercises
+    /// (no weights/reps) so the user can run the same workout again.
+    private func buildRepeatSession() -> WorkoutSession {
+        let newSession = WorkoutSession(
+            userId: userId,
+            startedAt: Date()
+        )
+        for (index, entry) in session.entries.sorted(by: { $0.orderIndex < $1.orderIndex }).enumerated() {
+            let newEntry = WorkoutExerciseEntry(
+                exerciseId: entry.exerciseId,
+                exerciseName: entry.exerciseName,
+                orderIndex: index
+            )
+            let firstSet = WorkoutSet(setNumber: 1)
+            newEntry.sets.append(firstSet)
+            newSession.entries.append(newEntry)
+        }
+        try? GymRepository.shared.saveSession(newSession)
+        return newSession
     }
 }
 

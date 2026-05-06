@@ -24,6 +24,8 @@
 	<string>Kinetics reads your heart rate during workouts to display live metrics on your watch.</string>
 	<key>WKApplication</key>
 	<true/>
+	<key>WKCompanionAppBundleIdentifier</key>
+	<string>com.rayancheca.kinetics</string>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
 	<false/>
 	<key>WKWatchOnly</key>

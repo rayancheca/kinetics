@@ -1,4 +1,6 @@
 import FirebaseFirestore
+import FirebaseStorage
+import PhotosUI
 import SwiftUI
 import UIKit
 
@@ -812,7 +814,7 @@ private struct StoriesBar: View {
     }
 }
 
-// MARK: - YourStoryBubble
+// MARK: - NewPostBubble (the "New Post" bubble in the stories bar; creates a permanent feed post, not an ephemeral story)
 
 private struct YourStoryBubble: View {
 
@@ -835,7 +837,7 @@ private struct YourStoryBubble: View {
                     }
                     .offset(x: 18, y: 18)
                 }
-                Text("Your Story")
+                Text("New Post")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(Color.kineticsSubtext)
                     .lineLimit(1)
@@ -994,6 +996,8 @@ struct ComposePostSheet: View {
     @State private var errorMessage: String?
     @State private var selectedSport: SportChip?
     @State private var selectedMood: MoodChip?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedImage: UIImage?
     @Environment(\.dismiss) private var dismiss
 
     private let moods: [MoodChip] = [
@@ -1009,7 +1013,8 @@ struct ComposePostSheet: View {
     }
 
     private var canPost: Bool {
-        !caption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isPosting
+        let hasText = !caption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return (hasText || selectedImage != nil) && !isPosting
     }
 
     var body: some View {
@@ -1143,6 +1148,61 @@ struct ComposePostSheet: View {
                         .padding(.top, 14)
                         .padding(.bottom, 10)
 
+                        Divider().background(.white.opacity(0.07))
+
+                        // Photo picker
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("PHOTO")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .tracking(1.0)
+                                    .foregroundStyle(Color.kineticsSubtext)
+                                Spacer()
+                                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                    HStack(spacing: 5) {
+                                        Image(systemName: "photo.on.rectangle.angled")
+                                            .font(.system(size: 13, weight: .semibold))
+                                        Text(selectedImage != nil ? "Change" : "Add Photo")
+                                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                                    }
+                                    .foregroundStyle(selectedImage != nil ? Color.kineticsBlue : Color.kineticsSubtext)
+                                }
+                            }
+
+                            if let image = selectedImage {
+                                ZStack(alignment: .topTrailing) {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 200)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                                    Button {
+                                        selectedImage = nil
+                                        selectedPhotoItem = nil
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.title3)
+                                            .foregroundStyle(.white)
+                                            .background(Color.black.opacity(0.4), in: Circle())
+                                    }
+                                    .padding(8)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 14)
+                        .padding(.bottom, 10)
+                        .onChange(of: selectedPhotoItem) { _, newItem in
+                            Task {
+                                if let data = try? await newItem?.loadTransferable(type: Data.self),
+                                   let image = UIImage(data: data) {
+                                    selectedImage = image
+                                }
+                            }
+                        }
+
                         if let error = errorMessage {
                             Text(error)
                                 .font(.system(size: 13))
@@ -1184,22 +1244,38 @@ struct ComposePostSheet: View {
 
     private func post() async {
         let trimmed = caption.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        // Require at least text or a photo
+        guard !trimmed.isEmpty || selectedImage != nil else { return }
         isPosting = true
         errorMessage = nil
 
         // Prepend mood opener to caption if a mood was selected.
         let fullCaption: String
-        if let mood = selectedMood {
+        if let mood = selectedMood, !trimmed.isEmpty {
             fullCaption = "\(mood.emoji) \(mood.label) — \(trimmed)"
+        } else if let mood = selectedMood {
+            fullCaption = "\(mood.emoji) \(mood.label)"
         } else {
             fullCaption = trimmed
         }
 
+        // Upload photo if one was selected.
+        let postId = UUID().uuidString
+        var resolvedImageURL = ""
+        if let image = selectedImage,
+           let data = image.jpegData(compressionQuality: 0.8) {
+            do {
+                resolvedImageURL = try await SocialRepository.shared.uploadPostImage(data, postId: postId, index: 0)
+            } catch {
+                // Non-fatal — post without the photo rather than blocking the whole action.
+                resolvedImageURL = ""
+            }
+        }
+
         let item = FeedItem(
-            id: UUID().uuidString, userId: currentUserId, displayName: currentDisplayName,
+            id: postId, userId: currentUserId, displayName: currentDisplayName,
             username: "", avatarURL: "", itemType: .workout, title: fullCaption, subtitle: "",
-            metrics: [], imageURL: "", postedAt: Date(), kudosCount: 0, commentCount: 0,
+            metrics: [], imageURL: resolvedImageURL, postedAt: Date(), kudosCount: 0, commentCount: 0,
             isLikedByCurrentUser: false, workoutId: "", activityType: effectiveActivityType
         )
         do { try await SocialRepository.shared.postActivity(item); onPost(item) }

@@ -239,6 +239,8 @@ struct HomeReadinessCard: View {
 struct HomeCoachInsightCard: View {
 
     let insight: HomeCoachInsight?
+    /// Called when the user taps "Practice this →". The caller navigates to the Train tab.
+    var onPractice: (() -> Void)? = nil
 
     var body: some View {
         if let insight {
@@ -278,6 +280,8 @@ struct HomeCoachInsightCard: View {
     // MARK: - Filled Card
 
     private func filledCard(_ ins: HomeCoachInsight) -> some View {
+        // Capture callback locally so the closure below doesn't capture `self` indirectly.
+        let practiceAction = onPractice
         let accent = Color(hex: ins.accentColorHex)
         return ZStack(alignment: .leading) {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -351,7 +355,9 @@ struct HomeCoachInsightCard: View {
                     .frame(maxHeight: 52)
 
                 // CTA
-                Button(action: {}) {
+                Button {
+                    practiceAction?()
+                } label: {
                     Text("Practice this →")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(accent)

@@ -33,6 +33,9 @@ enum SessionFeedPublisher {
         metrics: [FeedMetric]
     ) async {
         guard !userId.isEmpty else { return }
+        // Default is true (opt-out model). Only skip when the user has explicitly disabled it.
+        let autoPublish = UserDefaults.standard.object(forKey: "auto_publish_sessions") as? Bool ?? true
+        guard autoPublish else { return }
 
         let name = displayName.isEmpty ? "Athlete" : displayName
         let durationString = formatted(durationSeconds)

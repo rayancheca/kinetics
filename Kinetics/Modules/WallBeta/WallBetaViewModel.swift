@@ -48,6 +48,10 @@ final class WallBetaViewModel {
     /// The result of the most recently completed session; populated after `endSession` saves.
     var lastCompletedSession: SessionResult?
 
+    /// Previous sessions for the same sport, loaded after a session ends.
+    /// Passed to `WallBetaSessionReportView` so it can compute personal bests and deltas.
+    var previousSessions: [SessionResult] = []
+
     /// The current real-time coaching cue, derived from live metrics via `CoachingEngine`.
     var currentCoachCue: CoachCue?
 
@@ -151,6 +155,16 @@ final class WallBetaViewModel {
 
         startTimer()
         startProcessingLoop(cameraManager: cameraManager)
+    }
+
+    /// Fetches the 10 most recent sessions of the same sport for the given user and
+    /// stores them in `previousSessions`. Call this right after `endSession` completes,
+    /// before presenting `WallBetaSessionReportView`, so the report can show PRs and deltas.
+    ///
+    /// - Parameter userId: The Firebase Auth UID of the current user.
+    func loadPreviousSessions(userId: String) async {
+        let all = (try? await SessionRepository.shared.fetchSessions(for: userId, limit: 10)) ?? []
+        previousSessions = all.filter { $0.sport == .wallBeta }
     }
 
     /// Stops the session, cancels all background tasks, and persists the result to Firestore.

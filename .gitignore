@@ -28,3 +28,6 @@ Carthage/Build/
 
 ## Firebase — never commit the real plist
 # (keep the placeholder checked in; replace with your real one locally)
+
+## Strava — contains real client ID + secret, keep local only
+Kinetics/Core/Services/StravaAuthService.swift

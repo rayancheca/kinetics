@@ -87,9 +87,13 @@ struct HomeView: View {
                     }
 
                     // 5. AI coach card
-                    HomeCoachInsightCard(insight: viewModel.coachInsight)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 20)
+                    HomeCoachInsightCard(insight: viewModel.coachInsight) {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            appState.selectedTab = .train
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 20)
 
                     // 6. Recent activity (authenticated only)
                     if appState.authManager.isSignedIn {
@@ -528,10 +532,18 @@ struct HomeView: View {
         guard let user = appState.authManager.currentUser,
               user.isAnonymous == false
         else { return "Athlete" }
-        return user.email?
-            .components(separatedBy: "@").first?
-            .components(separatedBy: ".").first?
-            .capitalized ?? "Athlete"
+        // Prefer Firebase display name (set by Sign in with Apple when name is shared).
+        if let displayName = user.displayName, !displayName.isEmpty {
+            let first = displayName.components(separatedBy: " ").first ?? displayName
+            return first.prefix(1).uppercased() + first.dropFirst().lowercased()
+        }
+        // Fall back to the email prefix, taking only the segment before the first
+        // dot, plus, or underscore so "rayan.karimcheca@gmail.com" → "Rayan".
+        let emailPrefix = user.email?.components(separatedBy: "@").first ?? "Athlete"
+        let firstName = emailPrefix
+            .components(separatedBy: CharacterSet(charactersIn: ".+_"))
+            .first ?? emailPrefix
+        return firstName.prefix(1).uppercased() + firstName.dropFirst().lowercased()
     }
 
     // MARK: - Module Navigation
@@ -971,20 +983,22 @@ struct SignInSheet: View {
 
                     // MARK: Sign in with Apple
                     SignInWithAppleButton(.signIn) { request in
-                        request.requestedScopes = [.fullName, .email]
-                    } onCompletion: { _ in
-                        // Handled inside AuthManager.signInWithApple()
+                        appState.authManager.prepareAppleSignInRequest(request)
+                    } onCompletion: { result in
+                        switch result {
+                        case .success(let authorization):
+                            Task {
+                                try? await appState.authManager.completeAppleSignIn(with: authorization)
+                                if appState.authManager.isSignedIn { dismiss() }
+                            }
+                        case .failure(let error):
+                            print("[Kinetics] Apple Sign In failed: \(error)")
+                        }
                     }
                     .signInWithAppleButtonStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
                     .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                    .onTapGesture {
-                        Task {
-                            try? await appState.authManager.signInWithApple()
-                            if appState.authManager.isSignedIn { dismiss() }
-                        }
-                    }
                     .padding(.bottom, 12)
 
                     // MARK: Anonymous Continue

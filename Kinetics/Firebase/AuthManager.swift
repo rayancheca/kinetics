@@ -179,6 +179,58 @@ final class AuthManager {
         }
     }
 
+    // MARK: - Sign In: Apple (credential-based, for use with SignInWithAppleButton)
+
+    /// Completes Apple authentication using the credential delivered by
+    /// `SignInWithAppleButton`'s `onCompletion` handler.
+    ///
+    /// The nonce used when constructing the button request must match `currentNonce`.
+    /// Call `prepareAppleSignInRequest(_:)` from the button's `onRequest` closure
+    /// first so the nonce is set before this is called.
+    func completeAppleSignIn(with authorization: ASAuthorization) async throws {
+        guard isFirebaseReady else {
+            authError = "Firebase is not configured."
+            return
+        }
+        isLoading = true
+        defer { isLoading = false }
+        authError = nil
+
+        guard
+            let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+            let appleIDTokenData = appleIDCredential.identityToken,
+            let appleIDToken = String(data: appleIDTokenData, encoding: .utf8),
+            let nonce = currentNonce
+        else {
+            authError = "Unable to read Apple ID token."
+            throw AuthError.missingAppleIDToken
+        }
+
+        let credential = OAuthProvider.appleCredential(
+            withIDToken: appleIDToken,
+            rawNonce: nonce,
+            fullName: appleIDCredential.fullName
+        )
+
+        do {
+            let result = try await Auth.auth().signIn(with: credential)
+            currentUser = result.user
+        } catch {
+            authError = error.localizedDescription
+            throw error
+        }
+    }
+
+    /// Configures an `ASAuthorizationAppleIDRequest` and stores the matching
+    /// nonce so `completeAppleSignIn(with:)` can verify it.
+    /// Call this from `SignInWithAppleButton`'s `onRequest` closure.
+    func prepareAppleSignInRequest(_ request: ASAuthorizationAppleIDRequest) {
+        let nonce = randomNonceString()
+        currentNonce = nonce
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = sha256(nonce)
+    }
+
     // MARK: - Nonce Helpers
 
     private func randomNonceString(length: Int = 32) -> String {

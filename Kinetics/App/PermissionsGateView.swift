@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 // MARK: - PermissionsGateView
@@ -239,19 +240,22 @@ struct PermissionsGateView: View {
 
     // MARK: - Actions
 
-    /// Requests Camera → Notifications → HealthKit in sequence.
+    /// Requests Camera → Notifications → HealthKit → Location in sequence.
     /// Sets `permissionsRequested` to `true` regardless of individual
     /// grant/deny outcomes — we never block the app on denied permissions.
     private func requestAllPermissions() async {
         isRequesting = true
 
-        // 1. HealthKit — throws on simulator (no HealthKit); handled gracefully.
+        // 1. Camera — must be requested before the live analysis views appear.
+        await AVCaptureDevice.requestAccess(for: .video)
+
+        // 2. HealthKit — throws on simulator (no HealthKit); handled gracefully.
         try? await HealthKitService.shared.requestAuthorization()
 
-        // 2. Notifications — @MainActor, returns Bool (we don't block on denial).
+        // 3. Notifications — @MainActor, returns Bool (we don't block on denial).
         _ = await NotificationService.shared.requestAuthorization()
 
-        // 3. Location — actor-isolated, returns Bool.
+        // 4. Location — actor-isolated, returns Bool.
         let locationService = LocationService()
         _ = await locationService.requestAuthorization()
 

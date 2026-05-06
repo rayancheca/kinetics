@@ -816,6 +816,9 @@ struct FeedMetricCell: View {
 }
 
 // MARK: - StoryFullScreenView
+// Note: Despite the name, this renders a permanent feed post (StoryModel) full-screen —
+// it is NOT an ephemeral 24-hour story. The "story" terminology refers to the ring-bubble
+// UI pattern, not Stories as an ephemeral format.
 
 struct StoryFullScreenView: View {
 

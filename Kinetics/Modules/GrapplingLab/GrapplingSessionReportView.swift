@@ -279,7 +279,7 @@ struct GrapplingSessionReportView: View {
         \(coachingNotes.first?.headline ?? "")
         """
 
-        return VStack(spacing: 10) {
+        return VStack(spacing: 12) {
             Button { showFeedComposer = true } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "person.2.fill")
@@ -289,32 +289,30 @@ struct GrapplingSessionReportView: View {
                 }
                 .foregroundStyle(Color.kineticsDark)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color.kineticsOrange)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.vertical, 14)
+                .background(Color.kineticsPurple)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
             }
 
             HStack(spacing: 12) {
-                Button { dismiss() } label: {
-                    Text("Done")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
+                ShareLink(item: shareText) {
+                    Text("Save / Share")
+                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                        .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.kineticsOrange)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.vertical, 12)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
                 }
 
-                ShareLink(item: shareText) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 50, height: 50)
-                        .background(Color(red: 0.12, green: 0.12, blue: 0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
+                Button("Done") { dismiss() }
+                    .font(.system(.subheadline, design: .rounded, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
             }
         }
-        .padding(.bottom, 40)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 24)
     }
 }

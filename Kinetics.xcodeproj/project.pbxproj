@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		04B4A3A3AA1F873C25AEACB3 /* FaceProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07CDB0426E9D7F90CA17E405 /* FaceProfile.swift */; };
+		0655EF90C2C0AE3C9AEC4DE7 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 849EF2CB8A4B9A13DD1E9DD7 /* Lottie */; };
 		09F67684245B876B24959826 /* ActiveGymSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19FEB8C998F1CF53FF5240E /* ActiveGymSessionView.swift */; };
 		0C296E87D17F3ABEF24D62CD /* SocialModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0EA76A613EE66A3CFB9842 /* SocialModels.swift */; };
 		0C4E99C1A1F9D28B83027979 /* SportDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5468F484D1BA53FF59C89F84 /* SportDetailView.swift */; };
@@ -16,10 +17,12 @@
 		0FF07FC9A31EFBD5E2B9AD75 /* HomeAchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF32B9B890FA2C0114181EA /* HomeAchievementsView.swift */; };
 		1088DCBF512BA3FBC2F0C253 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CF8E2F952DD6ED295C43EA /* HomeView.swift */; };
 		112FAFFB42872D754E3C11FA /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */; };
+		156E602797345190C6AC2842 /* KineticsRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = A772FB9826D317EBDDD5ACA1 /* KineticsRoute.swift */; };
 		15C15C10B15A5C910E048169 /* TrainPerformanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC44B18BA572B17D2773799E /* TrainPerformanceView.swift */; };
 		162DF5DD793770496994F63A /* FollowButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18BF209B819D2FBDF6BB175E /* FollowButton.swift */; };
 		1703D816F2FC96CFBB4D41F3 /* FaceSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEBD464635A40AC808F03AA0 /* FaceSetupView.swift */; };
 		175C3ADDB5DCFB9C6D9B1167 /* RouteMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F16ADFA50EB885D3690144D /* RouteMapView.swift */; };
+		17E7EFC941F8CED5A9425192 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 27C829967418FD2A9D81ACC6 /* FirebaseStorage */; };
 		1C2426229591F54127DB3EFA /* VideoModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60C049ACD5028A62BCFBB96 /* VideoModels.swift */; };
 		1E21073D8ED01D1A90EAACFF /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D997E6E4FF21198B9123A2 /* ProfileView.swift */; };
 		22427D160A46FE3334E09C7E /* PostComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F4AFAEB7790E70D530C73E /* PostComposerView.swift */; };
@@ -30,13 +33,16 @@
 		29268051DA3A5B4519C87DE3 /* TrackAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C192019AE80768F03CED177 /* TrackAnalytics.swift */; };
 		2AD660E8DBBF5FFCB432177C /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9008B990FE65CFFFF7F53EAB /* AppState.swift */; };
 		2B9B952089A5DFA735C47F5C /* MuscleBodyDiagramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BFC5DAAD3D4C9292A629D2C /* MuscleBodyDiagramView.swift */; };
+		2F24AE60A4671EA14F7F8F10 /* RouteRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCEED0C5FF383D786264F59 /* RouteRepository.swift */; };
 		31A6EE899D6BC52F5BA390BC /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD8F79988934C12079F95AB /* CameraPreviewView.swift */; };
 		31E7709CD8F8F3A1BDA2F934 /* IronTrackerOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D55ACDFDD83069A1295A1A56 /* IronTrackerOnboardingView.swift */; };
 		3299A56C06A2686EDFC5CDE6 /* SearchDiscoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9CD6DA3879BCAA0E53C2939 /* SearchDiscoverView.swift */; };
 		32EF08425DB51F64DA48DD5A /* DrillLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A115ACB02250F857C10E556 /* DrillLibraryView.swift */; };
 		3300EFFCE9804BAF5F44B668 /* IronTrackerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */; };
+		35E64DE432C520D006E18212 /* MapKitRouteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 826050557D38304E0CA342B8 /* MapKitRouteService.swift */; };
 		36C562E05CC0A22264FECAF9 /* StrikingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DFCCE7474CEB92525C504A /* StrikingViewModel.swift */; };
 		3AAECFFD09059C41182B79E5 /* StrikingAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC755859D4AAA319C9102DB8 /* StrikingAnalytics.swift */; };
+		3B17C10FB43B416BC1F973BC /* KineticsWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 8A66132F6A94CCB092C81253 /* KineticsWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3C7A9650D2ADA2154F15CAB3 /* WallBetaSessionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AF3E9A65842F2A2BC6C4401 /* WallBetaSessionReportView.swift */; };
 		3DADA86E963133CAAB10C46F /* WorkoutSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C6653F2E4BFE91785252BD /* WorkoutSummaryView.swift */; };
 		3E7C8B554DAF17E48A36CF23 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDDDA7CCAF6D2485D5D25F7 /* AuthManager.swift */; };
@@ -59,38 +65,49 @@
 		58D7D9A2550728717E6BD0AA /* JointPose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CFC25313B76AA9012A0A96 /* JointPose.swift */; };
 		5A7D41C9A6C3862567130171 /* TrajectoryTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D3479AF90A2F3494B2D3F50 /* TrajectoryTracker.swift */; };
 		5B4CCC14E198B1031AE0EE4B /* FaceSetupViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E4AC8B027766E8790C6BE0 /* FaceSetupViewModel.swift */; };
+		5BD0FB75C7EAEEDD1650CD3B /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF635460CE789CA49C827E05 /* WatchContentView.swift */; };
 		5D424CAB04517AD7ACA5F78F /* GymModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76E6D4584A4566026C4F3591 /* GymModels.swift */; };
 		5DB2165BFB966EF4B40FFEFA /* CoachVoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9975CF29738ABDE897D62F /* CoachVoice.swift */; };
 		6253BD14B830015B5B3D73B3 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CFDEB608EE0C4C47FEA8440 /* NotificationService.swift */; };
+		62E4600AA5ED05E7F1CA6242 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A859B2DE2546802B489F83B /* WatchConnectivity.framework */; };
 		64C054DF49CA406C1D29117F /* VideoAnalysisEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1FDE6C1FE8B56A89DE042BF /* VideoAnalysisEngine.swift */; };
 		65AF90F6886E1FB4A948F130 /* PoseDetectionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE95815B031AA4940A863EE /* PoseDetectionEngine.swift */; };
 		6AD7786B7AEE29FEE451DC22 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = C4CED923C35612DDE1BFAD9F /* FirebaseAuth */; };
 		6CD08C691718A9FEE0CCAE01 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FFEBB8C2B0C91041461E63 /* OnboardingView.swift */; };
 		6DB9F094B9B3D5F739C3FC27 /* GrapplingAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB1F0F7FD8AD724C05CEEBE /* GrapplingAnalytics.swift */; };
+		6DC4A2E819A21FF759BAEC31 /* SportType+Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = F096371B9E22041F204881B5 /* SportType+Image.swift */; };
 		71464CCA100C4F34CAC9633B /* OnboardingMetricRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91AF016B55595E5A3008382C /* OnboardingMetricRow.swift */; };
 		72CA7F4E153888A87089D1C2 /* PoseOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */; };
 		7377A50BF3E4F6147E41AD89 /* WallBetaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 344EC78E25549C9A891871A6 /* WallBetaView.swift */; };
 		756D56E0ED10FC641E17194E /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F36FE62052C6F5934ACAAA40 /* ActiveWorkoutView.swift */; };
+		77D3030E50C9CFCFA95869C9 /* RouteDiscoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD787BC7861970672364F3B7 /* RouteDiscoveryView.swift */; };
 		781024CD297700D073EC5CBD /* FollowListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CBFCFDE32BD99B33A071261 /* FollowListView.swift */; };
 		7A44D12C512FF469EAC6FC10 /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34CF303ADC249DE03467E406 /* ShareCardView.swift */; };
 		7B4066A954E393ECF3628611 /* StrikingSessionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB9351DAC698CFD29E7C89D8 /* StrikingSessionReportView.swift */; };
+		7C6A65467D704AFA0204FFE4 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 76ED839D5F8CF279967904AF /* HealthKit.framework */; };
 		7D1C9BA45577100733892E52 /* HomeNotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26C1ACA637A4A68BB676059B /* HomeNotificationsView.swift */; };
 		80540CFE2336B7C01E02211C /* CoachingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63D18F45C130B389B898CD57 /* CoachingEngine.swift */; };
 		824300101F9C7F858944679F /* GymWorkoutHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EADB33E9A1501BDAF9621B7A /* GymWorkoutHistoryView.swift */; };
 		848844499EDC71521B05B46F /* WorkoutDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E48187450AB5A96B52417ED /* WorkoutDetailView.swift */; };
 		85A2D07262DEB08010C7ED4D /* VideoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2701AFF10406B8A01AA70F /* VideoRepository.swift */; };
 		86FB595B448BF9FE7E537B63 /* TrajectoryPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931EAA20F1D0BE1F51C8ACAB /* TrajectoryPath.swift */; };
+		880D144829CFB4258A0FE1C9 /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5B790A63CAF3EA890CE814E /* LottieView.swift */; };
+		88855366A8B2C7CA1548BE1E /* WatchActiveSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35D39BEF4210A83E043965C /* WatchActiveSessionView.swift */; };
 		891DA28B0845DA3863B714B1 /* PersonalRecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 497B16EEA223AE88C450FBA8 /* PersonalRecordsView.swift */; };
 		89D4093D6D3DD064C1066EBF /* WorkoutResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF82ED7BF717471259F1A6EB /* WorkoutResult.swift */; };
 		8B32DBDDAC4BECC125DD9427 /* MetricsCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */; };
 		8B4798A31EFBA9808093C604 /* GymProgressWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11665AA5E9C8305ABDB0D19C /* GymProgressWidgets.swift */; };
 		8ED4D22F1E0D4AD1C9EFA28E /* WallBetaOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49B757EAB9FE8AA2EA6BFBF /* WallBetaOnboardingView.swift */; };
+		8F0849BDF4E9CD256B0636BB /* KineticsImages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EA0B0745DC8134F97D6DA6E /* KineticsImages.swift */; };
 		9571F058704DE274B776C123 /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CFFA101E73EC4F9738ACEED /* SubscriptionManager.swift */; };
 		9598F6CA6662EC1F128A3F2A /* SocialRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 099853C55F62679C9537A8A4 /* SocialRepository.swift */; };
+		96776F4DBAF066DDE6528A5B /* KineticsWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51B7E7372C7420B99495F876 /* KineticsWatchApp.swift */; };
 		98C0AED100800BD8EA5FE78B /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4444A68F70A599ECA48403BE /* SessionRepository.swift */; };
+		9940017930A26F9D25DE5CD7 /* RouteDiscoveryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4D37D92C1FAD377145A7B0 /* RouteDiscoveryViewModel.swift */; };
 		9A384FDAF37E32FF5428E23B /* WidgetDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB185FD265C0A4E6E75368F /* WidgetDataStore.swift */; };
 		9B5DE83DC117C96FE3165CC9 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */; };
 		9C6B803704170B6992365B78 /* RoutineBuilderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB916B7E7603D1D43A896F73 /* RoutineBuilderView.swift */; };
+		9D091793EE05CD570C8BEFA8 /* StravaAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B37FE2E25F16254D339104 /* StravaAuthService.swift */; };
 		A192A25212CD2AE387CEF232 /* KineticsWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C302C404B5BD0B3928CB0E8C /* KineticsWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A1F9B0AF1252345E962F76C8 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F7902015FAF42D59AEF1E6 /* CameraManager.swift */; };
 		A4E9C776BB171B6613E9ED20 /* SessionHistoryRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */; };
@@ -106,11 +123,13 @@
 		B605CD90ADBE4244CF2E5A99 /* TrackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7934535B95DCFCD9079D79 /* TrackView.swift */; };
 		B7D5E117A99A8167A0B51675 /* VideoAnalysisReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73653353436B7812B507E56D /* VideoAnalysisReportView.swift */; };
 		B875E6380324D015BC9E9920 /* TrackViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8643CBD1C2B047956616ACC /* TrackViewModel.swift */; };
+		B8B6BB743A058A4726CBD6AB /* StravaAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41D80C4BEDAB5556876CDC3C /* StravaAPIService.swift */; };
 		B948297D38FEBE9A3E257525 /* RepCounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D04000D98CBD21248298A0 /* RepCounter.swift */; };
 		BB26387B878693EE71C9C95A /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 726CF430F8281EF13190F56B /* FirebaseCrashlytics */; };
 		BFB01F19B3C1C6EF05AFD455 /* CoachOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F65BFB10A8F0BCC14D54EA7D /* CoachOverlayView.swift */; };
 		C5CE24DAE9D544F78AF24B3B /* WeeklyPlannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA346D5771038C6F9E8A6D66 /* WeeklyPlannerView.swift */; };
 		C5CEBE44ACC1F2EA4743BAA7 /* FeedCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DBF71E832EBFB691D3BFC4 /* FeedCards.swift */; };
+		C9AF97BBB973D431D774B836 /* WatchConnectivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FECC1BFB3966D00202B04307 /* WatchConnectivityService.swift */; };
 		CB6BECC8855AE1CEEABAA02E /* SessionResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63DE416D081F3C588AC652A3 /* SessionResult.swift */; };
 		CBD5745D36354446FB741AE0 /* StrikingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05FB80A5C42F07AC82B0487B /* StrikingView.swift */; };
 		D4D833C1CD725F485BF5827C /* GrapplingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */; };
@@ -130,6 +149,8 @@
 		F0625C27A79CC0D116990168 /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E248662A4970A12F5F6FAD9 /* FeedView.swift */; };
 		F0D91AAE5B8ACFFBF4347D88 /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20EAF72B62C316979E21DCEB /* DeepLinkRouter.swift */; };
 		F2BF7D9E611D9C7C8554DB30 /* IronTrackerSessionReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECE0D529563112634E110515 /* IronTrackerSessionReportView.swift */; };
+		F38E27EDA40714EEE1768FC7 /* WatchKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C7D3E30252F9B7F3CEC8776 /* WatchKit.framework */; };
+		F395689114C7285E751EAB28 /* WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA68EFC50DD1D549F679B47 /* WatchSessionManager.swift */; };
 		F3C7D67C0CD2853294BC67D9 /* TrainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90F5D52A2B4BD6611D7FD00 /* TrainView.swift */; };
 		F49F31E064DD1C9596B014AC /* StrikingOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A05C80397FFC400824161B /* StrikingOnboardingView.swift */; };
 		F4E6F18C694967BA5C88EA9E /* GymProgressCharts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 065DA832AFE2FF5FE79CC790 /* GymProgressCharts.swift */; };
@@ -137,7 +158,6 @@
 		F78FC26BC5B4F42C0099A839 /* KineticsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3648047108B6B4CA0E33C4CF /* KineticsApp.swift */; };
 		F90A5D952B85707BC02B18C8 /* ProfileCharts.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC54442084B6FB301EA5443D /* ProfileCharts.swift */; };
 		FDBD12D7A1E09F769C5884E1 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC032562411DDDC1ED7D376 /* HistoryView.swift */; };
-		AA11BB22CC33DD44EE55FF01 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = AA11BB22CC33DD44EE55FF02 /* FirebaseStorage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -147,6 +167,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 4E104892220093A4B2F8B724;
 			remoteInfo = KineticsWidget;
+		};
+		E50304595BEC8A48ADFEEF0E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4FED42FC9F77BB90EF44869C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B6FA9D08E1678A5133D8282D;
+			remoteInfo = KineticsWatch;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -162,6 +189,17 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BF6FFE8040C9D0CEF3C91189 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				3B17C10FB43B416BC1F973BC /* KineticsWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -174,10 +212,11 @@
 		0BBA6E522E5F4455FB57EDDF /* VideoStorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoStorageService.swift; sourceTree = "<group>"; };
 		0CFFA101E73EC4F9738ACEED /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
 		0DC032562411DDDC1ED7D376 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		0EA0B0745DC8134F97D6DA6E /* KineticsImages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KineticsImages.swift; sourceTree = "<group>"; };
 		11665AA5E9C8305ABDB0D19C /* GymProgressWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymProgressWidgets.swift; sourceTree = "<group>"; };
 		121AC521FEFB5BC065773CAB /* InjuryRiskDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjuryRiskDetector.swift; sourceTree = "<group>"; };
 		13DBF71E832EBFB691D3BFC4 /* FeedCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedCards.swift; sourceTree = "<group>"; };
-		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		16DAA6C287CC5CDA16C313C2 /* Kinetics.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kinetics.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerViewModel.swift; sourceTree = "<group>"; };
 		17B53AC33EE1425DCE1469A4 /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailView.swift; sourceTree = "<group>"; };
 		17CCE96B7C847EF00BEF33CE /* GymRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymRootView.swift; sourceTree = "<group>"; };
@@ -191,6 +230,7 @@
 		1DADA5570767728A6B667F23 /* VideoReportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoReportViewModel.swift; sourceTree = "<group>"; };
 		20EAF72B62C316979E21DCEB /* DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
 		26C1ACA637A4A68BB676059B /* HomeNotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNotificationsView.swift; sourceTree = "<group>"; };
+		2A859B2DE2546802B489F83B /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
 		2B7B95E1925765E8119CF3FF /* WorkoutRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutRepository.swift; sourceTree = "<group>"; };
 		2C192019AE80768F03CED177 /* TrackAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackAnalytics.swift; sourceTree = "<group>"; };
 		2CBFCFDE32BD99B33A071261 /* FollowListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowListView.swift; sourceTree = "<group>"; };
@@ -201,7 +241,9 @@
 		3572F2B97B5DEC018B4829E7 /* IronTrackerAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerAnalytics.swift; sourceTree = "<group>"; };
 		3648047108B6B4CA0E33C4CF /* KineticsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KineticsApp.swift; sourceTree = "<group>"; };
 		3D3479AF90A2F3494B2D3F50 /* TrajectoryTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrajectoryTracker.swift; sourceTree = "<group>"; };
+		3F4D37D92C1FAD377145A7B0 /* RouteDiscoveryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteDiscoveryViewModel.swift; sourceTree = "<group>"; };
 		3FEEAE8C16C0B711D260D1FF /* WorkoutHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutHistoryView.swift; sourceTree = "<group>"; };
+		41D80C4BEDAB5556876CDC3C /* StravaAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaAPIService.swift; sourceTree = "<group>"; };
 		43D997E6E4FF21198B9123A2 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		43F7902015FAF42D59AEF1E6 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		4444A68F70A599ECA48403BE /* SessionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRepository.swift; sourceTree = "<group>"; };
@@ -212,6 +254,7 @@
 		4F16ADFA50EB885D3690144D /* RouteMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteMapView.swift; sourceTree = "<group>"; };
 		4FB485144AA4083C30FA5D1B /* UserProfilePreviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfilePreviewSheet.swift; sourceTree = "<group>"; };
 		514D783F0279F09D15F268E7 /* PermissionsGateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsGateView.swift; sourceTree = "<group>"; };
+		51B7E7372C7420B99495F876 /* KineticsWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KineticsWatchApp.swift; sourceTree = "<group>"; };
 		52A86F0EB463772C47FFDF8B /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		5468F484D1BA53FF59C89F84 /* SportDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportDetailView.swift; sourceTree = "<group>"; };
 		54C3A86BA19B1FE9C82EB1C7 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
@@ -223,17 +266,23 @@
 		63D18F45C130B389B898CD57 /* CoachingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachingEngine.swift; sourceTree = "<group>"; };
 		63DE416D081F3C588AC652A3 /* SessionResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionResult.swift; sourceTree = "<group>"; };
 		64B1735A24DA64B0245D7374 /* GymProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymProgressView.swift; sourceTree = "<group>"; };
+		64B37FE2E25F16254D339104 /* StravaAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaAuthService.swift; sourceTree = "<group>"; };
+		64BA06E0E9CC495E9552F6DF /* KineticsWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KineticsWatch.entitlements; sourceTree = "<group>"; };
 		6A115ACB02250F857C10E556 /* DrillLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrillLibraryView.swift; sourceTree = "<group>"; };
 		6E248662A4970A12F5F6FAD9 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
 		6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryRow.swift; sourceTree = "<group>"; };
 		73653353436B7812B507E56D /* VideoAnalysisReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoAnalysisReportView.swift; sourceTree = "<group>"; };
 		74E4AC8B027766E8790C6BE0 /* FaceSetupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceSetupViewModel.swift; sourceTree = "<group>"; };
 		76E6D4584A4566026C4F3591 /* GymModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymModels.swift; sourceTree = "<group>"; };
+		76ED839D5F8CF279967904AF /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		785EBA730A60B9AC81590852 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
 		7F0EA76A613EE66A3CFB9842 /* SocialModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialModels.swift; sourceTree = "<group>"; };
+		826050557D38304E0CA342B8 /* MapKitRouteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapKitRouteService.swift; sourceTree = "<group>"; };
+		8A66132F6A94CCB092C81253 /* KineticsWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KineticsWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8AE95815B031AA4940A863EE /* PoseDetectionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseDetectionEngine.swift; sourceTree = "<group>"; };
 		8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsCardView.swift; sourceTree = "<group>"; };
 		8B74BF235D1E6C923435365C /* FeedSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedSeeder.swift; sourceTree = "<group>"; };
+		8C7D3E30252F9B7F3CEC8776 /* WatchKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchKit.framework; path = System/Library/Frameworks/WatchKit.framework; sourceTree = SDKROOT; };
 		8CB1F0F7FD8AD724C05CEEBE /* GrapplingAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingAnalytics.swift; sourceTree = "<group>"; };
 		8CDDDA7CCAF6D2485D5D25F7 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		9008B990FE65CFFFF7F53EAB /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
@@ -245,17 +294,23 @@
 		A1FDE6C1FE8B56A89DE042BF /* VideoAnalysisEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoAnalysisEngine.swift; sourceTree = "<group>"; };
 		A49B757EAB9FE8AA2EA6BFBF /* WallBetaOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallBetaOnboardingView.swift; sourceTree = "<group>"; };
 		A6C6653F2E4BFE91785252BD /* WorkoutSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSummaryView.swift; sourceTree = "<group>"; };
+		A772FB9826D317EBDDD5ACA1 /* KineticsRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KineticsRoute.swift; sourceTree = "<group>"; };
 		A95A2EC5EFE23571ABDBD194 /* GymHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymHomeView.swift; sourceTree = "<group>"; };
 		AB24D4A26BF62CAF540EA913 /* SkeletonOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonOverlayView.swift; sourceTree = "<group>"; };
 		AC755859D4AAA319C9102DB8 /* StrikingAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingAnalytics.swift; sourceTree = "<group>"; };
+		AE27492D989F0DCF974C4F0B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		AF635460CE789CA49C827E05 /* WatchContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchContentView.swift; sourceTree = "<group>"; };
 		B017CA2C842943551F888F7E /* GyroscopeParallaxModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GyroscopeParallaxModifier.swift; sourceTree = "<group>"; };
+		B35D39BEF4210A83E043965C /* WatchActiveSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchActiveSessionView.swift; sourceTree = "<group>"; };
+		B5B790A63CAF3EA890CE814E /* LottieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieView.swift; sourceTree = "<group>"; };
 		BB9351DAC698CFD29E7C89D8 /* StrikingSessionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingSessionReportView.swift; sourceTree = "<group>"; };
+		BBCEED0C5FF383D786264F59 /* RouteRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteRepository.swift; sourceTree = "<group>"; };
 		BD219FA48EAF1405496D5120 /* VideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerView.swift; sourceTree = "<group>"; };
 		BDB11B92F27E39BC17FD0099 /* SessionFeedPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionFeedPublisher.swift; sourceTree = "<group>"; };
 		C02189BFFE321D7C74D13DCC /* HomeCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCards.swift; sourceTree = "<group>"; };
 		C18D64B47167CC6B91712D56 /* KineticsWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KineticsWidget.entitlements; sourceTree = "<group>"; };
 		C19FEB8C998F1CF53FF5240E /* ActiveGymSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveGymSessionView.swift; sourceTree = "<group>"; };
-		C302C404B5BD0B3928CB0E8C /* KineticsWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KineticsWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C302C404B5BD0B3928CB0E8C /* KineticsWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = KineticsWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C30B1A1FD6018E61C6E79268 /* GrapplingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingView.swift; sourceTree = "<group>"; };
 		C373127039F43C920BEF03AB /* VideoLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoLibraryView.swift; sourceTree = "<group>"; };
 		C47432F57057C58AB5AF1802 /* GrapplingSessionReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingSessionReportView.swift; sourceTree = "<group>"; };
@@ -273,6 +328,7 @@
 		DA1B89ACFB1F833A8629B450 /* TrainCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainCards.swift; sourceTree = "<group>"; };
 		DC44B18BA572B17D2773799E /* TrainPerformanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainPerformanceView.swift; sourceTree = "<group>"; };
 		DD2701AFF10406B8A01AA70F /* VideoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRepository.swift; sourceTree = "<group>"; };
+		DD787BC7861970672364F3B7 /* RouteDiscoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteDiscoveryView.swift; sourceTree = "<group>"; };
 		DFD4F1CA7451955DB1DA363A /* GymRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymRepository.swift; sourceTree = "<group>"; };
 		E49570C31CB2BA111E404F01 /* KineticsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KineticsWidget.swift; sourceTree = "<group>"; };
 		E52A53BDDF7AD6CAA2F4E282 /* GrapplingOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingOnboardingView.swift; sourceTree = "<group>"; };
@@ -286,13 +342,16 @@
 		EF82ED7BF717471259F1A6EB /* WorkoutResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutResult.swift; sourceTree = "<group>"; };
 		EFB185FD265C0A4E6E75368F /* WidgetDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataStore.swift; sourceTree = "<group>"; };
 		F07DA203D96B1ADD4E88F7F1 /* GrapplingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingViewModel.swift; sourceTree = "<group>"; };
+		F096371B9E22041F204881B5 /* SportType+Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SportType+Image.swift"; sourceTree = "<group>"; };
 		F36FE62052C6F5934ACAAA40 /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
 		F4DFCCE7474CEB92525C504A /* StrikingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingViewModel.swift; sourceTree = "<group>"; };
 		F65BFB10A8F0BCC14D54EA7D /* CoachOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachOverlayView.swift; sourceTree = "<group>"; };
 		F9EC3A501E98D2D04B904ABB /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		F9F4A266DDC44B5128BD6743 /* PoseOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseOverlayView.swift; sourceTree = "<group>"; };
+		FBA68EFC50DD1D549F679B47 /* WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSessionManager.swift; sourceTree = "<group>"; };
 		FC54442084B6FB301EA5443D /* ProfileCharts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileCharts.swift; sourceTree = "<group>"; };
 		FC7934535B95DCFCD9079D79 /* TrackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackView.swift; sourceTree = "<group>"; };
+		FECC1BFB3966D00202B04307 /* WatchConnectivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityService.swift; sourceTree = "<group>"; };
 		FF26AF759C2CAF15557EA802 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -301,17 +360,41 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				62E4600AA5ED05E7F1CA6242 /* WatchConnectivity.framework in Frameworks */,
 				448F9B65DC78550E389E5B4D /* FirebaseAnalytics in Frameworks */,
 				6AD7786B7AEE29FEE451DC22 /* FirebaseAuth in Frameworks */,
 				BB26387B878693EE71C9C95A /* FirebaseCrashlytics in Frameworks */,
 				9B5DE83DC117C96FE3165CC9 /* FirebaseFirestore in Frameworks */,
-				AA11BB22CC33DD44EE55FF01 /* FirebaseStorage in Frameworks */,
+				17E7EFC941F8CED5A9425192 /* FirebaseStorage in Frameworks */,
+				0655EF90C2C0AE3C9AEC4DE7 /* Lottie in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A104E9A44F666DC502C5ACD4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F38E27EDA40714EEE1768FC7 /* WatchKit.framework in Frameworks */,
+				7C6A65467D704AFA0204FFE4 /* HealthKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		02FF0DC6A23820C6DD6DF2A2 /* KineticsWatch */ = {
+			isa = PBXGroup;
+			children = (
+				AE27492D989F0DCF974C4F0B /* Info.plist */,
+				64BA06E0E9CC495E9552F6DF /* KineticsWatch.entitlements */,
+				51B7E7372C7420B99495F876 /* KineticsWatchApp.swift */,
+				B35D39BEF4210A83E043965C /* WatchActiveSessionView.swift */,
+				AF635460CE789CA49C827E05 /* WatchContentView.swift */,
+				FBA68EFC50DD1D549F679B47 /* WatchSessionManager.swift */,
+			);
+			path = KineticsWatch;
+			sourceTree = "<group>";
+		};
 		0D3316917AB164AB306F0212 /* GrapplingLab */ = {
 			isa = PBXGroup;
 			children = (
@@ -328,6 +411,8 @@
 			isa = PBXGroup;
 			children = (
 				F36FE62052C6F5934ACAAA40 /* ActiveWorkoutView.swift */,
+				DD787BC7861970672364F3B7 /* RouteDiscoveryView.swift */,
+				3F4D37D92C1FAD377145A7B0 /* RouteDiscoveryViewModel.swift */,
 				4F16ADFA50EB885D3690144D /* RouteMapView.swift */,
 				2C192019AE80768F03CED177 /* TrackAnalytics.swift */,
 				FC7934535B95DCFCD9079D79 /* TrackView.swift */,
@@ -389,6 +474,7 @@
 				4C4AE07B225D5EF7297371AB /* CoachReport.swift */,
 				07CDB0426E9D7F90CA17E405 /* FaceProfile.swift */,
 				60CFC25313B76AA9012A0A96 /* JointPose.swift */,
+				A772FB9826D317EBDDD5ACA1 /* KineticsRoute.swift */,
 				63DE416D081F3C588AC652A3 /* SessionResult.swift */,
 				931EAA20F1D0BE1F51C8ACAB /* TrajectoryPath.swift */,
 				EF82ED7BF717471259F1A6EB /* WorkoutResult.swift */,
@@ -411,6 +497,7 @@
 			isa = PBXGroup;
 			children = (
 				16DAA6C287CC5CDA16C313C2 /* Kinetics.app */,
+				8A66132F6A94CCB092C81253 /* KineticsWatch.app */,
 				C302C404B5BD0B3928CB0E8C /* KineticsWidget.appex */,
 			);
 			name = Products;
@@ -447,7 +534,9 @@
 			isa = PBXGroup;
 			children = (
 				333079546BCA96ECCA92EC04 /* Kinetics */,
+				02FF0DC6A23820C6DD6DF2A2 /* KineticsWatch */,
 				E63A3D76A58679040CB42D91 /* KineticsWidget */,
+				550BB65D53ACAB08CE361884 /* Frameworks */,
 				2BBB894D975C6D838780D84E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -459,6 +548,16 @@
 				180342BA4E84F58CF342FDFC /* SubscriptionView.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		550BB65D53ACAB08CE361884 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				76ED839D5F8CF279967904AF /* HealthKit.framework */,
+				2A859B2DE2546802B489F83B /* WatchConnectivity.framework */,
+				8C7D3E30252F9B7F3CEC8776 /* WatchKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		56F192B04F0870AB0C10B8FD /* FaceSetup */ = {
@@ -477,6 +576,7 @@
 				F65BFB10A8F0BCC14D54EA7D /* CoachOverlayView.swift */,
 				18BF209B819D2FBDF6BB175E /* FollowButton.swift */,
 				B017CA2C842943551F888F7E /* GyroscopeParallaxModifier.swift */,
+				B5B790A63CAF3EA890CE814E /* LottieView.swift */,
 				8B73E6BF17BABE0C4D62D73F /* MetricsCardView.swift */,
 				47FA1E566F4DB9E08CE9223F /* ModuleEntrySheet.swift */,
 				5BFC5DAAD3D4C9292A629D2C /* MuscleBodyDiagramView.swift */,
@@ -518,9 +618,13 @@
 				4C9975CF29738ABDE897D62F /* CoachVoice.swift */,
 				FF26AF759C2CAF15557EA802 /* HealthKitService.swift */,
 				95B1FF2C59121834922C934E /* LocationService.swift */,
+				826050557D38304E0CA342B8 /* MapKitRouteService.swift */,
 				1CFDEB608EE0C4C47FEA8440 /* NotificationService.swift */,
+				41D80C4BEDAB5556876CDC3C /* StravaAPIService.swift */,
+				64B37FE2E25F16254D339104 /* StravaAuthService.swift */,
 				0CFFA101E73EC4F9738ACEED /* SubscriptionManager.swift */,
 				0BBA6E522E5F4455FB57EDDF /* VideoStorageService.swift */,
+				FECC1BFB3966D00202B04307 /* WatchConnectivityService.swift */,
 				EFB185FD265C0A4E6E75368F /* WidgetDataStore.swift */,
 			);
 			path = Services;
@@ -542,6 +646,8 @@
 			isa = PBXGroup;
 			children = (
 				0A477BE0C4DB5442E352B9ED /* Color+Kinetics.swift */,
+				0EA0B0745DC8134F97D6DA6E /* KineticsImages.swift */,
+				F096371B9E22041F204881B5 /* SportType+Image.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -596,6 +702,7 @@
 			isa = PBXGroup;
 			children = (
 				8CDDDA7CCAF6D2485D5D25F7 /* AuthManager.swift */,
+				BBCEED0C5FF383D786264F59 /* RouteRepository.swift */,
 				4444A68F70A599ECA48403BE /* SessionRepository.swift */,
 			);
 			path = Firebase;
@@ -682,11 +789,13 @@
 				FC13FF98C07B93D6D17F9E25 /* Sources */,
 				38910400C9BF7C3AF1620A86 /* Frameworks */,
 				2D1C6D9D10D5F2C7AAA38263 /* Embed Foundation Extensions */,
+				BF6FFE8040C9D0CEF3C91189 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				9A9EBEED04A56FB2440117A1 /* PBXTargetDependency */,
+				45526CAC447F2096AE31A690 /* PBXTargetDependency */,
 			);
 			name = Kinetics;
 			packageProductDependencies = (
@@ -694,10 +803,29 @@
 				C4CED923C35612DDE1BFAD9F /* FirebaseAuth */,
 				726CF430F8281EF13190F56B /* FirebaseCrashlytics */,
 				BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */,
-				AA11BB22CC33DD44EE55FF02 /* FirebaseStorage */,
+				27C829967418FD2A9D81ACC6 /* FirebaseStorage */,
+				849EF2CB8A4B9A13DD1E9DD7 /* Lottie */,
 			);
 			productName = Kinetics;
 			productReference = 16DAA6C287CC5CDA16C313C2 /* Kinetics.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B6FA9D08E1678A5133D8282D /* KineticsWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF91F161DCA5C537CD500815 /* Build configuration list for PBXNativeTarget "KineticsWatch" */;
+			buildPhases = (
+				8C6C3A6133F3F712E98A009C /* Sources */,
+				A104E9A44F666DC502C5ACD4 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KineticsWatch;
+			packageProductDependencies = (
+			);
+			productName = KineticsWatch;
+			productReference = 8A66132F6A94CCB092C81253 /* KineticsWatch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -710,11 +838,12 @@
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					4E104892220093A4B2F8B724 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					9BB8A80AA6448CB87A29DDBD = {
-						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					B6FA9D08E1678A5133D8282D = {
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -730,6 +859,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				A89AAE6E794853C2A1D46425 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2BBB894D975C6D838780D84E /* Products */;
@@ -737,12 +867,24 @@
 			projectRoot = "";
 			targets = (
 				9BB8A80AA6448CB87A29DDBD /* Kinetics */,
+				B6FA9D08E1678A5133D8282D /* KineticsWatch */,
 				4E104892220093A4B2F8B724 /* KineticsWidget */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8C6C3A6133F3F712E98A009C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				96776F4DBAF066DDE6528A5B /* KineticsWatchApp.swift in Sources */,
+				88855366A8B2C7CA1548BE1E /* WatchActiveSessionView.swift in Sources */,
+				5BD0FB75C7EAEEDD1650CD3B /* WatchContentView.swift in Sources */,
+				F395689114C7285E751EAB28 /* WatchSessionManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EEF2820FAE98973E1AA6A8AC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -811,8 +953,12 @@
 				3300EFFCE9804BAF5F44B668 /* IronTrackerViewModel.swift in Sources */,
 				58D7D9A2550728717E6BD0AA /* JointPose.swift in Sources */,
 				F78FC26BC5B4F42C0099A839 /* KineticsApp.swift in Sources */,
+				8F0849BDF4E9CD256B0636BB /* KineticsImages.swift in Sources */,
+				156E602797345190C6AC2842 /* KineticsRoute.swift in Sources */,
 				A70F65FBDE4CF6DAE811721F /* LocationService.swift in Sources */,
+				880D144829CFB4258A0FE1C9 /* LottieView.swift in Sources */,
 				AD1940CAB68916B38A79570F /* MainTabView.swift in Sources */,
+				35E64DE432C520D006E18212 /* MapKitRouteService.swift in Sources */,
 				8B32DBDDAC4BECC125DD9427 /* MetricsCardView.swift in Sources */,
 				DF0073B2792EDC3D2E81B5BC /* ModuleEntrySheet.swift in Sources */,
 				2B9B952089A5DFA735C47F5C /* MuscleBodyDiagramView.swift in Sources */,
@@ -829,7 +975,10 @@
 				F90A5D952B85707BC02B18C8 /* ProfileCharts.swift in Sources */,
 				1E21073D8ED01D1A90EAACFF /* ProfileView.swift in Sources */,
 				B948297D38FEBE9A3E257525 /* RepCounter.swift in Sources */,
+				77D3030E50C9CFCFA95869C9 /* RouteDiscoveryView.swift in Sources */,
+				9940017930A26F9D25DE5CD7 /* RouteDiscoveryViewModel.swift in Sources */,
 				175C3ADDB5DCFB9C6D9B1167 /* RouteMapView.swift in Sources */,
+				2F24AE60A4671EA14F7F8F10 /* RouteRepository.swift in Sources */,
 				9C6B803704170B6992365B78 /* RoutineBuilderView.swift in Sources */,
 				3299A56C06A2686EDFC5CDE6 /* SearchDiscoverView.swift in Sources */,
 				E17AF55DA7AC09125EE4669B /* SessionDetailView.swift in Sources */,
@@ -842,6 +991,9 @@
 				0C296E87D17F3ABEF24D62CD /* SocialModels.swift in Sources */,
 				9598F6CA6662EC1F128A3F2A /* SocialRepository.swift in Sources */,
 				0C4E99C1A1F9D28B83027979 /* SportDetailView.swift in Sources */,
+				6DC4A2E819A21FF759BAEC31 /* SportType+Image.swift in Sources */,
+				B8B6BB743A058A4726CBD6AB /* StravaAPIService.swift in Sources */,
+				9D091793EE05CD570C8BEFA8 /* StravaAuthService.swift in Sources */,
 				3AAECFFD09059C41182B79E5 /* StrikingAnalytics.swift in Sources */,
 				F49F31E064DD1C9596B014AC /* StrikingOnboardingView.swift in Sources */,
 				7B4066A954E393ECF3628611 /* StrikingSessionReportView.swift in Sources */,
@@ -872,6 +1024,7 @@
 				3C7A9650D2ADA2154F15CAB3 /* WallBetaSessionReportView.swift in Sources */,
 				7377A50BF3E4F6147E41AD89 /* WallBetaView.swift in Sources */,
 				44685076B7F87358B2808006 /* WallBetaViewModel.swift in Sources */,
+				C9AF97BBB973D431D774B836 /* WatchConnectivityService.swift in Sources */,
 				C5CE24DAE9D544F78AF24B3B /* WeeklyPlannerView.swift in Sources */,
 				9A384FDAF37E32FF5428E23B /* WidgetDataStore.swift in Sources */,
 				848844499EDC71521B05B46F /* WorkoutDetailView.swift in Sources */,
@@ -885,6 +1038,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		45526CAC447F2096AE31A690 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B6FA9D08E1678A5133D8282D /* KineticsWatch */;
+			targetProxy = E50304595BEC8A48ADFEEF0E /* PBXContainerItemProxy */;
+		};
 		9A9EBEED04A56FB2440117A1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 4E104892220093A4B2F8B724 /* KineticsWidget */;
@@ -950,7 +1108,6 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
@@ -961,11 +1118,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Kinetics/Kinetics.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = Kinetics/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1030,7 +1188,6 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;
@@ -1041,11 +1198,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Kinetics/Kinetics.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = Kinetics/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1060,12 +1218,30 @@
 			};
 			name = Release;
 		};
+		B56A46EF5F31DC59C106D0A7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = KineticsWatch/KineticsWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
+				INFOPLIST_FILE = KineticsWatch/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rayancheca.kinetics.watch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
 		C437A92665180A48B4F5ADE4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = KineticsWidget/KineticsWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = KineticsWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1080,12 +1256,30 @@
 			};
 			name = Release;
 		};
+		D1D2DA9912D7C2807B28D795 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = KineticsWatch/KineticsWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
+				INFOPLIST_FILE = KineticsWatch/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rayancheca.kinetics.watch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
 		FB8B147E30A47155EC69F119 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = KineticsWidget/KineticsWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8M64JJQQAU;
 				INFOPLIST_FILE = KineticsWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1130,6 +1324,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		FF91F161DCA5C537CD500815 /* Build configuration list for PBXNativeTarget "KineticsWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B56A46EF5F31DC59C106D0A7 /* Debug */,
+				D1D2DA9912D7C2807B28D795 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -1141,6 +1344,14 @@
 				minimumVersion = 11.0.0;
 			};
 		};
+		A89AAE6E794853C2A1D46425 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-spm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.4.3;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1149,10 +1360,20 @@
 			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAnalytics;
 		};
+		27C829967418FD2A9D81ACC6 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
 		726CF430F8281EF13190F56B /* FirebaseCrashlytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCrashlytics;
+		};
+		849EF2CB8A4B9A13DD1E9DD7 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A89AAE6E794853C2A1D46425 /* XCRemoteSwiftPackageReference "lottie-spm" */;
+			productName = Lottie;
 		};
 		BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1163,11 +1384,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
-		};
-		AA11BB22CC33DD44EE55FF02 /* FirebaseStorage */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 980D8942765D872EFEDEB32C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseStorage;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

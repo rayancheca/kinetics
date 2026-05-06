@@ -80,7 +80,7 @@ struct GrapplingView: View {
         }) {
             if let s = viewModel.lastCompletedSession {
                 NavigationStack {
-                    GrapplingSessionReportView(result: s, previousSessions: [])
+                    GrapplingSessionReportView(result: s, previousSessions: viewModel.previousSessions)
                 }
             }
         }
@@ -268,12 +268,12 @@ struct GrapplingView: View {
     private var backButton: some View {
         Button {
             Task {
-                await viewModel.endSession(
-                    userId: appState.authManager.currentUser?.uid ?? ""
-                )
+                let uid = appState.authManager.currentUser?.uid ?? ""
+                await viewModel.endSession(userId: uid)
                 viewModel.stopProcessing()
                 appState.cameraManager.stopSession()
                 if viewModel.lastCompletedSession != nil {
+                    await viewModel.loadPreviousSessions(userId: uid)
                     showReport = true
                 } else {
                     dismiss()

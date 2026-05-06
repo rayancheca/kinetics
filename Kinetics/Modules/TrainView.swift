@@ -185,6 +185,11 @@ struct TrainView: View {
                 }
                 .buttonStyle(ScaleButtonStyle())
             }
+
+            NavigationLink(destination: TrackView()) {
+                GPSTrackQuickCard()
+            }
+            .buttonStyle(ScaleButtonStyle())
         }
     }
 
@@ -387,6 +392,47 @@ struct PerformanceQuickCard: View {
             title: "Performance",
             subtitle: "Trends & PRs",
             accent: Color.kineticsAmber
+        )
+    }
+}
+
+// MARK: - GPSTrackQuickCard
+
+struct GPSTrackQuickCard: View {
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.kineticsBlue.opacity(0.14))
+                    .frame(width: 40, height: 40)
+                Image(systemName: "figure.run")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color.kineticsBlue)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("GPS Track")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white)
+                Text("Run · Ride · Hike · Walk")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.kineticsSubtext)
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.25))
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity)
+        .background(Color.kineticsDark)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.kineticsBlue.opacity(0.18), lineWidth: 0.75)
         )
     }
 }

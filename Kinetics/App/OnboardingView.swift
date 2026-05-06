@@ -231,7 +231,7 @@ private struct WelcomeStep: View {
             .padding(.bottom, 36)
 
             // Description
-            Text("Kinetics uses Apple's Vision Framework to track 19 body joints in real-time — measuring velocity, posture, and kinetic chain efficiency across four elite sport modules.")
+            Text("Kinetics uses Apple's Vision Framework to track 19 body joints in real-time — measuring velocity, posture, and kinetic chain efficiency across four elite sport modules. Built-in GPS tracking logs every run, ride, hike, and walk.")
                 .font(.system(size: 15, design: .rounded))
                 .foregroundStyle(.white.opacity(0.55))
                 .multilineTextAlignment(.center)

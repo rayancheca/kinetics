@@ -5,16 +5,18 @@ import SwiftUI
 
 /// Enumeration of the five root tabs.
 enum KineticsTab: Int, CaseIterable {
-    case home   = 0
-    case train  = 1
-    case gym    = 2
-    case feed   = 3
-    case profile = 4
+    case home    = 0
+    case train   = 1
+    case track   = 2
+    case gym     = 3
+    case feed    = 4
+    case profile = 5
 
     var label: String {
         switch self {
         case .home:    return "Home"
         case .train:   return "Train"
+        case .track:   return "Track"
         case .gym:     return "Gym"
         case .feed:    return "Feed"
         case .profile: return "Profile"
@@ -25,7 +27,8 @@ enum KineticsTab: Int, CaseIterable {
     var outlineIcon: String {
         switch self {
         case .home:    return "house"
-        case .train:   return "figure.run"
+        case .train:   return "figure.martial.arts"
+        case .track:   return "figure.run"
         case .gym:     return "dumbbell"
         case .feed:    return "person.2"
         case .profile: return "person"
@@ -36,7 +39,8 @@ enum KineticsTab: Int, CaseIterable {
     var fillIcon: String {
         switch self {
         case .home:    return "house.fill"
-        case .train:   return "figure.run"        // no fill variant — same icon
+        case .train:   return "figure.martial.arts"  // no fill variant — same icon
+        case .track:   return "figure.run"           // no fill variant — same icon
         case .gym:     return "dumbbell.fill"
         case .feed:    return "person.2.fill"
         case .profile: return "person.fill"
@@ -60,6 +64,7 @@ struct MainTabView: View {
                 switch selectedTab {
                 case .home:    HomeView()
                 case .train:   TrainView()
+                case .track:   TrackView()
                 case .gym:     GymRootView()
                 case .feed:    FeedView()
                 case .profile: ProfileView()
@@ -166,8 +171,7 @@ struct MainTabView: View {
             case .profile:
                 appState.selectedTab = .profile
             case .track:
-                // Track module is accessible via Train tab
-                appState.selectedTab = .train
+                appState.selectedTab = .track
             }
         }
     }

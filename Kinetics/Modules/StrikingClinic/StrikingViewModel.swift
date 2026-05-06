@@ -34,6 +34,10 @@ final class StrikingViewModel {
     /// The result of the most recently completed session; populated after `endSession` saves.
     var lastCompletedSession: SessionResult?
 
+    /// Previous sessions for the same sport, loaded after a session ends.
+    /// Passed to `StrikingSessionReportView` so it can compute personal bests and deltas.
+    var previousSessions: [SessionResult] = []
+
     /// The current real-time coaching cue, derived from live metrics via `CoachingEngine`.
     /// `nil` when no condition is triggered or no session is active.
     var currentCoachCue: CoachCue?
@@ -167,6 +171,16 @@ final class StrikingViewModel {
                 ]
             )
         }
+    }
+
+    /// Fetches the 10 most recent sessions of the same sport for the given user and
+    /// stores them in `previousSessions`. Call this right after `endSession` completes,
+    /// before presenting `StrikingSessionReportView`, so the report can show PRs and deltas.
+    ///
+    /// - Parameter userId: The Firebase Auth UID of the current user.
+    func loadPreviousSessions(userId: String) async {
+        let all = (try? await SessionRepository.shared.fetchSessions(for: userId, limit: 10)) ?? []
+        previousSessions = all.filter { $0.sport == .striking }
     }
 
     /// Cancels the active processing and duration tasks and clears session state

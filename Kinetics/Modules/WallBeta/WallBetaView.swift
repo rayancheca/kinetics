@@ -88,7 +88,7 @@ struct WallBetaView: View {
         }) {
             if let s = viewModel.lastCompletedSession {
                 NavigationStack {
-                    WallBetaSessionReportView(result: s, previousSessions: [])
+                    WallBetaSessionReportView(result: s, previousSessions: viewModel.previousSessions)
                 }
             }
         }
@@ -504,6 +504,7 @@ struct WallBetaView: View {
                     let uid = appState.authManager.currentUser?.uid ?? "anonymous"
                     await viewModel.endSession(userId: uid)
                     if viewModel.lastCompletedSession != nil {
+                        await viewModel.loadPreviousSessions(userId: uid)
                         showReport = true
                     } else {
                         dismiss()

@@ -86,7 +86,7 @@ struct StrikingView: View {
         }) {
             if let s = viewModel.lastCompletedSession {
                 NavigationStack {
-                    StrikingSessionReportView(result: s, previousSessions: [])
+                    StrikingSessionReportView(result: s, previousSessions: viewModel.previousSessions)
                 }
             }
         }
@@ -358,6 +358,7 @@ struct StrikingView: View {
                     let uid = appState.authManager.currentUser?.uid ?? "anonymous"
                     await viewModel.endSession(userId: uid)
                     if viewModel.lastCompletedSession != nil {
+                        await viewModel.loadPreviousSessions(userId: uid)
                         showReport = true
                     } else {
                         dismiss()

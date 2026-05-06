@@ -47,6 +47,10 @@ final class IronTrackerViewModel {
     /// The result of the most recently completed session; populated after `endSession` saves.
     var lastCompletedSession: SessionResult?
 
+    /// Previous sessions for the same sport, loaded after a session ends.
+    /// Passed to `IronTrackerSessionReportView` so it can compute personal bests and deltas.
+    var previousSessions: [SessionResult] = []
+
     /// Automatically-counted rep total, incremented by `RepCounter` each time a full
     /// wrist oscillation cycle is detected.
     var autoRepCount: Int = 0
@@ -227,6 +231,16 @@ final class IronTrackerViewModel {
                 ]
             )
         }
+    }
+
+    /// Fetches the 10 most recent sessions of the same sport for the given user and
+    /// stores them in `previousSessions`. Call this right after `endSession` completes,
+    /// before presenting `IronTrackerSessionReportView`, so the report can show PRs and deltas.
+    ///
+    /// - Parameter userId: The Firebase Auth UID of the current user.
+    func loadPreviousSessions(userId: String) async {
+        let all = (try? await SessionRepository.shared.fetchSessions(for: userId, limit: 10)) ?? []
+        previousSessions = all.filter { $0.sport == .ironTracker }
     }
 
     /// Cancels the active processing and duration tasks and clears session state

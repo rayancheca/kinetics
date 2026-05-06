@@ -79,7 +79,7 @@ struct IronTrackerView: View {
         }) {
             if let s = viewModel.lastCompletedSession {
                 NavigationStack {
-                    IronTrackerSessionReportView(result: s, previousSessions: [])
+                    IronTrackerSessionReportView(result: s, previousSessions: viewModel.previousSessions)
                 }
             }
         }
@@ -391,6 +391,7 @@ struct IronTrackerView: View {
                     // still true when endSession's guard runs.
                     await viewModel.endSession(userId: uid)
                     if viewModel.lastCompletedSession != nil {
+                        await viewModel.loadPreviousSessions(userId: uid)
                         showReport = true
                     } else {
                         dismiss()

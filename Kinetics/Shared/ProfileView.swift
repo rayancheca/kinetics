@@ -1,3 +1,5 @@
+import FirebaseAuth
+import FirebaseFirestore
 import SwiftData
 import SwiftUI
 
@@ -50,10 +52,13 @@ struct ProfileView: View {
     @State private var vm = ProfileViewModel()
     @State private var showSignIn = false
     @State private var confirmSignOut = false
+    @State private var showDeleteConfirm = false
     @State private var showFaceSetup = false
     @AppStorage("preferred_units") private var preferredUnits = "mph"
     @AppStorage("coach_voice_enabled") private var coachVoiceEnabled = true
     @AppStorage("onboarding_complete") private var onboardingComplete = true
+    @AppStorage("auto_publish_sessions") private var autoPublishSessions = true
+    @StateObject private var stravaAuth = StravaAuthService.shared
 
     // Body composition editing state
     @State private var heightCmText: String = ""
@@ -109,6 +114,18 @@ struct ProfileView: View {
                 }
             } message: {
                 Text("You will be signed out of your account.")
+            }
+            .confirmationDialog(
+                "Delete your account?",
+                isPresented: $showDeleteConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Delete Everything", role: .destructive) {
+                    Task { await deleteAccount() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This permanently deletes your sessions, progress, and profile. This cannot be undone.")
             }
             .task {
                 if let uid = appState.authManager.currentUser?.uid {
@@ -381,36 +398,59 @@ struct ProfileView: View {
     // MARK: - Stats Grid
 
     private var statsGrid: some View {
-        LazyVGrid(
-            columns: [GridItem(.flexible()), GridItem(.flexible())],
-            spacing: 12
-        ) {
-            StatCard(
-                value: "\(vm.totalCount)",
-                label: "Total Sessions",
-                icon: "figure.run",
-                color: .kineticsBlue
-            )
-            StatCard(
-                value: String(format: "%.1fh", vm.totalHours),
-                label: "Total Time",
-                icon: "clock.fill",
-                color: .kineticsGreen
-            )
-            StatCard(
-                value: vm.favoriteModule?.displayName ?? "—",
-                label: "Favorite Module",
-                icon: "star.fill",
-                color: Color(hex: "FFB800")
-            )
-            StatCard(
-                value: "\(vm.longestStreak)d",
-                label: "Best Streak",
-                icon: "flame.fill",
-                color: .kineticsRed
-            )
+        Group {
+            if vm.totalCount == 0 && !vm.isLoading {
+                VStack(spacing: 16) {
+                    Image(systemName: "figure.run.circle")
+                        .font(.system(size: 40))
+                        .foregroundStyle(Color(red: 0, green: 0.76, blue: 1.0))
+                    VStack(spacing: 6) {
+                        Text("Your journey starts here")
+                            .font(.system(.headline, design: .rounded, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text("Complete your first session to start tracking your progress.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(24)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 16)
+            } else {
+                LazyVGrid(
+                    columns: [GridItem(.flexible()), GridItem(.flexible())],
+                    spacing: 12
+                ) {
+                    StatCard(
+                        value: "\(vm.totalCount)",
+                        label: "Total Sessions",
+                        icon: "figure.run",
+                        color: .kineticsBlue
+                    )
+                    StatCard(
+                        value: String(format: "%.1fh", vm.totalHours),
+                        label: "Total Time",
+                        icon: "clock.fill",
+                        color: .kineticsGreen
+                    )
+                    StatCard(
+                        value: vm.favoriteModule?.displayName ?? "—",
+                        label: "Favorite Module",
+                        icon: "star.fill",
+                        color: Color(hex: "FFB800")
+                    )
+                    StatCard(
+                        value: "\(vm.longestStreak)d",
+                        label: "Best Streak",
+                        icon: "flame.fill",
+                        color: .kineticsRed
+                    )
+                }
+                .padding(.horizontal, 16)
+            }
         }
-        .padding(.horizontal, 16)
     }
 
     // MARK: - Account Section
@@ -455,8 +495,34 @@ struct ProfileView: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
                 }
+
+                SettingsDivider()
+
+                Button(role: .destructive) {
+                    showDeleteConfirm = true
+                } label: {
+                    HStack(spacing: 12) {
+                        settingsIconBox(systemName: "trash.fill", color: Color.kineticsRed)
+                        Text("Delete Account")
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color.kineticsRed)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                }
             }
         }
+    }
+
+    // MARK: - Delete Account
+
+    private func deleteAccount() async {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let db = Firestore.firestore()
+        try? await db.collection("users").document(uid).delete()
+        try? appState.authManager.signOut()
+        try? await Auth.auth().currentUser?.delete()
     }
 
     // MARK: - Preferences Section
@@ -534,6 +600,57 @@ struct ProfileView: View {
                     UIApplication.shared.open(url)
                 }
             }
+
+            SettingsDivider()
+
+            // Auto-share sessions toggle
+            HStack(spacing: 12) {
+                settingsIconBox(systemName: "square.and.arrow.up", color: Color.kineticsGreen)
+                Toggle(isOn: $autoPublishSessions) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Auto-share sessions")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.white)
+                        Text("Automatically post completed sessions to your feed")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.38))
+                    }
+                }
+                .tint(Color(red: 0, green: 0.76, blue: 1.0))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            SettingsDivider()
+
+            // Strava connection row
+            HStack(spacing: 12) {
+                settingsIconBox(systemName: "figure.run", color: Color(red: 0.98, green: 0.38, blue: 0.16))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Strava")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.white)
+                    Text(stravaAuth.isAuthenticated ? "Connected" : "Not connected")
+                        .font(.system(size: 12))
+                        .foregroundStyle(stravaAuth.isAuthenticated ? Color.kineticsGreen : .secondary)
+                }
+                Spacer()
+                if stravaAuth.isAuthenticated {
+                    Button("Disconnect") {
+                        stravaAuth.disconnect()
+                    }
+                    .font(.system(size: 13))
+                    .foregroundStyle(.red)
+                } else {
+                    Button("Connect") {
+                        Task { try? await stravaAuth.authenticate() }
+                    }
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(Color(red: 0.98, green: 0.38, blue: 0.16))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
         }
     }
 
@@ -599,6 +716,7 @@ struct ProfileView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
 
+            #if DEBUG
             SettingsDivider()
 
             // Debug: seed demo feed data
@@ -626,6 +744,7 @@ struct ProfileView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
+            #endif
         }
     }
 

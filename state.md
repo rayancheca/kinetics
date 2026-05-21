@@ -1,8 +1,35 @@
 # Kinetics — Session State
 
-**Last updated:** Session 15 (2026-05-20) — Full audit fix pass: 24 issues resolved across security, social, video, onboarding, performance
+**Last updated:** Session 16 (2026-05-21) — Gym FAB fix, AI backpropagation, push to GitHub
 **Current phase:** Phase 1+ — App Store polish
-**Overall progress:** All Phase 1 deliverables + Sessions 7–15 enhancements. App is production-ready pending Firestore index creation.
+**Overall progress:** All Phase 1 deliverables + Sessions 7–16 enhancements. App is production-ready pending Firestore index creation.
+
+---
+
+## Status: SESSION 16 COMPLETE
+
+### Session 16 — Bug Fixes + AI Backpropagation
+
+#### Gym FAB Cut Off (user asked multiple times)
+- ✅ GymRootView: replaced ZStack pill overlay with `.safeAreaInset(edge: .bottom)` — pushed NavigationStack destinations now inherit extended safe area and their FABs stay visible above the pill on all iPhone sizes including 16 Pro Max
+- ✅ RoutineBuilderView: RoutineListView FAB padding reduced 96→20 (now handled by safeAreaInset)
+- ✅ WeeklyPlannerView: WeeklyPlanListView FAB padding 12→16, removed redundant double safeAreaInset, trimmed LazyVStack bottom padding 100→80
+
+#### Build Fix
+- ✅ SplashScreenView: removed `[weak self]` from Task capture — SwiftUI structs cannot be weakly referenced (Session 15 agent introduced this regression)
+
+#### Claude API
+- ✅ AICoachService verified working: correct endpoint, model `claude-sonnet-4-6`, headers, key guard
+- ✅ AICoachService: added 25s timeout on URLSession request (was using 60s default)
+- ✅ AI coaching backpropagation: VideoLibraryView now silently generates AI reports for any analyzed session missing a report on first appearance
+
+#### Code Quality (pre-existing bugs from audit — verified already fixed in earlier sessions)
+- ✅ FeedView: UIScreen.main already eliminated (uses sentinel pattern)
+- ✅ FeedCards: DispatchQueue.main.asyncAfter already eliminated
+- ✅ SocialRepository: kudos/comment FieldValue.increment already implemented
+
+#### GitHub
+- ✅ All changes pushed to main branch
 
 ---
 

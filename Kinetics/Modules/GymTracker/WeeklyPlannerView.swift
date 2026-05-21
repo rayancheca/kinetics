@@ -100,7 +100,7 @@ struct WeeklyPlanListView: View {
                 Spacer()
                 createButton
                     .padding(.trailing, 20)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 16)
             }
             .background(Color.clear)
         }
@@ -142,11 +142,7 @@ struct WeeklyPlanListView: View {
             }
             .padding(.horizontal, 16)
             // Bottom padding so the last card clears the FAB + home indicator
-            .padding(.bottom, 100)
-        }
-        // Ensures the scroll view's content area stops above the FAB overlay
-        .safeAreaInset(edge: .bottom) {
-            Color.clear.frame(height: 80)
+            .padding(.bottom, 80)
         }
     }
 

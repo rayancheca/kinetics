@@ -124,8 +124,7 @@ struct SplashScreenView: View {
     }
 
     private func runSequence() {
-        splashTask = Task { @MainActor [weak self] in
-            guard let self else { return }
+        splashTask = Task { @MainActor in
 
             // 1. Skeleton materializes from blur
             withAnimation(.easeOut(duration: 0.9)) {

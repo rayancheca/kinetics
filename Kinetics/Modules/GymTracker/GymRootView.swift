@@ -42,20 +42,19 @@ struct GymRootView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             Color.black.ignoresSafeArea()
 
             // MARK: Page content
             tabContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                // Reserve space so content is never hidden behind the pill
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    Color.clear.frame(height: 72)
-                }
-
+        }
+        // Using safeAreaInset so pushed NavigationStack destinations
+        // inherit the extended safe area and their own FABs stay visible.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             // MARK: Floating pill tab bar
             gymTabPill
-                .padding(.bottom, 8)
+                .padding(.vertical, 8)
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }

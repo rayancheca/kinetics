@@ -78,7 +78,9 @@ final class FeedViewModel {
     var newPostsAvailable = false
     var newPostsCount = 0
     private var pendingNewPosts: [FeedItem] = []
-    private var listenerRegistration: ListenerRegistration?
+    // nonisolated(unsafe): deinit runs outside @MainActor in Swift 6;
+    // this property is only ever written on the main actor at runtime.
+    nonisolated(unsafe) private var listenerRegistration: ListenerRegistration?
 
     // MARK: - UI state
 

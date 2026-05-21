@@ -848,7 +848,7 @@ final class SocialRepository {
         await withTaskGroup(of: (String, [String: Int]).self) { group in
             for item in items {
                 let itemId = item.id
-                group.addTask { @MainActor in
+                group.addTask {
                     let counts = await self.fetchReactions(for: itemId)
                     return (itemId, counts)
                 }

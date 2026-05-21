@@ -28,6 +28,9 @@ struct SplashScreenView: View {
     // Exit
     @State private var exitOpacity: Double = 1
 
+    // Cancellable animation task
+    @State private var splashTask: Task<Void, Never>?
+
     var body: some View {
         ZStack {
             Color(hex: "#0D0D0D").ignoresSafeArea()
@@ -117,57 +120,64 @@ struct SplashScreenView: View {
         }
         .opacity(exitOpacity)
         .onAppear { runSequence() }
+        .onDisappear { splashTask?.cancel() }
     }
 
     private func runSequence() {
-        // 1. Skeleton materializes from blur
-        withAnimation(.easeOut(duration: 0.9)) {
-            skeletonOpacity = 1
-            skeletonScale = 1
-            skeletonBlur = 0
-        }
+        splashTask = Task { @MainActor [weak self] in
+            guard let self else { return }
 
-        // 2. Glow fades in and starts pulsing
-        withAnimation(.easeOut(duration: 0.6).delay(0.3)) {
-            glowOpacity = 1
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            glowPulse = true
-        }
+            // 1. Skeleton materializes from blur
+            withAnimation(.easeOut(duration: 0.9)) {
+                self.skeletonOpacity = 1
+                self.skeletonScale = 1
+                self.skeletonBlur = 0
+            }
 
-        // 3. Scan line sweeps top to bottom
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            scanLineOpacity = 1
+            // 2. Glow fades in and starts pulsing
+            withAnimation(.easeOut(duration: 0.6).delay(0.3)) {
+                self.glowOpacity = 1
+            }
+            try? await Task.sleep(for: .seconds(0.5))
+            guard !Task.isCancelled else { return }
+            self.glowPulse = true
+
+            // 3. Scan line sweeps top to bottom
+            self.scanLineOpacity = 1
             withAnimation(.easeInOut(duration: 0.55)) {
-                scanLineY = 130
+                self.scanLineY = 130
             }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
+            try? await Task.sleep(for: .seconds(0.6))
+            guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.2)) {
-                scanLineOpacity = 0
+                self.scanLineOpacity = 0
             }
-        }
 
-        // 4. KINETICS text slides up
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.75).delay(0.85)) {
-            textOpacity = 1
-            textOffset = 0
-            letterSpacing = 8
-        }
+            // 4. KINETICS text slides up (originally delay(0.85) from start — already ~1.1s elapsed)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
+                self.textOpacity = 1
+                self.textOffset = 0
+                self.letterSpacing = 8
+            }
 
-        // 5. Tagline fades in
-        withAnimation(.easeOut(duration: 0.4).delay(1.2)) {
-            taglineOpacity = 1
-        }
+            // 5. Tagline fades in (0.35s after text — matches original 1.2s vs 0.85s gap)
+            try? await Task.sleep(for: .seconds(0.35))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.4)) {
+                self.taglineOpacity = 1
+            }
 
-        // 6. Everything fades out
-        withAnimation(.easeIn(duration: 0.5).delay(3.2)) {
-            exitOpacity = 0
-        }
+            // 6. Everything fades out (originally at 3.2s from start; ~1.45s elapsed, so sleep ~1.75s)
+            try? await Task.sleep(for: .seconds(1.75))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeIn(duration: 0.5)) {
+                self.exitOpacity = 0
+            }
 
-        // 7. Notify parent
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.8) {
-            onComplete()
+            // 7. Notify parent (originally at 3.8s from start; 0.6s after fade begins)
+            try? await Task.sleep(for: .seconds(0.6))
+            guard !Task.isCancelled else { return }
+            self.onComplete()
         }
     }
 }

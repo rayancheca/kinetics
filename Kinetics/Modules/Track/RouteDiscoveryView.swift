@@ -1,10 +1,11 @@
-import SwiftUI
+import FirebaseAuth
 import MapKit
+import SwiftUI
 
 // MARK: - RouteDiscoveryView
 
 struct RouteDiscoveryView: View {
-    @StateObject private var viewModel = RouteDiscoveryViewModel()
+    @State private var viewModel = RouteDiscoveryViewModel()
     @State private var selectedTab: RouteTab = .mapkit
 
     enum RouteTab: String, CaseIterable {
@@ -42,7 +43,7 @@ struct RouteDiscoveryView: View {
 // MARK: - MapKitRoutesSection
 
 struct MapKitRoutesSection: View {
-    @ObservedObject var viewModel: RouteDiscoveryViewModel
+    var viewModel: RouteDiscoveryViewModel
 
     var body: some View {
         ScrollView {
@@ -101,14 +102,77 @@ struct MapKitRoutesSection: View {
 // MARK: - StravaRoutesSection
 
 struct StravaRoutesSection: View {
-    @ObservedObject var viewModel: RouteDiscoveryViewModel
-    @ObservedObject private var strava = StravaAuthService.shared
+    var viewModel: RouteDiscoveryViewModel
+    private var strava: StravaAuthService { StravaAuthService.shared }
+    @State private var showPaywall = false
+
+    private var subscriptionManager: SubscriptionManager { SubscriptionManager.shared }
 
     var body: some View {
-        if strava.isAuthenticated {
-            authenticatedView
+        if subscriptionManager.isPremium {
+            if strava.isAuthenticated {
+                authenticatedView
+            } else {
+                connectView
+            }
         } else {
-            connectView
+            stravaLockedView
+                .sheet(isPresented: $showPaywall) {
+                    PaywallView(lockedFeature: "Strava Integration")
+                }
+        }
+    }
+
+    // MARK: - Locked (free tier)
+
+    private var stravaLockedView: some View {
+        VStack(spacing: 28) {
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(Color.kineticsAmber.opacity(0.08))
+                    .frame(width: 100, height: 100)
+                VStack(spacing: 4) {
+                    Image(systemName: "figure.run")
+                        .font(.system(size: 32))
+                        .foregroundStyle(Color(red: 0.98, green: 0.38, blue: 0.16))
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color.kineticsAmber)
+                        .offset(y: 2)
+                }
+            }
+
+            VStack(spacing: 8) {
+                Text("Strava Integration")
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .foregroundStyle(.white)
+                Text("Connect Strava, import your routes, and discover segments — exclusive to Kinetics Pro.")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.kineticsSubtext)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 24)
+
+            Button {
+                showPaywall = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "crown.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Unlock with Pro")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                }
+                .foregroundStyle(.black)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.kineticsAmber, in: RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 32)
+
+            Spacer()
         }
     }
 
@@ -213,7 +277,7 @@ struct StravaRoutesSection: View {
 // MARK: - CommunityRoutesSection
 
 struct CommunityRoutesSection: View {
-    @ObservedObject var viewModel: RouteDiscoveryViewModel
+    var viewModel: RouteDiscoveryViewModel
 
     var body: some View {
         ScrollView {
@@ -229,8 +293,8 @@ struct CommunityRoutesSection: View {
                     ForEach(viewModel.communityRoutes) { route in
                         CommunityRouteCard(route: route) {
                             Task {
-                                // TODO: Replace with actual authenticated user UID
-                                await RouteRepository.shared.kudosRoute(route.id, uid: "currentUID")
+                                let uid = Auth.auth().currentUser?.uid ?? ""
+                                await RouteRepository.shared.kudosRoute(route.id, uid: uid)
                             }
                         }
                     }

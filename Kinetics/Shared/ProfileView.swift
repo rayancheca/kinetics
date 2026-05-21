@@ -54,11 +54,12 @@ struct ProfileView: View {
     @State private var confirmSignOut = false
     @State private var showDeleteConfirm = false
     @State private var showFaceSetup = false
+    @State private var errorMessage: String? = nil
     @AppStorage("preferred_units") private var preferredUnits = "mph"
     @AppStorage("coach_voice_enabled") private var coachVoiceEnabled = true
     @AppStorage("onboarding_complete") private var onboardingComplete = true
-    @AppStorage("auto_publish_sessions") private var autoPublishSessions = true
-    @StateObject private var stravaAuth = StravaAuthService.shared
+    @AppStorage("auto_publish_sessions") private var autoPublishSessions = false
+    private var stravaAuth: StravaAuthService { StravaAuthService.shared }
 
     // Body composition editing state
     @State private var heightCmText: String = ""
@@ -90,19 +91,34 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 28) {
-                    avatarSection
-                    statsGrid
-                    badgesSection
-                    athleteSection
-                    accountSection
-                    preferencesSection
-                    subscriptionSection
-                    aboutSection
+            Group {
+                if appState.authManager.currentUser == nil {
+                    signedOutCard
+                        .transition(.asymmetric(
+                            insertion: .opacity,
+                            removal: .opacity.combined(with: .scale(scale: 0.96))
+                        ))
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 28) {
+                            avatarSection
+                            statsGrid
+                            badgesSection
+                            athleteSection
+                            accountSection
+                            preferencesSection
+                            subscriptionSection
+                            aboutSection
+                        }
+                        .padding(.bottom, 48)
+                    }
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.96)),
+                        removal: .opacity
+                    ))
                 }
-                .padding(.bottom, 48)
             }
+            .animation(.easeInOut(duration: 0.35), value: appState.authManager.currentUser == nil)
             .background(Color.kineticsBackground)
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showSignIn) {
@@ -145,6 +161,14 @@ struct ProfileView: View {
                             hasFaceProfile = faceProfileExists(userId: uid)
                         }
                 }
+            }
+            .alert("Error", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "")
             }
         }
     }
@@ -357,6 +381,52 @@ struct ProfileView: View {
         return ((try? modelContext.fetch(descriptor))?.isEmpty == false)
     }
 
+    // MARK: - Signed-Out Card
+
+    private var signedOutCard: some View {
+        VStack {
+            Spacer()
+            VStack(spacing: 24) {
+                Image(systemName: "person.crop.circle.badge.questionmark")
+                    .font(.system(size: 56, weight: .thin))
+                    .foregroundStyle(Color.kineticsBlue.opacity(0.85))
+
+                VStack(spacing: 8) {
+                    Text("Sign In to Kinetics")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(.white)
+
+                    Text("Track your progress and connect with athletes")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.white.opacity(0.55))
+                        .multilineTextAlignment(.center)
+                }
+
+                Button {
+                    showSignIn = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "person.badge.key.fill")
+                        Text("Sign In")
+                            .fontWeight(.semibold)
+                    }
+                    .font(.system(size: 16))
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.kineticsBlue)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+            .padding(28)
+            .background(Color.kineticsDark)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .padding(.horizontal, 28)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     // MARK: - Avatar
 
     private var avatarSection: some View {
@@ -520,9 +590,23 @@ struct ProfileView: View {
     private func deleteAccount() async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         let db = Firestore.firestore()
-        try? await db.collection("users").document(uid).delete()
-        try? appState.authManager.signOut()
-        try? await Auth.auth().currentUser?.delete()
+        do {
+            try await db.collection("users").document(uid).delete()
+        } catch {
+            errorMessage = "Failed to delete your data: \(error.localizedDescription)"
+            return
+        }
+        do {
+            try appState.authManager.signOut()
+        } catch {
+            errorMessage = "Failed to sign out: \(error.localizedDescription)"
+            return
+        }
+        do {
+            try await Auth.auth().currentUser?.delete()
+        } catch {
+            errorMessage = "Failed to delete account: \(error.localizedDescription)"
+        }
     }
 
     // MARK: - Preferences Section

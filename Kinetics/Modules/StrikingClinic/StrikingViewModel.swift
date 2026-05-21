@@ -139,6 +139,7 @@ final class StrikingViewModel {
             startedAt: sessionStartTime ?? Date(),
             duration: sessionDuration,
             metrics: [
+                "strikeVelocityMPH":  metrics.peakVelocityMPH,
                 "peak_velocity_mph":  metrics.peakVelocityMPH,
                 "strike_count":       Double(metrics.strikeCount),
                 "kinematic_score":    metrics.kinematicScore,
@@ -158,7 +159,6 @@ final class StrikingViewModel {
         Task {
             await SessionFeedPublisher.publish(
                 userId: userId,
-                displayName: "",
                 sport: "Striking Clinic",
                 activityType: "striking",
                 itemType: .strikeSession,

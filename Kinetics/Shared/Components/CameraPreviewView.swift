@@ -8,14 +8,18 @@ import AVFoundation
 /// with the live camera feed. Uses `UIViewRepresentable` because SwiftUI has no
 /// native layer-level API for AVFoundation preview layers.
 ///
+/// Pass `previewLayer` directly (not the whole `CameraManager`) so SwiftUI
+/// tracks the property during body evaluation and calls `updateUIView` as soon
+/// as the layer becomes non-nil after the async camera start.
+///
 /// Usage:
 /// ```swift
-/// CameraPreviewView(cameraManager: cameraManager)
+/// CameraPreviewView(previewLayer: cameraManager.previewLayer)
 ///     .ignoresSafeArea()
 /// ```
 struct CameraPreviewView: UIViewRepresentable {
 
-    let cameraManager: CameraManager
+    let previewLayer: AVCaptureVideoPreviewLayer?
 
     // MARK: UIViewRepresentable
 
@@ -26,9 +30,7 @@ struct CameraPreviewView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: PreviewUIView, context: Context) {
-        // The preview layer is set asynchronously after the session starts —
-        // guard against the brief window where it is still nil.
-        if let layer = cameraManager.previewLayer {
+        if let layer = previewLayer {
             uiView.setPreviewLayer(layer)
         }
     }

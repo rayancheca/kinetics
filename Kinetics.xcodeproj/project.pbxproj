@@ -39,6 +39,7 @@
 		3299A56C06A2686EDFC5CDE6 /* SearchDiscoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9CD6DA3879BCAA0E53C2939 /* SearchDiscoverView.swift */; };
 		32EF08425DB51F64DA48DD5A /* DrillLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A115ACB02250F857C10E556 /* DrillLibraryView.swift */; };
 		3300EFFCE9804BAF5F44B668 /* IronTrackerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17511DDF3DD72E61C29E559C /* IronTrackerViewModel.swift */; };
+		34BF94B0680DD0F73F129985 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C8B1BEC33E9FE3F9795D39 /* PaywallView.swift */; };
 		35E64DE432C520D006E18212 /* MapKitRouteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 826050557D38304E0CA342B8 /* MapKitRouteService.swift */; };
 		36C562E05CC0A22264FECAF9 /* StrikingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DFCCE7474CEB92525C504A /* StrikingViewModel.swift */; };
 		3AAECFFD09059C41182B79E5 /* StrikingAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC755859D4AAA319C9102DB8 /* StrikingAnalytics.swift */; };
@@ -57,6 +58,7 @@
 		4800590EB918C41C35699399 /* WallBetaAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18D06C3B0FC7C077782C8964 /* WallBetaAnalytics.swift */; };
 		49ECC632295AAB4CC822CFBD /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 785EBA730A60B9AC81590852 /* NotificationSettingsView.swift */; };
 		4B29E40397B9E920014A8A16 /* ExerciseLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D81D660BD10ABEB404C13D91 /* ExerciseLibraryView.swift */; };
+		4E197A006403584458710E6B /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = D393DB8A99F16A7F865B581D /* KeychainHelper.swift */; };
 		50BEC988D442747AE03F5EF0 /* AICoachService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5C9C31D6C291C6F160B8B54 /* AICoachService.swift */; };
 		511809C053541BB8B230D4ED /* GrapplingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F07DA203D96B1ADD4E88F7F1 /* GrapplingViewModel.swift */; };
 		512AA097D17B8FC2EFCCFD4D /* KineticsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E49570C31CB2BA111E404F01 /* KineticsWidget.swift */; };
@@ -281,6 +283,7 @@
 		64B1735A24DA64B0245D7374 /* GymProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymProgressView.swift; sourceTree = "<group>"; };
 		64B37FE2E25F16254D339104 /* StravaAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StravaAuthService.swift; sourceTree = "<group>"; };
 		64BA06E0E9CC495E9552F6DF /* KineticsWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KineticsWatch.entitlements; sourceTree = "<group>"; };
+		68C8B1BEC33E9FE3F9795D39 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		6A115ACB02250F857C10E556 /* DrillLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrillLibraryView.swift; sourceTree = "<group>"; };
 		6E248662A4970A12F5F6FAD9 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
 		6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryRow.swift; sourceTree = "<group>"; };
@@ -337,6 +340,7 @@
 		CB12A8B398B73015C9F5E645 /* FaceProfileEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceProfileEngine.swift; sourceTree = "<group>"; };
 		CB916B7E7603D1D43A896F73 /* RoutineBuilderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineBuilderView.swift; sourceTree = "<group>"; };
 		CEBD464635A40AC808F03AA0 /* FaceSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceSetupView.swift; sourceTree = "<group>"; };
+		D393DB8A99F16A7F865B581D /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		D51B170C12B79F83BC55C7D7 /* CommentSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentSheetView.swift; sourceTree = "<group>"; };
 		D55ACDFDD83069A1295A1A56 /* IronTrackerOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IronTrackerOnboardingView.swift; sourceTree = "<group>"; };
 		D5C9C31D6C291C6F160B8B54 /* AICoachService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AICoachService.swift; sourceTree = "<group>"; };
@@ -348,6 +352,7 @@
 		DD2701AFF10406B8A01AA70F /* VideoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRepository.swift; sourceTree = "<group>"; };
 		DD787BC7861970672364F3B7 /* RouteDiscoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteDiscoveryView.swift; sourceTree = "<group>"; };
 		DFD4F1CA7451955DB1DA363A /* GymRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymRepository.swift; sourceTree = "<group>"; };
+		E07CCF85270529C8C75A2D77 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		E49570C31CB2BA111E404F01 /* KineticsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KineticsWidget.swift; sourceTree = "<group>"; };
 		E52A53BDDF7AD6CAA2F4E282 /* GrapplingOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrapplingOnboardingView.swift; sourceTree = "<group>"; };
 		E5A05C80397FFC400824161B /* StrikingOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikingOnboardingView.swift; sourceTree = "<group>"; };
@@ -479,6 +484,7 @@
 				51F2AD8C3957E501A32CAFC4 /* Settings */,
 				DE4D16577BA0BA14DBAFE8F4 /* Social */,
 				7B7BBC68A7C5DE469BFC2107 /* StrikingClinic */,
+				A4599D5C87525725C92FE9D2 /* Subscription */,
 				0EA50C404C9E3144E4C2D07A /* Track */,
 				B473E84E72E2DA3F0FE578EC /* VideoAnalysis */,
 				953F928A7FAD0A9B77C055FE /* WallBeta */,
@@ -525,6 +531,7 @@
 			isa = PBXGroup;
 			children = (
 				3864CE24244FBF9109D2160F /* App */,
+				F1138FD7DF41D8A7B7D15833 /* Config */,
 				1B3FA0A18D36FC662C99E694 /* Core */,
 				D49473F70C3A0FC347D9C256 /* Firebase */,
 				FE8C116C97DB23818D059A1C /* Home */,
@@ -637,6 +644,7 @@
 				D5C9C31D6C291C6F160B8B54 /* AICoachService.swift */,
 				4C9975CF29738ABDE897D62F /* CoachVoice.swift */,
 				FF26AF759C2CAF15557EA802 /* HealthKitService.swift */,
+				D393DB8A99F16A7F865B581D /* KeychainHelper.swift */,
 				95B1FF2C59121834922C934E /* LocationService.swift */,
 				826050557D38304E0CA342B8 /* MapKitRouteService.swift */,
 				1CFDEB608EE0C4C47FEA8440 /* NotificationService.swift */,
@@ -691,6 +699,14 @@
 				CA346D5771038C6F9E8A6D66 /* WeeklyPlannerView.swift */,
 			);
 			path = GymTracker;
+			sourceTree = "<group>";
+		};
+		A4599D5C87525725C92FE9D2 /* Subscription */ = {
+			isa = PBXGroup;
+			children = (
+				68C8B1BEC33E9FE3F9795D39 /* PaywallView.swift */,
+			);
+			path = Subscription;
 			sourceTree = "<group>";
 		};
 		B473E84E72E2DA3F0FE578EC /* VideoAnalysis */ = {
@@ -791,6 +807,14 @@
 				E49570C31CB2BA111E404F01 /* KineticsWidget.swift */,
 			);
 			path = KineticsWidget;
+			sourceTree = "<group>";
+		};
+		F1138FD7DF41D8A7B7D15833 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				E07CCF85270529C8C75A2D77 /* Secrets.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		FE8C116C97DB23818D059A1C /* Home */ = {
@@ -1017,6 +1041,7 @@
 				53A2FBFDFE9EC40662AEDA69 /* IronTrackerView.swift in Sources */,
 				3300EFFCE9804BAF5F44B668 /* IronTrackerViewModel.swift in Sources */,
 				58D7D9A2550728717E6BD0AA /* JointPose.swift in Sources */,
+				4E197A006403584458710E6B /* KeychainHelper.swift in Sources */,
 				F78FC26BC5B4F42C0099A839 /* KineticsApp.swift in Sources */,
 				8F0849BDF4E9CD256B0636BB /* KineticsImages.swift in Sources */,
 				156E602797345190C6AC2842 /* KineticsRoute.swift in Sources */,
@@ -1032,6 +1057,7 @@
 				A81689BDCC1B4FBBA1A44A00 /* OnboardingCoordinator.swift in Sources */,
 				71464CCA100C4F34CAC9633B /* OnboardingMetricRow.swift in Sources */,
 				6CD08C691718A9FEE0CCAE01 /* OnboardingView.swift in Sources */,
+				34BF94B0680DD0F73F129985 /* PaywallView.swift in Sources */,
 				ADDD4F6B55D3F9E1E5611FED /* PermissionsGateView.swift in Sources */,
 				891DA28B0845DA3863B714B1 /* PersonalRecordsView.swift in Sources */,
 				65AF90F6886E1FB4A948F130 /* PoseDetectionEngine.swift in Sources */,
@@ -1119,6 +1145,7 @@
 /* Begin XCBuildConfiguration section */
 		20688BC78AF6071C7434B32C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E07CCF85270529C8C75A2D77 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -1205,6 +1232,7 @@
 		};
 		5D6DD509B7867A25C48FF94D /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E07CCF85270529C8C75A2D77 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;

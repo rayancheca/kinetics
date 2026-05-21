@@ -18,6 +18,10 @@ configs:
   Debug: debug
   Release: release
 
+configFiles:
+  Debug: Kinetics/Config/Secrets.xcconfig
+  Release: Kinetics/Config/Secrets.xcconfig
+
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk

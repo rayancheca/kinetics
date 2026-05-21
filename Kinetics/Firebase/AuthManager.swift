@@ -57,7 +57,9 @@ final class AuthManager {
         guard isFirebaseReady else { return }
         listenerHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             Task { @MainActor [weak self] in
-                self?.currentUser = user
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    self?.currentUser = user
+                }
             }
         }
     }
@@ -266,7 +268,9 @@ final class AuthManager {
     func signOut() throws {
         guard isFirebaseReady else { return }
         try Auth.auth().signOut()
-        currentUser = nil
+        withAnimation(.easeInOut(duration: 0.35)) {
+            currentUser = nil
+        }
     }
 }
 

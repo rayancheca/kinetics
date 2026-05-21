@@ -3,13 +3,13 @@ import WatchConnectivity
 
 // MARK: - WatchConnectivityService
 
-@MainActor
-final class WatchConnectivityService: NSObject, ObservableObject {
+@Observable @MainActor
+final class WatchConnectivityService: NSObject {
     static let shared = WatchConnectivityService()
 
-    // MARK: Published State
+    // MARK: Observable State
 
-    @Published var isWatchReachable = false
+    var isWatchReachable = false
 
     // MARK: Init
 

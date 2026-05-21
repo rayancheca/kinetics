@@ -61,8 +61,7 @@ struct WallBetaView: View {
             cameraFlipButton
         }
         .ignoresSafeArea()
-        .navigationBarBackButtonHidden()
-        .toolbar { backButton }
+        .toolbar(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             metricsPanel
         }
@@ -109,7 +108,7 @@ struct WallBetaView: View {
     // MARK: - Camera
 
     private var cameraLayer: some View {
-        CameraPreviewView(cameraManager: appState.cameraManager)
+        CameraPreviewView(previewLayer: appState.cameraManager.previewLayer)
             .ignoresSafeArea()
     }
 
@@ -539,43 +538,6 @@ struct WallBetaView: View {
         }
     }
 
-    // MARK: - Navigation Bar
-
-    @ToolbarContentBuilder
-    private var backButton: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarLeading) {
-            Button {
-                Task {
-                    let uid = appState.authManager.currentUser?.uid ?? "anonymous"
-                    await viewModel.endSession(userId: uid)
-                    if viewModel.lastCompletedSession != nil {
-                        await viewModel.loadPreviousSessions(userId: uid)
-                        showReport = true
-                    } else {
-                        dismiss()
-                    }
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("End")
-                        .font(.system(size: 15, weight: .medium))
-                }
-                .foregroundStyle(Color.kineticsGreen)
-            }
-        }
-
-        ToolbarItem(placement: .navigationBarTrailing) {
-            Button {
-                showOnboarding = true
-            } label: {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundStyle(Color.white.opacity(0.75))
-            }
-        }
-    }
 }
 
 // MARK: - NobodyDetectedOverlay

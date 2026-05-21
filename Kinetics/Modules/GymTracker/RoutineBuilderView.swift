@@ -37,6 +37,35 @@ struct RoutineListView: View {
     @State private var showBuilder = false
     @State private var selectedRoutine: Routine?
     @State private var activeSession: WorkoutSession?
+    @State private var selectedFilter: String = "All"
+
+    private let filterOptions = ["All", "Legs", "Upper", "Lower", "Back", "Full Body"]
+
+    private var filteredRoutines: [Routine] {
+        guard selectedFilter != "All" else { return viewModel.routines }
+        let filter = selectedFilter
+        return viewModel.routines.filter { routine in
+            routine.muscleGroups.contains { group in
+                switch filter {
+                case "Legs":
+                    return [GymMuscleGroup.quadriceps, .hamstrings, .glutes, .calves]
+                        .contains(group)
+                case "Upper":
+                    return [GymMuscleGroup.chest, .shoulders, .biceps, .triceps, .forearms]
+                        .contains(group)
+                case "Lower":
+                    return [GymMuscleGroup.quadriceps, .hamstrings, .glutes, .calves]
+                        .contains(group)
+                case "Back":
+                    return group == .back
+                case "Full Body":
+                    return group == .fullBody
+                default:
+                    return false
+                }
+            }
+        }
+    }
 
     private var uid: String {
         appState.authManager.currentUser?.uid ?? "preview-user"
@@ -71,17 +100,6 @@ struct RoutineListView: View {
         .toolbarBackground(Color.kineticsBackground, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showBuilder = true
-                } label: {
-                    Image(systemName: "plus")
-                        .foregroundStyle(Color.kineticsPurple)
-                        .fontWeight(.semibold)
-                }
-            }
-        }
         .task { viewModel.load(userId: uid) }
         .sheet(isPresented: $showBuilder, onDismiss: { viewModel.load(userId: uid) }) {
             RoutineBuilderView(userId: uid) {
@@ -100,14 +118,57 @@ struct RoutineListView: View {
         }
     }
 
+    // MARK: - Filter Chips
+
+    private var filterChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(filterOptions, id: \.self) { filter in
+                    Button {
+                        selectedFilter = filter
+                    } label: {
+                        Text(filter)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(selectedFilter == filter ? .white : Color.kineticsSubtext)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(
+                                Capsule()
+                                    .fill(selectedFilter == filter ? Color.kineticsPurple : Color.kineticsDark)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+        }
+    }
+
     // MARK: - Content
 
     @ViewBuilder
     private var content: some View {
-        if viewModel.routines.isEmpty {
-            emptyState
-        } else {
-            routineList
+        VStack(spacing: 0) {
+            filterChips
+            if filteredRoutines.isEmpty && !viewModel.routines.isEmpty {
+                // All routines exist but none match the current filter
+                VStack(spacing: 12) {
+                    Spacer()
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .font(.system(size: 40, weight: .medium))
+                        .foregroundStyle(Color.kineticsPurple.opacity(0.6))
+                    Text("No routines match \"\(selectedFilter)\"")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color.kineticsSubtext)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if viewModel.routines.isEmpty {
+                emptyState
+            } else {
+                routineList
+            }
         }
     }
 
@@ -163,7 +224,7 @@ struct RoutineListView: View {
     private var routineList: some View {
         ScrollView(.vertical, showsIndicators: false) {
             LazyVStack(spacing: 12) {
-                ForEach(viewModel.routines, id: \.id) { routine in
+                ForEach(filteredRoutines, id: \.id) { routine in
                     RoutineCard(routine: routine)
                         .contentShape(Rectangle())
                         .onTapGesture { selectedRoutine = routine }
@@ -719,12 +780,10 @@ struct RoutineDetailView: View {
     }
 
     private var estimatedMinutes: Int {
-        let totalSeconds = viewModel.slots.reduce(0) { acc, slot in
-            let setTime = slot.targetSets * 45
-            let restTime = max(0, slot.targetSets - 1) * slot.restSeconds
-            return acc + setTime + restTime
-        }
-        return max(1, Int(ceil(Double(totalSeconds) / 60.0)))
+        let totalSets = viewModel.slots.reduce(0) { $0 + $1.targetSets }
+        let raw = Double(totalSets) * 2.5
+        let rounded = (raw / 5.0).rounded(.up) * 5.0
+        return max(5, Int(rounded))
     }
 }
 
@@ -1706,12 +1765,10 @@ struct RoutineBuilderView: View {
     }
 
     private var builderEstimatedMinutes: Int {
-        let totalSeconds = viewModel.selectedSlots.reduce(0) { acc, slot in
-            let setTime = slot.targetSets * 45
-            let restTime = max(0, slot.targetSets - 1) * slot.restSeconds
-            return acc + setTime + restTime
-        }
-        return max(1, Int(ceil(Double(totalSeconds) / 60.0)))
+        let totalSets = viewModel.selectedSlots.reduce(0) { $0 + $1.targetSets }
+        let raw = Double(totalSets) * 2.5
+        let rounded = (raw / 5.0).rounded(.up) * 5.0
+        return max(5, Int(rounded))
     }
 }
 

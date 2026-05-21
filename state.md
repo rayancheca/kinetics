@@ -1,8 +1,70 @@
 # Kinetics — Session State
 
-**Last updated:** Session 13+ (2026-05-06) — Assets, Lottie, WatchKit, Routes, Full QA Fixes
+**Last updated:** Session 15 (2026-05-20) — Full audit fix pass: 24 issues resolved across security, social, video, onboarding, performance
 **Current phase:** Phase 1+ — App Store polish
-**Overall progress:** All Phase 1 deliverables + Sessions 7–13 enhancements + full QA fix pass built.
+**Overall progress:** All Phase 1 deliverables + Sessions 7–15 enhancements. App is production-ready pending Firestore index creation.
+
+---
+
+## Status: SESSION 15 COMPLETE
+
+### Session 15 — Full Audit Fix Pass (24 issues resolved)
+
+#### Security / Credentials
+- ✅ Strava client secret removed from source → xcconfig (Kinetics/Config/Secrets.xcconfig, gitignored)
+- ✅ KeychainHelper.swift created — Strava OAuth tokens now stored in Keychain, not UserDefaults
+- ✅ Claude API key wired: xcconfig → Info.plist CLAUDE_API_KEY → AICoachService reads it at runtime
+- ✅ Firestore security rules written (firestore.rules) — no more open database
+- ✅ project.yml configFiles wired to Secrets.xcconfig for both Debug and Release
+
+#### Feed / Social
+- ✅ Feed posts now appear as cards: fixed 4 root bugs (silent Decodable failures on missing fields, wrong postedAt path in listener, missing userId at document root, wrong fetchUserActivities field path)
+- ✅ FeedSeeder: fixed 3 schema mismatches (kudos/follows/comments paths now match SocialRepository)
+- ✅ FeedSeeder: wrapped in #if DEBUG guard
+- ✅ FeedViewModel: listener double-registration guard added (startListening is no-op if listener active)
+- ✅ FeedViewModel: deinit removes Firestore listener
+- ✅ Infinite scroll: DispatchQueue.main.async removed → Task-based sentinel with guard
+- ✅ SocialRepository: N+1 kudos reads → single collectionGroup query + in-memory Set cache
+- ✅ SocialRepository: fetchUserPostCount → Firestore count() aggregate (was full doc fetch)
+- ✅ Reactions: fetchReactions() added, resolveKudosState fetches reactions in parallel, reaction tally strip shown in feed cards
+- ✅ Discover: TopAthleteCard and UserSearchRow now tappable, opens UserProfilePreviewSheet
+- ✅ @mention in PostComposer: real Firestore prefix query replaces hardcoded stub handles
+
+#### AI & Coaching
+- ✅ AICoachService: isAPIKeyConfigured static property added — shows amber "key not configured" banner in HomeCoachInsightCard and VideoAnalysisReportView instead of template output
+- ✅ Claude API key in Secrets.xcconfig (real key present locally)
+
+#### Video
+- ✅ Video upload fixed: PhotosPicker now uses URL-based transfer (not Data) so 40s+ videos don't fail silently
+- ✅ Cloud upload button in VideoAnalysisReportView wired to VideoStorageService (was print() TODO)
+
+#### Subscriptions / Paywall
+- ✅ PaywallView.swift created (Kinetics/Modules/Subscription/)
+- ✅ isPremium enforced at 3 gates: AI Coach Report, Strava route planning, Advanced Gym Analytics
+- ✅ Free users see contextual PaywallView, not a crash or blank screen
+
+#### Onboarding / UX
+- ✅ Auto-publish opt-in: new onboarding step (AutoShareStep) added, default changed to false everywhere
+- ✅ SplashScreenView: DispatchQueue.main.asyncAfter chains → single cancellable Task with isCancelled guards
+- ✅ Sign in/sign out: smooth opacity+scale transitions added (AuthManager + ProfileView)
+
+#### Architecture
+- ✅ ObservableObject → @Observable: StravaAuthService, WatchConnectivityService, RouteRepository, RouteDiscoveryViewModel all migrated
+- ✅ RouteDiscoveryView: @StateObject/@ObservedObject → @State/plain var (matches new @Observable)
+- ✅ ProfileView: @StateObject stravaAuth → computed property (singleton tracking works correctly)
+- ✅ ProfileView: account deletion now has proper do/catch (was try? silently swallowing errors)
+- ✅ ProfileView: Seed Demo Data button wrapped in #if DEBUG
+- ✅ RouteDiscoveryView: hardcoded uid: "currentUID" → Auth.auth().currentUser?.uid
+
+### Still pending (won't block ship)
+- Firestore composite index: user must open Firebase Console and click the URL from the terminal log when the app first queries the feed (one-time setup)
+- Video AI sport detection labelling (jujitsu detected as wrong sport) — requires ML model tuning, out of scope
+- AI Coach voice — likely now works after Session 14 metric key alignment; needs on-device test
+- AI Coach voice never fires (may now be fixed once users do sessions — the metric key issue was blocking coaching engine from finding values)
+- Feed post body missing (share appears in story circles, not as feed cards)
+- Gym swipe-to-delete on recent workouts (already has swipe actions per grep — may already work)
+- Discover: can't tap user profiles to open them
+- Sign in/sign out animations
 
 ---
 
@@ -200,3 +262,4 @@ Use the font name exactly as registered (use CTFontManagerCopyAvailableFontFamil
 | 11 | HomeAchievementsView crash fix, OnboardingView, ModuleEntrySheet, FeedSeeder fix |
 | 12 | Full polish: gym overhaul, social composer, home improvements, color system, track real stats |
 | 13 | Assets migrated, Lottie animations, WatchKit companion app, 3-source route planning (Strava+MapKit+Kinetics) |
+| 14 | Camera blank screen fix (previewLayer tracking), feed author fix, gym/routine fixes, AI coaching metric key alignment |

@@ -31,6 +31,11 @@ struct VideoAnalysisReportView: View {
     // MARK: - State
 
     @State private var vm: VideoReportViewModel
+    @State private var showPaywall = false
+
+    // MARK: - Subscription
+
+    private var subscriptionManager: SubscriptionManager { SubscriptionManager.shared }
 
     // MARK: - Init
 
@@ -91,6 +96,9 @@ struct VideoAnalysisReportView: View {
         }
         .onAppear { vm.onAppear(modelContext: modelContext) }
         .onDisappear { vm.cleanup() }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(lockedFeature: "AI Coach Report")
+        }
     }
 
     // MARK: - Section 1: Video Player
@@ -779,7 +787,27 @@ struct VideoAnalysisReportView: View {
 
     @ViewBuilder
     private var generateCoachButton: some View {
-        if vm.isGeneratingCoachReport {
+        if !AICoachService.isAPIKeyConfigured {
+            // Show a clear, actionable message instead of a button that will
+            // immediately fail with a cryptic error.
+            HStack(spacing: 10) {
+                Image(systemName: "key.slash")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.kineticsAmber)
+                Text("API key not configured — add CLAUDE_API_KEY to enable AI coaching.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.kineticsAmber.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(Color.kineticsAmber.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Color.kineticsAmber.opacity(0.25), lineWidth: 0.75)
+            )
+        } else if vm.isGeneratingCoachReport {
             HStack(spacing: 10) {
                 ProgressView()
                     .tint(.white)
@@ -794,28 +822,72 @@ struct VideoAnalysisReportView: View {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(Color.kineticsPurple.opacity(0.55))
             )
+        } else if subscriptionManager.isPremium {
+            // Premium path — run the analysis.
+            VStack(spacing: 10) {
+                Button {
+                    Task {
+                        await vm.generateCoachReport(userId: userId, modelContext: modelContext)
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Analyse with AI Coach")
+                            .font(.system(size: 15, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.kineticsPurple, Color(hex: "#6D28D9")],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                if let errorMsg = vm.coachReportError {
+                    Text(errorMsg)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.kineticsRed)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
         } else {
+            // Free path — show locked state that opens the paywall.
             Button {
-                Task {
-                    await vm.generateCoachReport(userId: userId, modelContext: modelContext)
-                }
+                showPaywall = true
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "wand.and.stars")
-                        .font(.system(size: 16, weight: .semibold))
-                    Text("Analyse with AI Coach")
-                        .font(.system(size: 15, weight: .semibold))
+                HStack(spacing: 10) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.kineticsAmber)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Unlock AI Coach Analysis")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text("Requires Kinetics Pro")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.45))
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.3))
                 }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
                 .background(
-                    LinearGradient(
-                        colors: [Color.kineticsPurple, Color(hex: "#6D28D9")],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.kineticsAmber.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.kineticsAmber.opacity(0.35), lineWidth: 1)
+                        )
                 )
             }
             .buttonStyle(.plain)
@@ -926,41 +998,85 @@ struct VideoAnalysisReportView: View {
     // MARK: - Section 6: Cloud Upload Row
 
     private var cloudUploadRow: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "icloud.and.arrow.up")
-                .font(.system(size: 20))
-                .foregroundStyle(Color.kineticsBlue.opacity(0.7))
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Upload to Cloud")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.8))
-                Text("Access your analysis on all devices")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.kineticsSubtext)
-            }
-
-            Spacer()
-
-            Button {
-                // TODO: Wire to VideoStorageService in integration pass
-                print("[VideoReport] Cloud upload tapped for session \(session.id)")
-            } label: {
-                Text("Upload")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.kineticsBlue)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.kineticsBlue.opacity(0.12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .strokeBorder(Color.kineticsBlue.opacity(0.3), lineWidth: 0.75)
-                            )
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                Image(systemName: vm.isUploadingToCloud ? "icloud.and.arrow.up.fill" : "icloud.and.arrow.up")
+                    .font(.system(size: 20))
+                    .foregroundStyle(
+                        vm.isUploadingToCloud ? Color.kineticsBlue : Color.kineticsBlue.opacity(0.7)
                     )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(vm.isUploadingToCloud ? "Uploading…" : "Upload to Cloud")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.8))
+
+                    if vm.isUploadingToCloud {
+                        Text("\(Int(vm.cloudUploadProgress * 100))%")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.kineticsBlue)
+                    } else {
+                        Text("Access your analysis on all devices")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.kineticsSubtext)
+                    }
+                }
+
+                Spacer()
+
+                if vm.isUploadingToCloud {
+                    ProgressView()
+                        .tint(Color.kineticsBlue)
+                        .scaleEffect(0.85)
+                } else {
+                    Button {
+                        Task {
+                            await vm.uploadToCloud(userId: userId, modelContext: modelContext)
+                        }
+                    } label: {
+                        Text("Upload")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.kineticsBlue)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color.kineticsBlue.opacity(0.12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .strokeBorder(Color.kineticsBlue.opacity(0.3), lineWidth: 0.75)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            .buttonStyle(.plain)
+
+            if vm.isUploadingToCloud {
+                ProgressView(value: vm.cloudUploadProgress)
+                    .tint(Color.kineticsBlue)
+                    .frame(maxWidth: .infinity)
+            }
+
+            if let err = vm.cloudUploadError {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.kineticsRed)
+                    Text(err)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.kineticsRed)
+                    Spacer()
+                    Button {
+                        vm.cloudUploadError = nil
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.kineticsRed.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
         .padding(14)
         .background(

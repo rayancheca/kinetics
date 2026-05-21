@@ -179,6 +179,7 @@ struct SearchDiscoverView: View {
     @Environment(AppState.self) private var appState
     @State private var viewModel = DiscoverViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var profilePreviewUserId: String?
 
     private var currentUserId: String {
         appState.authManager.currentUser?.uid ?? ""
@@ -221,6 +222,15 @@ struct SearchDiscoverView: View {
             }
             .task {
                 await viewModel.loadDiscover(currentUserId: currentUserId)
+            }
+            .sheet(isPresented: Binding(
+                get: { profilePreviewUserId != nil },
+                set: { if !$0 { profilePreviewUserId = nil } }
+            )) {
+                if let userId = profilePreviewUserId {
+                    UserProfilePreviewSheet(userId: userId)
+                        .environment(appState)
+                }
             }
         }
     }
@@ -298,7 +308,8 @@ struct SearchDiscoverView: View {
                                             currentDisplayName: currentDisplayName
                                         )
                                     }
-                                }
+                                },
+                                onTap: { profilePreviewUserId = athlete.id }
                             )
                         }
                     }
@@ -412,7 +423,8 @@ struct SearchDiscoverView: View {
                             },
                             onUnfollow: {
                                 Task { await viewModel.unfollow(userId: athlete.id, currentUserId: currentUserId) }
-                            }
+                            },
+                            onTap: { profilePreviewUserId = athlete.id }
                         )
                         .padding(.horizontal, 16)
                         Divider().background(.white.opacity(0.05)).padding(.horizontal, 16)
@@ -460,7 +472,8 @@ struct SearchDiscoverView: View {
                                 },
                                 onUnfollow: {
                                     Task { await viewModel.unfollow(userId: profile.id, currentUserId: currentUserId) }
-                                }
+                                },
+                                onTap: { profilePreviewUserId = profile.id }
                             )
                             .padding(.horizontal, 16)
                             Divider().background(.white.opacity(0.05)).padding(.horizontal, 16)
@@ -516,41 +529,45 @@ private struct TopAthleteCard: View {
     let profile: UserProfile
     let followStatus: FollowStatus
     let onFollow: () -> Void
+    let onTap: () -> Void
 
     private var emoji: String {
         String(profile.displayName.prefix(1)).uppercased()
     }
 
     var body: some View {
-        VStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(
-                        colors: [Color.kineticsPurple, Color.kineticsBlue],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 54, height: 54)
-                Text(emoji)
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+        Button(action: onTap) {
+            VStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(
+                            colors: [Color.kineticsPurple, Color.kineticsBlue],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        ))
+                        .frame(width: 54, height: 54)
+                    Text(emoji)
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
+                VStack(spacing: 2) {
+                    Text(profile.displayName)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    SportBadge(sport: profile.primarySport)
+                }
+                Text("\(profile.totalWorkouts) workouts")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(Color.kineticsSubtext)
+                DiscoverFollowButton(status: followStatus, onFollow: onFollow)
+                    .frame(maxWidth: .infinity)
             }
-            VStack(spacing: 2) {
-                Text(profile.displayName)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                SportBadge(sport: profile.primarySport)
-            }
-            Text("\(profile.totalWorkouts) workouts")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(Color.kineticsSubtext)
-            DiscoverFollowButton(status: followStatus, onFollow: onFollow)
-                .frame(maxWidth: .infinity)
+            .padding(12)
+            .frame(width: 110)
+            .background(Color(white: 0.08), in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.white.opacity(0.07), lineWidth: 1))
         }
-        .padding(12)
-        .frame(width: 110)
-        .background(Color(white: 0.08), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.white.opacity(0.07), lineWidth: 1))
+        .buttonStyle(.plain)
     }
 }
 
@@ -664,37 +681,42 @@ struct UserSearchRow: View {
     let followStatus: FollowStatus
     let onFollow: () -> Void
     let onUnfollow: () -> Void
+    var onTap: (() -> Void)? = nil
 
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(
-                        colors: [Color.kineticsPurple, Color.kineticsBlue],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 44, height: 44)
-                Text(String(profile.displayName.prefix(1)).uppercased())
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+        Button(action: { onTap?() }) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(
+                            colors: [Color.kineticsPurple, Color.kineticsBlue],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        ))
+                        .frame(width: 44, height: 44)
+                    Text(String(profile.displayName.prefix(1)).uppercased())
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(profile.displayName)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Text(profile.username)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.kineticsSubtext)
+                        .lineLimit(1)
+                }
+                Spacer()
+                SportBadge(sport: profile.primarySport)
+                if followStatus != .self_ {
+                    DiscoverFollowButton(status: followStatus, onFollow: followStatus == .following ? onUnfollow : onFollow)
+                }
             }
-            VStack(alignment: .leading, spacing: 3) {
-                Text(profile.displayName)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                Text(profile.username)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.kineticsSubtext)
-                    .lineLimit(1)
-            }
-            Spacer()
-            SportBadge(sport: profile.primarySport)
-            if followStatus != .self_ {
-                DiscoverFollowButton(status: followStatus, onFollow: followStatus == .following ? onUnfollow : onFollow)
-            }
+            .padding(.vertical, 12)
         }
-        .padding(.vertical, 12)
+        .buttonStyle(.plain)
+        .disabled(onTap == nil)
     }
 }
 

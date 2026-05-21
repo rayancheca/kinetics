@@ -237,7 +237,6 @@ final class WallBetaViewModel {
         Task {
             await SessionFeedPublisher.publish(
                 userId: userId,
-                displayName: "",
                 sport: "Wall Beta",
                 activityType: "wall",
                 itemType: .wallSession,
@@ -399,6 +398,7 @@ final class WallBetaViewModel {
     private func snapshotMetricsDict() -> [String: Double] {
         [
             // Keys read by WallBetaSessionReportView (0–1 fractions where noted)
+            "hipProximityScore":        metrics.hipProximityScore,
             "hip_proximity_score":      metrics.hipProximityScore / 100.0,
             "sag_events":               metrics.isHipSag ? 1.0 : 0.0,
             "dyno_arc_smoothness":      metrics.isDynoDetected ? 0.85 : 0.0,

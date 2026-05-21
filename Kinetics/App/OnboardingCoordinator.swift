@@ -10,7 +10,8 @@ enum OnboardingStep: Int, CaseIterable {
     case videoAnalysis  = 2
     case aiCoach        = 3
     case socialFeed     = 4
-    case done           = 5
+    case autoShare      = 5
+    case done           = 6
 }
 
 // MARK: - OnboardingCoordinator

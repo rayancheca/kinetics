@@ -37,6 +37,12 @@ final class VideoReportViewModel {
     var showSkeletonOverlay = true
     var activeSection: ReportSection = .overview
 
+    // MARK: - Cloud Upload State
+
+    var isUploadingToCloud = false
+    var cloudUploadProgress: Double = 0.0
+    var cloudUploadError: String?
+
     // MARK: - Init
 
     init(session: VideoSession) {
@@ -187,6 +193,62 @@ final class VideoReportViewModel {
         } catch {
             coachReportError = error.localizedDescription
         }
+    }
+
+    // MARK: - Cloud Upload
+
+    /// Uploads the session's local video file to Firebase Storage.
+    /// Updates `cloudUploadProgress` during the transfer and writes the
+    /// returned download URL back to `session.cloudStorageURL`.
+    func uploadToCloud(userId: String, modelContext: ModelContext) async {
+        guard !isUploadingToCloud else { return }
+
+        let path = session.localVideoPath
+        guard !path.isEmpty else {
+            cloudUploadError = "No local video file found for this session."
+            return
+        }
+
+        let localURL: URL
+        if path.hasPrefix("/") {
+            localURL = URL(fileURLWithPath: path)
+        } else {
+            let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            localURL = docs.appendingPathComponent(path)
+        }
+
+        guard FileManager.default.fileExists(atPath: localURL.path) else {
+            cloudUploadError = "Local video file is missing — re-import the video to enable cloud upload."
+            return
+        }
+
+        isUploadingToCloud = true
+        cloudUploadProgress = 0.0
+        cloudUploadError = nil
+
+        do {
+            // `uploadVideo` is an `actor` method; we capture `self` (the VM, a
+            // class) via a `@Sendable` closure that hops back to MainActor to
+            // update observable state.
+            let downloadURL = try await VideoStorageService.shared.uploadVideo(
+                localURL: localURL,
+                userId: userId,
+                videoId: session.id,
+                progressHandler: { [weak self] fraction in
+                    Task { @MainActor [weak self] in
+                        self?.cloudUploadProgress = fraction
+                    }
+                }
+            )
+
+            session.cloudStorageURL = downloadURL
+            try? modelContext.save()
+
+        } catch {
+            cloudUploadError = error.localizedDescription
+        }
+
+        isUploadingToCloud = false
     }
 
     // MARK: - Seek to Tip

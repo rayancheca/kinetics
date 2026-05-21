@@ -293,21 +293,25 @@ struct FeedItem: Codable, Identifiable, Sendable, Hashable {
         id = try c.decode(String.self, forKey: .id)
         userId = try c.decode(String.self, forKey: .userId)
         displayName = try c.decode(String.self, forKey: .displayName)
-        username = try c.decode(String.self, forKey: .username)
-        avatarURL = try c.decode(String.self, forKey: .avatarURL)
+        // Use decodeIfPresent for denormalised author fields — older documents written
+        // before these fields were added decode cleanly with empty-string fallbacks.
+        username = try c.decodeIfPresent(String.self, forKey: .username) ?? ""
+        avatarURL = try c.decodeIfPresent(String.self, forKey: .avatarURL) ?? ""
         itemType = try c.decode(FeedItemType.self, forKey: .itemType)
         title = try c.decode(String.self, forKey: .title)
-        subtitle = try c.decode(String.self, forKey: .subtitle)
+        subtitle = try c.decodeIfPresent(String.self, forKey: .subtitle) ?? ""
         caption = try c.decodeIfPresent(String.self, forKey: .caption)
-        metrics = try c.decode([FeedMetric].self, forKey: .metrics)
+        metrics = try c.decodeIfPresent([FeedMetric].self, forKey: .metrics) ?? []
         exerciseSummaries = try c.decodeIfPresent([ExerciseSummary].self, forKey: .exerciseSummaries)
         routeCoordinates = try c.decodeIfPresent([[Double]].self, forKey: .routeCoordinates)
-        imageURL = try c.decode(String.self, forKey: .imageURL)
+        imageURL = try c.decodeIfPresent(String.self, forKey: .imageURL) ?? ""
         postedAt = try c.decode(Date.self, forKey: .postedAt)
-        kudosCount = try c.decode(Int.self, forKey: .kudosCount)
-        commentCount = try c.decode(Int.self, forKey: .commentCount)
-        workoutId = try c.decode(String.self, forKey: .workoutId)
-        activityType = try c.decode(String.self, forKey: .activityType)
+        kudosCount = try c.decodeIfPresent(Int.self, forKey: .kudosCount) ?? 0
+        commentCount = try c.decodeIfPresent(Int.self, forKey: .commentCount) ?? 0
+        // workoutId and activityType are written by SessionFeedPublisher for module posts,
+        // but may be absent in legacy documents — fall back to safe defaults.
+        workoutId = try c.decodeIfPresent(String.self, forKey: .workoutId) ?? ""
+        activityType = try c.decodeIfPresent(String.self, forKey: .activityType) ?? "workout"
         // Resolved client-side after fetch; defaults set here.
         isLikedByCurrentUser = false
         reactions = [:]

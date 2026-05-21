@@ -92,6 +92,13 @@ final class FeedViewModel {
     var kudosFloatingItems: [String: Bool] = [:]
     var scrollToTopTrigger = false
 
+    // MARK: - Lifecycle
+
+    deinit {
+        listenerRegistration?.remove()
+        listenerRegistration = nil
+    }
+
     // MARK: - Pagination cursor
 
     /// `postedAt` timestamp (ms) of the oldest item in `feedItems`.
@@ -160,6 +167,8 @@ final class FeedViewModel {
         newPostsAvailable = false
         newPostsCount     = 0
         pendingNewPosts   = []
+        // Reset the listener so it re-anchors to the new feed head after refresh.
+        stopListening()
         defer { isRefreshing = false }
         do {
             // Haptic
@@ -238,8 +247,13 @@ final class FeedViewModel {
 
     // MARK: - Realtime listener
 
-    func listenForNewPosts() {
+    func stopListening() {
         listenerRegistration?.remove()
+        listenerRegistration = nil
+    }
+
+    func listenForNewPosts() {
+        guard listenerRegistration == nil else { return }
         guard let latestMs = feedItems.first.map({ $0.postedAt.timeIntervalSince1970 * 1_000 }) else { return }
 
         listenerRegistration = Firestore.firestore()
@@ -249,8 +263,8 @@ final class FeedViewModel {
             .addSnapshotListener { [weak self] snapshot, _ in
                 guard let self else { return }
                 guard let docs = snapshot?.documents, let doc = docs.first else { return }
-                guard let wrapper = doc.data()["data"] as? [String: Any],
-                      let ms = wrapper["postedAt"] as? Double,
+                // "postedAt" is at the document root, not inside the "data" envelope.
+                guard let ms = doc.data()["postedAt"] as? Double,
                       ms > latestMs else { return }
                 // A new post has arrived that is newer than our current feed head.
                 // We do a lightweight re-fetch to get the actual item.
@@ -582,22 +596,14 @@ struct FeedView: View {
                 .padding(.horizontal, 16)
             }
 
-            // Infinite scroll trigger — fires when last card comes near the bottom
+            // Infinite scroll trigger — fires when the sentinel row appears near the bottom
             if !viewModel.filteredItems.isEmpty {
-                GeometryReader { geo -> Color in
-                    let frame = geo.frame(in: .global)
-                    let screenHeight = (UIApplication.shared.connectedScenes
-                        .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene)
-                        .flatMap { $0.windows.first }
-                        .map { $0.bounds.height } ?? 852
-                    DispatchQueue.main.async {
-                        if frame.maxY < screenHeight + 200 {
-                            Task { await viewModel.loadMore() }
-                        }
+                Color.clear
+                    .frame(height: 1)
+                    .onAppear {
+                        guard !viewModel.isLoadingMore, viewModel.hasMore else { return }
+                        Task { await viewModel.loadMore() }
                     }
-                    return Color.clear
-                }
-                .frame(height: 1)
             }
 
             // Load more spinner

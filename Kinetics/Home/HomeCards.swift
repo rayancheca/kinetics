@@ -236,18 +236,60 @@ struct HomeReadinessCard: View {
 // MARK: - HomeCoachInsightCard
 
 /// Coaching card: sport-colour left border, metric, trend arrow, advice copy.
+///
+/// When no valid Claude API key is configured (`!AICoachService.isAPIKeyConfigured`),
+/// the card replaces the coaching content with a clear, actionable banner so the
+/// user knows exactly why AI output is unavailable instead of seeing template text.
 struct HomeCoachInsightCard: View {
 
     let insight: HomeCoachInsight?
     /// Called when the user taps "Practice this →". The caller navigates to the Train tab.
     var onPractice: (() -> Void)? = nil
 
+    private var apiKeyConfigured: Bool { AICoachService.isAPIKeyConfigured }
+
     var body: some View {
-        if let insight {
+        if !apiKeyConfigured {
+            // API key is missing — show a clear actionable message regardless of
+            // whether session data exists.
+            missingKeyBanner
+        } else if let insight {
             filledCard(insight)
         } else {
             emptyCard
         }
+    }
+
+    // MARK: - Missing Key Banner
+
+    private var missingKeyBanner: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.kineticsAmber.opacity(0.14))
+                    .frame(width: 40, height: 40)
+                Image(systemName: "key.slash")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.kineticsAmber)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text("AI coaching unavailable")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.85))
+                Text("Add your Claude API key in Settings → CLAUDE_API_KEY to enable personalised coaching.")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.50))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.kineticsAmber.opacity(0.07))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.kineticsAmber.opacity(0.22), lineWidth: 0.75)
+        )
     }
 
     // MARK: - Empty State

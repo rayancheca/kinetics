@@ -4,12 +4,12 @@ import CoreLocation
 
 // MARK: - RouteRepository
 
-@MainActor
-final class RouteRepository: ObservableObject {
+@Observable @MainActor
+final class RouteRepository {
     static let shared = RouteRepository()
 
-    @Published var communityRoutes: [KineticsRoute] = []
-    @Published var myRoutes: [KineticsRoute] = []
+    var communityRoutes: [KineticsRoute] = []
+    var myRoutes: [KineticsRoute] = []
 
     private let db = Firestore.firestore()
 

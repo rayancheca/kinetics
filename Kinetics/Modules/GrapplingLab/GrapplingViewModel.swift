@@ -196,7 +196,6 @@ final class GrapplingViewModel {
         Task {
             await SessionFeedPublisher.publish(
                 userId: userId,
-                displayName: "",
                 sport: "Grappling Lab",
                 activityType: "grappling",
                 itemType: .grapplingSession,
@@ -329,6 +328,7 @@ final class GrapplingViewModel {
     private func snapshotMetricsDict() -> [String: Double] {
         [
             // Report-view keys (must match GrapplingSessionReportView derived properties)
+            "kuzushiIndex":      metrics.kuzushiIndex,
             "kuzushi_index":     metrics.kuzushiIndex,
             "base_stability":    metrics.isBaseStable ? 1.0 : 0.0,
             "postural_breaks":   metrics.isPosturalAlert ? 1.0 : 0.0,

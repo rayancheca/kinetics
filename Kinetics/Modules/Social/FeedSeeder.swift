@@ -25,12 +25,14 @@ final class FeedSeeder {
     /// Checks the `_meta/feed_seeded_v3` flag and seeds only if absent.
     /// Uses v3 to force a fresh seed that includes comments, follows, and kudos.
     func seedIfNeeded() async {
+        #if DEBUG
         guard FirebaseApp.app() != nil else { return }
         let flagDoc = try? await db.collection("_meta").document("feed_seeded_v3").getDocument()
         if flagDoc?.exists == true { return }
         await seed()
         try? await db.collection("_meta").document("feed_seeded_v3")
             .setData(["seededAt": Date().timeIntervalSince1970])
+        #endif
     }
 
     /// Unconditionally writes all demo users, posts, follows, comments, and kudos to Firestore.
@@ -800,16 +802,33 @@ final class FeedSeeder {
     }
 
     private func writeFollow(followerId: String, followingId: String, createdAt: Double) async {
-        let docId = "\(followerId)_\(followingId)"
-        let data: [String: Any] = [
-            "followerId": followerId,
-            "followingId": followingId,
-            "status": "accepted",
-            "createdAt": createdAt,
+        let followedAtMs = createdAt * 1_000
+
+        let followingData: [String: Any] = [
+            "userId": followingId,
+            "displayName": "",
+            "username": "",
+            "avatarURL": "",
+            "primarySport": "",
+            "followedAt": followedAtMs,
         ]
-        try? await db.collection("follows")
-            .document(docId)
-            .setData(data)
+        try? await db
+            .collection("users").document(followerId)
+            .collection("following").document(followingId)
+            .setData(followingData)
+
+        let followerData: [String: Any] = [
+            "userId": followerId,
+            "displayName": "",
+            "username": "",
+            "avatarURL": "",
+            "primarySport": "",
+            "followedAt": followedAtMs,
+        ]
+        try? await db
+            .collection("users").document(followingId)
+            .collection("followers").document(followerId)
+            .setData(followerData)
     }
 
     // MARK: - Seed Comments
@@ -931,18 +950,18 @@ final class FeedSeeder {
                 let commentData: [String: Any] = [
                     "data": [
                         "id": commentId,
-                        "activityId": postId,
                         "userId": commenterId,
                         "displayName": commenterInfo.0,
-                        "username": commenterInfo.1,
+                        "avatarURL": "",
                         "text": text,
+                        "postedAt": ts,
                         "createdAt": ts,
                     ] as [String: Any],
                 ]
 
-                try? await db.collection("comments")
+                try? await db.collection("activity")
                     .document(postId)
-                    .collection("entries")
+                    .collection("comments")
                     .document(commentId)
                     .setData(commentData)
                 count += 1
@@ -1002,11 +1021,14 @@ final class FeedSeeder {
     }
 
     private func writeKudo(postId: String, userId: String, likedAt: Double) async {
-        try? await db.collection("kudos")
+        try? await db.collection("activity")
             .document(postId)
-            .collection("likes")
+            .collection("kudos")
             .document(userId)
-            .setData(["likedAt": likedAt])
+            .setData([
+                "userId": userId,
+                "likedAt": likedAt * 1_000,
+            ])
     }
 
     // MARK: - Private Write Helpers
@@ -1026,7 +1048,8 @@ final class FeedSeeder {
             .document(item.id)
             .setData([
                 "data": json,
-                "postedAt": item.postedAt.timeIntervalSince1970 * 1_000
+                "postedAt": item.postedAt.timeIntervalSince1970 * 1_000,
+                "userId": item.userId
             ])
     }
 

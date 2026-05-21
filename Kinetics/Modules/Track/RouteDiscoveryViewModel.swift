@@ -1,17 +1,16 @@
 import Foundation
 import CoreLocation
-import Combine
 
 // MARK: - RouteDiscoveryViewModel
 
-@MainActor
-final class RouteDiscoveryViewModel: ObservableObject {
-    @Published var mapKitRoutes: [MapKitRouteService.LoopRoute] = []
-    @Published var stravaRoutes: [StravaRoute] = []
-    @Published var communityRoutes: [KineticsRoute] = []
-    @Published var isLoading = false
+@Observable @MainActor
+final class RouteDiscoveryViewModel {
+    var mapKitRoutes: [MapKitRouteService.LoopRoute] = []
+    var stravaRoutes: [StravaRoute] = []
+    var communityRoutes: [KineticsRoute] = []
+    var isLoading = false
 
-    @Published var targetDistance: Double = 5.0 {
+    var targetDistance: Double = 5.0 {
         didSet {
             Task { await reloadMapKitRoutes() }
         }

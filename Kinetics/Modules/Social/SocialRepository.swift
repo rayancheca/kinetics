@@ -41,6 +41,16 @@ final class SocialRepository {
     /// `true` only when a real Firebase app has been configured.
     private var isFirebaseReady: Bool { FirebaseApp.app() != nil }
 
+    /// In-memory cache of post IDs the current user has kudosed.
+    ///
+    /// Populated lazily by `warmKudosCache(for:)` on the first feed load.
+    /// `nil` means the cache has not yet been fetched; an empty `Set` means the
+    /// user has not kudosed anything.
+    private var kudosCache: Set<String>?
+
+    /// The user ID whose kudos are currently cached.
+    private var kudosCacheUserId: String?
+
     private init() {}
 
     // MARK: - Feed
@@ -176,10 +186,17 @@ final class SocialRepository {
         guard isFirebaseReady else { return }
 
         let dict = try encodeFeedItem(item)
+        // Write userId and postedAt at the document root so they can be used in
+        // Firestore whereField / orderBy queries without requiring composite indexes
+        // on nested fields inside the "data" envelope.
         try await db
             .collection("activity")
             .document(item.id)
-            .setData(["data": dict, "postedAt": item.postedAt.timeIntervalSince1970 * 1_000])
+            .setData([
+                "data": dict,
+                "postedAt": item.postedAt.timeIntervalSince1970 * 1_000,
+                "userId": item.userId
+            ])
 
         logActivity(event: "posted", parameters: [
             "item_type": item.itemType.rawValue as NSString,
@@ -228,7 +245,7 @@ final class SocialRepository {
         try await db
             .collection("activity")
             .document(mirrorId)
-            .setData(["data": dict, "postedAt": item.postedAt.timeIntervalSince1970 * 1_000])
+            .setData(["data": dict, "postedAt": item.postedAt.timeIntervalSince1970 * 1_000, "userId": item.userId])
     }
 
     // MARK: - Delete Activity
@@ -293,6 +310,9 @@ final class SocialRepository {
             try await activityRef.updateData([
                 "data.kudosCount": FieldValue.increment(Int64(-1))
             ])
+            // Invalidate the cache entry so the next resolveKudosState call
+            // reflects the unlike without a full cache refresh.
+            kudosCache?.remove(activityId)
             logActivity(event: "kudos_removed", parameters: [
                 "activity_id": activityId as NSString
             ])
@@ -306,6 +326,8 @@ final class SocialRepository {
             try await activityRef.updateData([
                 "data.kudosCount": FieldValue.increment(Int64(1))
             ])
+            // Reflect the like in the cache immediately.
+            kudosCache?.insert(activityId)
             logActivity(event: "kudos_added", parameters: [
                 "activity_id": activityId as NSString
             ])
@@ -480,6 +502,29 @@ final class SocialRepository {
             "activity_id": activityId as NSString,
             "reaction_type": type as NSString
         ])
+    }
+
+    /// Fetches reaction counts for `activityId` from `kudos/{activityId}/reactions`.
+    ///
+    /// Returns a `[String: Int]` map where each key is a `ReactionType` raw value
+    /// and the value is the number of users who posted that reaction.
+    ///
+    /// Returns an empty dictionary when Firebase is not configured or no reactions exist.
+    func fetchReactions(for activityId: String) async -> [String: Int] {
+        guard isFirebaseReady else { return [:] }
+
+        let snap = try? await db
+            .collection("kudos")
+            .document(activityId)
+            .collection("reactions")
+            .getDocuments()
+
+        var counts: [String: Int] = [:]
+        for doc in snap?.documents ?? [] {
+            guard let type = doc.data()["type"] as? String else { continue }
+            counts[type, default: 0] += 1
+        }
+        return counts
     }
 
     // MARK: - postComment convenience (CommentSheetView)
@@ -758,41 +803,82 @@ final class SocialRepository {
 
     // MARK: - Private Helpers
 
-    /// Checks the kudos sub-collection for each item and returns an updated array
-    /// with `isLikedByCurrentUser` set correctly.
+    /// Ensures the kudos cache is populated for `userId`.
     ///
-    /// Runs checks serially to stay on `@MainActor` and avoid Sendable issues with
-    /// the non-Sendable `Firestore` type.
+    /// Fires a **single** Firestore `collectionGroup` query that fetches every
+    /// `kudos/{userId}` document across all `activity` sub-collections, then
+    /// stores the parent activity IDs in `kudosCache`.
+    ///
+    /// The cache is skipped when it has already been loaded for the same user
+    /// this session, so subsequent page loads are free set-lookups.
+    private func warmKudosCache(for userId: String) async {
+        // Already warm for this user — skip the round-trip.
+        if kudosCacheUserId == userId, kudosCache != nil { return }
+
+        let snap = try? await db
+            .collectionGroup("kudos")
+            .whereField(FieldPath.documentID(), isEqualTo: userId)
+            .getDocuments()
+
+        let likedIds = (snap?.documents ?? []).compactMap { doc -> String? in
+            // Path: activity/{activityId}/kudos/{userId}
+            // The grandparent segment is the activity ID.
+            let segments = doc.reference.path.components(separatedBy: "/")
+            // segments = ["activity", activityId, "kudos", userId]
+            guard segments.count == 4 else { return nil }
+            return segments[1]
+        }
+
+        kudosCache = Set(likedIds)
+        kudosCacheUserId = userId
+    }
+
+    /// Resolves `isLikedByCurrentUser` and `reactions` for each item.
+    ///
+    /// - Kudos state: warms the in-memory cache with a single Firestore query on first call;
+    ///   subsequent page loads are free `Set` lookups.
+    /// - Reactions: fetched in parallel for all items in the page using a `TaskGroup`.
+    ///   Results are a `[String: Int]` tally keyed by `ReactionType` raw value.
     private func resolveKudosState(for items: [FeedItem], currentUserId: String) async -> [FeedItem] {
-        var resolved = items
-        for (index, item) in items.enumerated() {
-            let kudosRef = db
-                .collection("activity")
-                .document(item.id)
-                .collection("kudos")
-                .document(currentUserId)
-            let doc = try? await kudosRef.getDocument()
-            if doc?.exists == true {
-                let original = resolved[index]
-                resolved[index] = FeedItem(
-                    id: original.id, userId: original.userId,
-                    displayName: original.displayName, username: original.username,
-                    avatarURL: original.avatarURL, itemType: original.itemType,
-                    title: original.title, subtitle: original.subtitle,
-                    caption: original.caption, metrics: original.metrics,
-                    exerciseSummaries: original.exerciseSummaries,
-                    routeCoordinates: original.routeCoordinates,
-                    imageURL: original.imageURL, postedAt: original.postedAt,
-                    kudosCount: original.kudosCount,
-                    commentCount: original.commentCount,
-                    isLikedByCurrentUser: true,
-                    reactions: original.reactions,
-                    workoutId: original.workoutId,
-                    activityType: original.activityType
-                )
+        await warmKudosCache(for: currentUserId)
+        let liked = kudosCache ?? []
+
+        // Fetch all reaction maps in parallel.
+        var reactionsByItemId: [String: [String: Int]] = [:]
+        await withTaskGroup(of: (String, [String: Int]).self) { group in
+            for item in items {
+                let itemId = item.id
+                group.addTask { @MainActor in
+                    let counts = await self.fetchReactions(for: itemId)
+                    return (itemId, counts)
+                }
+            }
+            for await (itemId, counts) in group {
+                reactionsByItemId[itemId] = counts
             }
         }
-        return resolved
+
+        return items.map { item in
+            let isLiked = liked.contains(item.id)
+            let reactions = reactionsByItemId[item.id] ?? [:]
+            guard isLiked || !reactions.isEmpty else { return item }
+            return FeedItem(
+                id: item.id, userId: item.userId,
+                displayName: item.displayName, username: item.username,
+                avatarURL: item.avatarURL, itemType: item.itemType,
+                title: item.title, subtitle: item.subtitle,
+                caption: item.caption, metrics: item.metrics,
+                exerciseSummaries: item.exerciseSummaries,
+                routeCoordinates: item.routeCoordinates,
+                imageURL: item.imageURL, postedAt: item.postedAt,
+                kudosCount: item.kudosCount,
+                commentCount: item.commentCount,
+                isLikedByCurrentUser: isLiked,
+                reactions: reactions,
+                workoutId: item.workoutId,
+                activityType: item.activityType
+            )
+        }
     }
 
     private func decodeFollowRelationship(from d: [String: Any]) -> FollowRelationship? {
@@ -858,14 +944,18 @@ final class SocialRepository {
 
     /// Returns the number of activity documents posted by `userId`.
     ///
+    /// Uses Firestore's `count()` aggregate so no document data is transferred —
+    /// only the resulting integer is returned from the server.
+    ///
     /// Returns `0` when Firebase is not configured.
     func fetchUserPostCount(userId: String) async throws -> Int {
         guard isFirebaseReady else { return 0 }
-        let snap = try await db
+        let countQuery = db
             .collection("activity")
             .whereField("userId", isEqualTo: userId)
-            .getDocuments()
-        return snap.documents.count
+            .count
+        let snapshot = try await countQuery.getAggregation(source: .server)
+        return Int(truncating: snapshot.count)
     }
 
     /// Returns up to `limit` user profiles sorted by `totalWorkouts` descending.

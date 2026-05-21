@@ -394,14 +394,12 @@ final class Routine {
     }
 
     /// Estimated total workout duration in minutes.
-    /// Formula: sum over each slot of (targetSets x restSeconds) + (targetSets x 45s avg set time).
+    /// Formula: totalSets × 2.5 min per set (≈ 45s work + ~105s rest, rounded to nearest 5).
     var estimatedMinutes: Int {
-        let totalSeconds = slots.reduce(0) { acc, slot in
-            let setTime = slot.targetSets * 45
-            let restTime = max(0, slot.targetSets - 1) * slot.restSeconds
-            return acc + setTime + restTime
-        }
-        return max(1, Int(ceil(Double(totalSeconds) / 60.0)))
+        let totalSets = slots.reduce(0) { $0 + $1.targetSets }
+        let raw = Double(totalSets) * 2.5
+        let rounded = (raw / 5.0).rounded(.up) * 5.0
+        return max(5, Int(rounded))
     }
 }
 

@@ -12,7 +12,8 @@ import SwiftUI
 ///   2 — Video Analysis (tap a source icon)
 ///   3 — AI Coach (tap the example coaching card)
 ///   4 — Social Feed (tap the kudos button)
-///   5 — Done (checkmark animation → Start Training)
+///   5 — Auto Share (opt-in choice — sets auto_publish_sessions)
+///   6 — Done (checkmark animation → Start Training)
 @MainActor
 struct OnboardingView: View {
 
@@ -60,6 +61,9 @@ struct OnboardingView: View {
                             .transition(stepTransition)
                     case .socialFeed:
                         SocialFeedStep(onInteraction: unlock)
+                            .transition(stepTransition)
+                    case .autoShare:
+                        AutoShareStep(onInteraction: unlock)
                             .transition(stepTransition)
                     case .done:
                         DoneStep(onFinish: finish)
@@ -158,6 +162,7 @@ struct OnboardingView: View {
         case .videoAnalysis: return Color.kineticsBlue
         case .aiCoach:       return Color.kineticsGreen
         case .socialFeed:    return Color.kineticsPurple
+        case .autoShare:     return Color.kineticsPurple
         case .done:          return Color.kineticsBlue
         }
     }
@@ -935,7 +940,152 @@ private struct FeedMetricTile: View {
     }
 }
 
-// MARK: - Step 6: Done
+// MARK: - Step 6: Auto Share
+
+/// Opt-in prompt for auto-publishing sessions to the community feed.
+/// The user must tap one of the two buttons to unlock Continue — there is no
+/// way to skip this step without making a deliberate choice.
+private struct AutoShareStep: View {
+
+    let onInteraction: () -> Void
+
+    @AppStorage("auto_publish_sessions") private var autoPublish = false
+
+    @State private var selection: Bool? = nil   // nil = no choice yet
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 28) {
+                // Header
+                VStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.kineticsPurple.opacity(0.12))
+                            .frame(width: 100, height: 100)
+                        Circle()
+                            .fill(Color.kineticsPurple.opacity(0.06))
+                            .frame(width: 136, height: 136)
+                        Image(systemName: "square.and.arrow.up.circle.fill")
+                            .font(.system(size: 56, weight: .semibold))
+                            .foregroundStyle(Color.kineticsPurple)
+                    }
+
+                    VStack(spacing: 8) {
+                        Text("AUTO-SHARE SESSIONS")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(3)
+                            .foregroundStyle(Color.kineticsPurple)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
+                            .background(Color.kineticsPurple.opacity(0.14))
+                            .clipShape(Capsule())
+
+                        Text("Share sessions to your feed automatically?")
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+
+                        Text("When enabled, completed sessions appear in the community feed so friends can give you kudos. You can change this at any time in Profile settings.")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.white.opacity(0.50))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4)
+                            .padding(.horizontal, 28)
+                    }
+                }
+
+                // Choice buttons
+                VStack(spacing: 12) {
+                    // Yes
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                            selection = true
+                            autoPublish = true
+                        }
+                        onInteraction()
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: selection == true ? "checkmark.circle.fill" : "circle")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(
+                                    selection == true ? Color.kineticsPurple : .white.opacity(0.35)
+                                )
+                            Text("Yes, share my sessions")
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                .foregroundStyle(selection == true ? .white : .white.opacity(0.75))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 16)
+                        .background(
+                            selection == true
+                                ? Color.kineticsPurple.opacity(0.18)
+                                : Color.kineticsDark
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(
+                                    selection == true
+                                        ? Color.kineticsPurple.opacity(0.65)
+                                        : Color.white.opacity(0.1),
+                                    lineWidth: 1.5
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    // No
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                            selection = false
+                            autoPublish = false
+                        }
+                        onInteraction()
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: selection == false ? "checkmark.circle.fill" : "circle")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(
+                                    selection == false ? Color.kineticsBlue : .white.opacity(0.35)
+                                )
+                            Text("No thanks, keep sessions private")
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                .foregroundStyle(selection == false ? .white : .white.opacity(0.75))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 16)
+                        .background(
+                            selection == false
+                                ? Color.kineticsBlue.opacity(0.12)
+                                : Color.kineticsDark
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(
+                                    selection == false
+                                        ? Color.kineticsBlue.opacity(0.55)
+                                        : Color.white.opacity(0.1),
+                                    lineWidth: 1.5
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 24)
+            }
+
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Step 7: Done
 
 private struct DoneStep: View {
 

@@ -46,6 +46,18 @@ actor AICoachService {
 
     private init() {}
 
+    // MARK: - API Key Status
+
+    /// Returns `true` when a non-empty, non-placeholder Claude API key is
+    /// present in `Info.plist`. Use this from the UI to show or hide the
+    /// "AI coaching unavailable" banner without making a network call.
+    nonisolated static var isAPIKeyConfigured: Bool {
+        guard let key = Bundle.main.object(forInfoDictionaryKey: "CLAUDE_API_KEY") as? String,
+              !key.isEmpty,
+              key != "YOUR_API_KEY_HERE" else { return false }
+        return true
+    }
+
     // MARK: - API Key Resolution
 
     /// Reads the Claude API key from `Info.plist` at the `CLAUDE_API_KEY` key.
@@ -58,9 +70,9 @@ actor AICoachService {
 
     /// Generates a `CoachReport` for the given session.
     ///
-    /// When the API key is empty or missing, falls back silently to a
-    /// sport-specific template. Network and parsing errors are surfaced as
-    /// thrown `AICoachError` values so callers can present them.
+    /// When the API key is empty or missing, throws `AICoachError.missingAPIKey`
+    /// so the UI can show a clear, actionable message instead of template output.
+    /// Network and parsing errors are surfaced as thrown `AICoachError` values.
     ///
     /// - Parameters:
     ///   - sport: Module identifier — e.g. `"striking"`, `"grappling"`,
@@ -72,6 +84,7 @@ actor AICoachService {
     ///   - videoDurationSeconds: Runtime of the analysed video clip.
     ///   - keyObservations: Brief human-readable statements from the Vision engine.
     /// - Returns: A fully-populated `CoachReport`.
+    /// - Throws: `AICoachError.missingAPIKey` when no valid key is configured.
     func generateReport(
         sport: String,
         metrics: [String: Double],
@@ -82,8 +95,8 @@ actor AICoachService {
         keyObservations: [String]
     ) async throws -> CoachReport {
         let key = apiKey
-        guard !key.isEmpty else {
-            return templateReport(sport: sport, metrics: metrics)
+        guard !key.isEmpty, key != "YOUR_API_KEY_HERE" else {
+            throw AICoachError.missingAPIKey
         }
 
         let prompt = buildPrompt(

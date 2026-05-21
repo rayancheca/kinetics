@@ -1,0 +1,268 @@
+rules_version = '2';
+
+// Kinetics — Firebase project: kinetics-4da22
+//
+// Schema summary:
+//   users/{uid}                                   UserProfile (wrapped under "data" key)
+//   users/{uid}/sessions/{sessionId}              SessionResult — owner-only
+//   users/{uid}/following/{targetUid}             Follow relationship — owner writes
+//   users/{uid}/followers/{followerUid}           Follow relationship — follower writes
+//   users/{uid}/followRequests/{requesterId}      Pending follow request — requester writes
+//   activity/{activityId}                         FeedItem (public read, owner write)
+//   activity/{activityId}/kudos/{uid}             Kudos presence — self write
+//   activity/{activityId}/comments/{commentId}    ActivityComment — self write
+//   comments/{postId}/entries/{commentId}         CommentModel — self write
+//   kudos/{activityId}/reactions/{uid}            Typed reactions — self write
+//   kudos/{activityId}/likes/{uid}                Kudos (seeded) — self write
+//   follows/{docId}                               Flat follow graph — authenticated read/write
+//   _meta/{docId}                                 Seeder flags — authenticated read, no client write
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // Helper functions
+    // -------------------------------------------------------------------------
+
+    /// True when the request carries a valid Firebase Auth token.
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    /// True when the authenticated user's UID matches the given uid.
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    /// True when the incoming write does not introduce any fields beyond the
+    /// allowed set — prevents clients from injecting arbitrary top-level keys.
+    function hasOnly(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
+    }
+
+    // -------------------------------------------------------------------------
+    // users/{uid}
+    // -------------------------------------------------------------------------
+    // UserProfile documents are wrapped: { "data": { ...profile fields... } }
+    // Any authenticated user can read a profile (needed for search, feed, stories).
+    // Only the owning user may create or overwrite their own document.
+    // -------------------------------------------------------------------------
+
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(uid);
+      allow delete: if isOwner(uid);
+
+      // -----------------------------------------------------------------------
+      // users/{uid}/sessions/{sessionId}
+      // -----------------------------------------------------------------------
+      // Session data is private. Only the owning user may read or write.
+      // -----------------------------------------------------------------------
+
+      match /sessions/{sessionId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // -----------------------------------------------------------------------
+      // users/{uid}/following/{targetUid}
+      // -----------------------------------------------------------------------
+      // Written by the authenticated user to record who they follow.
+      // The target user (and the owner) can read their following list.
+      // -----------------------------------------------------------------------
+
+      match /following/{targetUid} {
+        allow read: if isAuthenticated() && (isOwner(uid) || isOwner(targetUid));
+        allow create, update: if isOwner(uid);
+        allow delete: if isOwner(uid) || isOwner(targetUid); // owner unfollows or target removes
+      }
+
+      // -----------------------------------------------------------------------
+      // users/{uid}/followers/{followerUid}
+      // -----------------------------------------------------------------------
+      // Written by the follower when they follow uid (public accounts).
+      // The owner can read their own follower list; the follower can see their entry.
+      // -----------------------------------------------------------------------
+
+      match /followers/{followerUid} {
+        allow read: if isAuthenticated() && (isOwner(uid) || isOwner(followerUid));
+        allow create, update: if isOwner(followerUid);
+        allow delete: if isOwner(uid) || isOwner(followerUid);
+      }
+
+      // -----------------------------------------------------------------------
+      // users/{uid}/followRequests/{requesterId}
+      // -----------------------------------------------------------------------
+      // Written by the requester to uid's document (private account flow).
+      // Only the target user (uid) and the requester can read or delete requests.
+      // -----------------------------------------------------------------------
+
+      match /followRequests/{requesterId} {
+        allow read: if isAuthenticated() && (isOwner(uid) || isOwner(requesterId));
+        allow create: if isOwner(requesterId);
+        allow delete: if isOwner(uid) || isOwner(requesterId);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // activity/{activityId}
+    // -------------------------------------------------------------------------
+    // Feed items are publicly readable by all authenticated users.
+    //
+    // Create: the document's data.userId field must match the authenticated UID.
+    // Update: allow the owner to overwrite the document AND allow any
+    //         authenticated user to increment kudosCount / commentCount via
+    //         updateData() (social interaction counters). The update rule checks
+    //         whether the caller is the owner (full update) or is only touching
+    //         the denormalised counter fields (social interaction update).
+    // Delete: owner only.
+    // -------------------------------------------------------------------------
+
+    match /activity/{activityId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.get("data", {}).get("userId", "") == request.auth.uid;
+
+      allow update: if isAuthenticated() && (
+        // Owner can update any field on their own post.
+        resource.data.get("data", {}).get("userId", "") == request.auth.uid
+        ||
+        // Any authenticated user can increment/decrement the social counters.
+        // They must only touch the denormalised counter fields and nothing else.
+        (
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["data"])
+          && request.resource.data.data.diff(resource.data.data).affectedKeys()
+            .hasOnly(["kudosCount", "commentCount"])
+        )
+      );
+
+      allow delete: if isAuthenticated()
+        && resource.data.get("data", {}).get("userId", "") == request.auth.uid;
+
+      // -----------------------------------------------------------------------
+      // activity/{activityId}/kudos/{uid}
+      // -----------------------------------------------------------------------
+      // A kudos presence document keyed by the liker's UID.
+      // Authenticated users may read kudos to resolve liked state in the feed.
+      // A user may only write or delete their own kudos document.
+      // -----------------------------------------------------------------------
+
+      match /kudos/{uid} {
+        allow read: if isAuthenticated();
+        allow create, update: if isOwner(uid);
+        allow delete: if isOwner(uid);
+      }
+
+      // -----------------------------------------------------------------------
+      // activity/{activityId}/comments/{commentId}
+      // -----------------------------------------------------------------------
+      // ActivityComment documents are wrapped: { "data": { ...comment... } }
+      // Any authenticated user can read comments.
+      // A user may create a comment only when data.userId matches their UID.
+      // Only the comment author may delete their own comment.
+      // -----------------------------------------------------------------------
+
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+
+        allow create: if isAuthenticated()
+          && request.resource.data.get("data", {}).get("userId", "") == request.auth.uid;
+
+        allow delete: if isAuthenticated()
+          && resource.data.get("data", {}).get("userId", "") == request.auth.uid;
+
+        // Comments are immutable after posting — no update rule granted.
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // comments/{postId}/entries/{commentId}
+    // -------------------------------------------------------------------------
+    // Alternative comment path used by FeedSeeder and addComment() helpers.
+    // CommentModel documents are wrapped: { "data": { ...comment... } }
+    // Rules mirror activity/{activityId}/comments/{commentId}.
+    // -------------------------------------------------------------------------
+
+    match /comments/{postId}/entries/{commentId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.get("data", {}).get("userId", "") == request.auth.uid;
+
+      allow delete: if isAuthenticated()
+        && resource.data.get("data", {}).get("userId", "") == request.auth.uid;
+    }
+
+    // -------------------------------------------------------------------------
+    // kudos/{activityId}/reactions/{uid}
+    // kudos/{activityId}/likes/{uid}
+    // -------------------------------------------------------------------------
+    // Typed reactions and raw like documents stored under the top-level "kudos"
+    // collection (used by addReaction/removeReaction and FeedSeeder).
+    // Any authenticated user can read; a user may only write their own document.
+    // -------------------------------------------------------------------------
+
+    match /kudos/{activityId} {
+      allow read: if isAuthenticated();
+
+      match /reactions/{uid} {
+        allow read: if isAuthenticated();
+        allow create, update: if isOwner(uid);
+        allow delete: if isOwner(uid);
+      }
+
+      match /likes/{uid} {
+        allow read: if isAuthenticated();
+        allow create, update: if isOwner(uid);
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // follows/{docId}
+    // -------------------------------------------------------------------------
+    // Flat follow-graph documents written by FeedSeeder and writeFollow().
+    // Document IDs are "{followerId}_{followingId}".
+    // Any authenticated user can read (needed for following-feed chunk queries).
+    // Any authenticated user can create or update their own follow edges;
+    // the followerId field in the document must match the authenticated UID.
+    // -------------------------------------------------------------------------
+
+    match /follows/{docId} {
+      allow read: if isAuthenticated();
+
+      allow create, update: if isAuthenticated()
+        && request.resource.data.get("followerId", "") == request.auth.uid;
+
+      allow delete: if isAuthenticated() && (
+        resource.data.get("followerId", "") == request.auth.uid
+        || resource.data.get("followingId", "") == request.auth.uid
+      );
+    }
+
+    // -------------------------------------------------------------------------
+    // _meta/{docId}
+    // -------------------------------------------------------------------------
+    // Internal seeder flag documents (e.g. "feed_seeded_v3").
+    // Any authenticated user can read the flag so seedIfNeeded() can check it.
+    // Writes are blocked — the seeder runs as an authenticated user in DEBUG
+    // builds with SEED_DATA=1; those builds should use a dedicated service
+    // account or a Admin SDK script instead of client writes.
+    // To re-seed manually: delete the flag document via the Firebase Console or
+    // Admin SDK, then trigger seed() from the debug menu in the app.
+    // -------------------------------------------------------------------------
+
+    match /_meta/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // Catch-all: deny everything not explicitly matched above.
+    // This is implicit in Firestore rules v2 but stated here for clarity.
+    // -------------------------------------------------------------------------
+    // (No explicit catch-all rule needed — Firestore denies by default.)
+
+  }
+}

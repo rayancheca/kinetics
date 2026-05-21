@@ -103,7 +103,7 @@ struct IronTrackerView: View {
     private func sessionContent(geometry: GeometryProxy) -> some View {
         ZStack(alignment: .bottom) {
             // Layer 1: Live camera feed
-            CameraPreviewView(cameraManager: appState.cameraManager)
+            CameraPreviewView(previewLayer: appState.cameraManager.previewLayer)
                 .ignoresSafeArea()
 
             // Layer 2: Skeleton overlay

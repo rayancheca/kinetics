@@ -47,11 +47,12 @@ struct ActivityFeedCard: View {
             .padding(.horizontal, 14)
             .padding(.top, 12)
             .padding(.bottom, 4)
-            // 4. Divider + Interaction bar
+            // 4. Divider + Reaction tally + Interaction bar
             Divider()
                 .background(Color.white.opacity(0.07))
                 .padding(.horizontal, 14)
                 .padding(.top, 6)
+            reactionTallyStrip
             interactionBar
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
@@ -480,6 +481,38 @@ struct ActivityFeedCard: View {
             }
         default:
             EmptyView()
+        }
+    }
+
+    // MARK: - Reaction Tally Strip
+
+    /// Horizontal strip of `emoji count` pairs for every reaction type that has
+    /// at least one vote. Hidden when `reactions` is empty.
+    @ViewBuilder
+    private var reactionTallyStrip: some View {
+        let sorted = item.reactions
+            .filter { $0.value > 0 }
+            .sorted { $0.value > $1.value }
+        if !sorted.isEmpty {
+            HStack(spacing: 8) {
+                ForEach(sorted, id: \.key) { key, count in
+                    if let reactionType = ReactionType(rawValue: key) {
+                        HStack(spacing: 3) {
+                            Text(reactionType.emoji)
+                                .font(.system(size: 13))
+                            Text("\(count)")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundStyle(Color.kineticsSubtext)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(white: 0.10), in: Capsule())
+                    }
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 6)
         }
     }
 

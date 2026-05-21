@@ -191,6 +191,7 @@ final class IronTrackerViewModel {
             duration: sessionDuration,
             metrics: [
                 // Keys read by IronTrackerSessionReportView
+                "barVelocityMS":          metrics.peakBarVelocityMS,
                 "bar_path_deviation_cm":  barDeviationCM,
                 "vbt_velocity_ms":        metrics.peakBarVelocityMS,
                 "bilateral_symmetry":     max(0.0, 1.0 - abs(metrics.bilateralSymmetry) / 100.0),
@@ -216,7 +217,6 @@ final class IronTrackerViewModel {
         Task {
             await SessionFeedPublisher.publish(
                 userId: userId,
-                displayName: "",
                 sport: "Iron Tracker",
                 activityType: "iron",
                 itemType: .gymSession,

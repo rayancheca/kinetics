@@ -107,7 +107,7 @@ struct StrikingView: View {
     // MARK: - Camera
 
     private var cameraLayer: some View {
-        CameraPreviewView(cameraManager: appState.cameraManager)
+        CameraPreviewView(previewLayer: appState.cameraManager.previewLayer)
             .ignoresSafeArea()
     }
 

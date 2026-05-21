@@ -1,3 +1,4 @@
+import FirebaseAuth
 import Foundation
 
 // MARK: - SessionFeedPublisher
@@ -17,7 +18,6 @@ enum SessionFeedPublisher {
     ///
     /// - Parameters:
     ///   - userId: Firebase Auth UID of the current user. Pass an empty string to skip posting.
-    ///   - displayName: Human-readable name shown on the feed card. Falls back to "Athlete".
     ///   - sport: Module display name, e.g. "Striking", "Grappling", "Iron Tracker", "Wall Beta".
     ///   - activityType: Short key used for icon/accent lookup, e.g. "striking", "grappling", "iron", "wall".
     ///   - itemType: `FeedItemType` discriminator for the card renderer.
@@ -25,7 +25,6 @@ enum SessionFeedPublisher {
     ///   - metrics: Up to three `FeedMetric` values shown in the metrics strip.
     static func publish(
         userId: String,
-        displayName: String,
         sport: String,
         activityType: String,
         itemType: FeedItemType,
@@ -33,11 +32,15 @@ enum SessionFeedPublisher {
         metrics: [FeedMetric]
     ) async {
         guard !userId.isEmpty else { return }
-        // Default is true (opt-out model). Only skip when the user has explicitly disabled it.
-        let autoPublish = UserDefaults.standard.object(forKey: "auto_publish_sessions") as? Bool ?? true
+        // Default is false (opt-in model). Only publish when the user explicitly enabled it during onboarding.
+        let autoPublish = UserDefaults.standard.object(forKey: "auto_publish_sessions") as? Bool ?? false
         guard autoPublish else { return }
 
-        let name = displayName.isEmpty ? "Athlete" : displayName
+        let profile = try? await SocialRepository.shared.fetchUserProfile(userId: userId)
+        let name = profile?.displayName.isEmpty == false ? profile!.displayName : (Auth.auth().currentUser?.displayName ?? "Athlete")
+        let uname = profile?.username ?? ""
+        let avatarURL = profile?.avatarURL ?? ""
+
         let durationString = formatted(durationSeconds)
         let title = "\(sport) • \(durationString)"
 
@@ -45,8 +48,8 @@ enum SessionFeedPublisher {
             id: UUID().uuidString,
             userId: userId,
             displayName: name,
-            username: "",
-            avatarURL: "",
+            username: uname,
+            avatarURL: avatarURL,
             itemType: itemType,
             title: title,
             subtitle: durationString,

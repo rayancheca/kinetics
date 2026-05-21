@@ -1282,7 +1282,7 @@ struct SportSessionDetailSheet: View {
         case "kuzushiIndex":        return String(format: "%.2f", value)
         case "barVelocityMS":       return String(format: "%.2f m/s", value)
         case "barPathDeviationCM":  return String(format: "%.1f cm", value)
-        case "hipProximityScore":   return String(format: "%.0f%%", value * 100)
+        case "hipProximityScore":   return String(format: "%.0f%%", value)
         case "stanceRecoveryS":     return String(format: "%.2f s", value)
         default:                    return String(format: "%.2f", value)
         }

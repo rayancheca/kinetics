@@ -162,7 +162,7 @@ struct GrapplingView: View {
 
     /// Full-screen live camera feed.
     private var cameraLayer: some View {
-        CameraPreviewView(cameraManager: appState.cameraManager)
+        CameraPreviewView(previewLayer: appState.cameraManager.previewLayer)
             .ignoresSafeArea()
     }
 

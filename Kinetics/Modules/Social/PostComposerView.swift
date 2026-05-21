@@ -170,16 +170,28 @@ final class PostComposerViewModel {
     var selectedPhotoItems: [PhotosPickerItem] = []
     var selectedImageDatas: [Data] = []
 
+    // MARK: Video
+
+    var selectedVideoItem: PhotosPickerItem?
+    /// Temporary file URL for the picked video. Loaded via `VideoTransferable`
+    /// (FileRepresentation) so the full file is never decoded into memory.
+    var selectedVideoURL: URL?
+    var isLoadingVideo: Bool = false
+    var videoUploadProgress: Double = 0.0
+    var uploadedVideoURL: String = ""
+
     // MARK: Mood & Privacy
 
     var selectedMood: ComposerMood?
     var privacy: ComposerPrivacy = .everyone
 
-    // MARK: Tags (stub — wired to Firebase later)
+    // MARK: Tags
 
     var taggedUsernames: [String] = []
     var showTagSheet: Bool = false
     var tagSearchText: String = ""
+    var mentionSuggestions: [UserProfile] = []
+    var isSearchingUsers: Bool = false
 
     // MARK: Posting state
 
@@ -198,7 +210,7 @@ final class PostComposerViewModel {
 
     /// True if the user has entered any content worth warning about on discard.
     var hasContent: Bool {
-        !title.isEmpty || !descriptionText.isEmpty || !selectedImageDatas.isEmpty
+        !title.isEmpty || !descriptionText.isEmpty || !selectedImageDatas.isEmpty || selectedVideoURL != nil
     }
 
     // MARK: Init
@@ -260,6 +272,63 @@ final class PostComposerViewModel {
         selectedImageDatas.remove(at: index)
     }
 
+    // MARK: Video loading
+
+    /// Loads the picked video item as a temporary file URL using `VideoTransferable`
+    /// (FileRepresentation). This avoids loading the entire video into RAM, which
+    /// silently fails for files over ~50 MB when using `Data.self`.
+    func loadVideoURL(from item: PhotosPickerItem) async {
+        isLoadingVideo = true
+        defer { isLoadingVideo = false }
+
+        // Clean up any previously-selected temp file.
+        if let old = selectedVideoURL {
+            try? FileManager.default.removeItem(at: old)
+            selectedVideoURL = nil
+        }
+
+        guard let transferable = try? await item.loadTransferable(type: VideoTransferable.self) else {
+            return
+        }
+        selectedVideoURL = transferable.url
+    }
+
+    func removeVideo() {
+        if let url = selectedVideoURL {
+            try? FileManager.default.removeItem(at: url)
+        }
+        selectedVideoURL = nil
+        selectedVideoItem = nil
+        uploadedVideoURL = ""
+        videoUploadProgress = 0.0
+    }
+
+    // MARK: User search for @mention tagging
+
+    /// Queries Firestore for users whose username starts with `query`.
+    /// The query may or may not include a leading `@` — either form is handled.
+    /// Results are stored in `mentionSuggestions`. Requires at least 2 characters
+    /// (after stripping the `@`) to fire.
+    func searchTaggedUsers() async {
+        // Normalise: strip leading `@`, lowercase.
+        let raw = tagSearchText.hasPrefix("@") ? String(tagSearchText.dropFirst()) : tagSearchText
+        let normalised = raw.lowercased()
+
+        guard normalised.count >= 2 else {
+            mentionSuggestions = []
+            return
+        }
+
+        isSearchingUsers = true
+        defer { isSearchingUsers = false }
+
+        // `SocialRepository.searchUsers` queries the `username` field,
+        // which is stored with the `@` prefix (e.g. "@rayan").
+        // Prepend `@` so the prefix range query matches stored values.
+        let queryWithAt = "@" + normalised
+        mentionSuggestions = (try? await SocialRepository.shared.searchUsers(query: queryWithAt)) ?? []
+    }
+
     // MARK: Post
 
     func post(
@@ -270,10 +339,29 @@ final class PostComposerViewModel {
         isPosting = true
         defer { isPosting = false }
 
-        // Upload photos first (best-effort; errors are swallowed so a failed
+        let postId = UUID().uuidString
+
+        // Upload video first (best-effort; errors are swallowed so a failed
+        // video upload does not block the post).
+        var uploadedVideoURLResult = ""
+        if let videoURL = selectedVideoURL {
+            uploadedVideoURLResult = (try? await VideoStorageService.shared.uploadVideo(
+                localURL: videoURL,
+                userId: userId,
+                videoId: postId,
+                progressHandler: { [weak self] fraction in
+                    Task { @MainActor [weak self] in
+                        self?.videoUploadProgress = fraction
+                    }
+                }
+            )) ?? ""
+            uploadedVideoURL = uploadedVideoURLResult
+            removeVideo()
+        }
+
+        // Upload photos (best-effort; errors are swallowed so a failed
         // image upload does not block the post).
         var uploadedImageURL = ""
-        let postId = UUID().uuidString
         if let firstData = selectedImageDatas.first {
             uploadedImageURL = (try? await SocialRepository.shared.uploadPostImage(firstData, postId: postId, index: 0)) ?? ""
         }
@@ -432,6 +520,9 @@ struct PostComposerView: View {
                         }
 
                         photoSection
+                        sectionDivider
+
+                        videoSection
                         sectionDivider
 
                         moodRow
@@ -734,6 +825,97 @@ struct PostComposerView: View {
         }
     }
 
+    // MARK: - Video Section
+
+    private var videoSection: some View {
+        Group {
+            if viewModel.isLoadingVideo {
+                HStack(spacing: 12) {
+                    ProgressView()
+                        .tint(Color.kineticsBlue)
+                    Text("Importing video…")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.kineticsSubtext)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+
+            } else if let videoURL = viewModel.selectedVideoURL {
+                HStack(spacing: 12) {
+                    Image(systemName: "video.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.kineticsPurple)
+                        .frame(width: 28, height: 28)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(videoURL.lastPathComponent)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        if viewModel.videoUploadProgress > 0 && viewModel.videoUploadProgress < 1 {
+                            ProgressView(value: viewModel.videoUploadProgress)
+                                .tint(Color.kineticsPurple)
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Text("Video attached")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.kineticsSubtext)
+                        }
+                    }
+
+                    Spacer()
+
+                    Button {
+                        withAnimation(.spring(duration: 0.2)) {
+                            viewModel.removeVideo()
+                        }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(Color.kineticsSubtext.opacity(0.6))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+
+            } else {
+                PhotosPicker(
+                    selection: Binding(
+                        get: { viewModel.selectedVideoItem },
+                        set: { item in
+                            viewModel.selectedVideoItem = item
+                            guard let item else { return }
+                            Task {
+                                await viewModel.loadVideoURL(from: item)
+                            }
+                        }
+                    ),
+                    matching: .videos
+                ) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "video.badge.plus")
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color.kineticsPurple)
+                            .frame(width: 28, height: 28)
+                        Text("Add Video Clip")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.kineticsSubtext.opacity(0.5))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
     // MARK: - Mood Row
 
     private var moodRow: some View {
@@ -998,7 +1180,7 @@ struct PostComposerView: View {
         .presentationDetents([.medium, .large])
     }
 
-    // MARK: - Tag Athletes Sheet (stub)
+    // MARK: - Tag Athletes Sheet
 
     private var tagAthletesSheet: some View {
         NavigationStack {
@@ -1012,45 +1194,94 @@ struct PostComposerView: View {
                         TextField("Search athletes…", text: $viewModel.tagSearchText)
                             .foregroundStyle(.white)
                             .tint(Color.kineticsBlue)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                            .onChange(of: viewModel.tagSearchText) { _, _ in
+                                Task { await viewModel.searchTaggedUsers() }
+                            }
+                        if viewModel.isSearchingUsers {
+                            ProgressView()
+                                .tint(Color.kineticsSubtext)
+                                .scaleEffect(0.75)
+                        }
                     }
                     .padding(12)
                     .background(Color(white: 0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .padding(16)
 
-                    // Stub user list
-                    List {
-                        ForEach(stubAthleteHandles(matching: viewModel.tagSearchText), id: \.self) { handle in
-                            Button {
-                                if !viewModel.taggedUsernames.contains(handle) {
-                                    viewModel.taggedUsernames.append(handle)
-                                }
-                                viewModel.showTagSheet = false
-                            } label: {
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(Color.kineticsPurple.opacity(0.25))
-                                            .frame(width: 38, height: 38)
-                                        Text(String(handle.prefix(1)).uppercased())
-                                            .font(.system(size: 14, weight: .bold))
-                                            .foregroundStyle(Color.kineticsPurple)
-                                    }
-                                    Text(handle)
-                                        .font(.system(size: 15))
-                                        .foregroundStyle(.white)
-                                    Spacer()
-                                    if viewModel.taggedUsernames.contains(handle) {
-                                        Image(systemName: "checkmark")
-                                            .foregroundStyle(Color.kineticsBlue)
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-                            .buttonStyle(.plain)
-                            .listRowBackground(Color(white: 0.08))
+                    if viewModel.mentionSuggestions.isEmpty && !viewModel.tagSearchText.isEmpty && !viewModel.isSearchingUsers {
+                        // Empty state
+                        VStack(spacing: 8) {
+                            Image(systemName: "person.slash")
+                                .font(.system(size: 32))
+                                .foregroundStyle(Color.kineticsSubtext)
+                            Text("No athletes found")
+                                .font(.system(size: 14))
+                                .foregroundStyle(Color.kineticsSubtext)
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 48)
+                    } else if viewModel.mentionSuggestions.isEmpty && viewModel.tagSearchText.isEmpty {
+                        // Prompt state
+                        VStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 32))
+                                .foregroundStyle(Color.kineticsSubtext.opacity(0.5))
+                            Text("Search by username")
+                                .font(.system(size: 14))
+                                .foregroundStyle(Color.kineticsSubtext)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 48)
+                    } else {
+                        // Results list
+                        List {
+                            ForEach(viewModel.mentionSuggestions) { profile in
+                                Button {
+                                    let handle = profile.username.hasPrefix("@")
+                                        ? profile.username
+                                        : "@\(profile.username)"
+                                    if !viewModel.taggedUsernames.contains(handle) {
+                                        viewModel.taggedUsernames.append(handle)
+                                    }
+                                    viewModel.showTagSheet = false
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.kineticsPurple.opacity(0.25))
+                                                .frame(width: 38, height: 38)
+                                            Text(String(profile.displayName.prefix(1)).uppercased())
+                                                .font(.system(size: 14, weight: .bold))
+                                                .foregroundStyle(Color.kineticsPurple)
+                                        }
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(profile.displayName)
+                                                .font(.system(size: 15, weight: .medium))
+                                                .foregroundStyle(.white)
+                                            Text(profile.username)
+                                                .font(.system(size: 12))
+                                                .foregroundStyle(Color.kineticsSubtext)
+                                        }
+                                        Spacer()
+                                        let handle = profile.username.hasPrefix("@")
+                                            ? profile.username
+                                            : "@\(profile.username)"
+                                        if viewModel.taggedUsernames.contains(handle) {
+                                            Image(systemName: "checkmark")
+                                                .foregroundStyle(Color.kineticsBlue)
+                                        }
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                                .buttonStyle(.plain)
+                                .listRowBackground(Color(white: 0.08))
+                            }
+                        }
+                        .scrollContentBackground(.hidden)
                     }
-                    .scrollContentBackground(.hidden)
+
+                    Spacer()
                 }
             }
             .navigationTitle("Tag Athletes")
@@ -1167,11 +1398,6 @@ struct PostComposerView: View {
         return "\(m):\(String(format: "%02d", s))"
     }
 
-    private func stubAthleteHandles(matching query: String) -> [String] {
-        let all = ["@alexguerrero", "@jordankim", "@samtorres", "@caseylee", "@mike_mma", "@bjjqueen"]
-        guard !query.isEmpty else { return all }
-        return all.filter { $0.localizedCaseInsensitiveContains(query) }
-    }
 }
 
 // MARK: - ComposerRouteMapView

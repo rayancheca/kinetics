@@ -272,6 +272,9 @@ struct GymProgressView: View {
     private var exercises: [Exercise]
 
     @State private var viewModel = GymProgressViewModel()
+    @State private var showPaywall = false
+
+    private var subscriptionManager: SubscriptionManager { SubscriptionManager.shared }
 
     var body: some View {
         NavigationStack {
@@ -288,6 +291,9 @@ struct GymProgressView: View {
             .toolbarBackground(Color.kineticsBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .sheet(isPresented: $showPaywall) {
+                PaywallView(lockedFeature: "Advanced Analytics")
+            }
         }
         .task { reload() }
         .onChange(of: sessions.count) { reload() }
@@ -329,13 +335,112 @@ struct GymProgressView: View {
 
     @ViewBuilder
     private var tabContent: some View {
-        switch viewModel.selectedTab {
-        case .overview: overviewTab
-        case .strength: strengthTab
-        case .volume: volumeTab
-        case .body: bodyTab
-        case .consistency: consistencyTab
+        if viewModel.selectedTab == .overview || subscriptionManager.isPremium {
+            switch viewModel.selectedTab {
+            case .overview:    overviewTab
+            case .strength:    strengthTab
+            case .volume:      volumeTab
+            case .body:        bodyTab
+            case .consistency: consistencyTab
+            }
+        } else {
+            analyticsLockedView
         }
+    }
+
+    // MARK: - Analytics Locked State (free tier)
+
+    private var analyticsLockedView: some View {
+        ScrollView {
+            VStack(spacing: 28) {
+                Spacer(minLength: 40)
+
+                ZStack {
+                    Circle()
+                        .fill(Color.kineticsBlue.opacity(0.08))
+                        .frame(width: 100, height: 100)
+                    VStack(spacing: 2) {
+                        Image(systemName: "chart.xyaxis.line")
+                            .font(.system(size: 30, weight: .light))
+                            .foregroundStyle(Color.kineticsBlue)
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(Color.kineticsAmber)
+                            .offset(y: 4)
+                    }
+                }
+
+                VStack(spacing: 10) {
+                    Text("Advanced Analytics")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+
+                    Text("Strength curves, volume trends, body composition charts, and consistency data are available with Kinetics Pro.")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.kineticsSubtext)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(3)
+                }
+                .padding(.horizontal, 32)
+
+                VStack(spacing: 12) {
+                    lockedFeatureRow(icon: "dumbbell.fill",      text: "Strength progression curves",   color: Color.kineticsBlue)
+                    lockedFeatureRow(icon: "chart.bar.fill",     text: "Weekly & monthly volume trends", color: Color.kineticsGreen)
+                    lockedFeatureRow(icon: "figure.arms.open",   text: "Body composition tracking",      color: Color.kineticsPurple)
+                    lockedFeatureRow(icon: "flame.fill",         text: "Training consistency analysis",  color: Color.kineticsAmber)
+                }
+                .padding(.horizontal, 24)
+
+                Button {
+                    showPaywall = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Unlock Advanced Analytics")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                    }
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.kineticsAmber, in: RoundedRectangle(cornerRadius: 14))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 32)
+
+                Spacer(minLength: 40)
+            }
+        }
+    }
+
+    private func lockedFeatureRow(icon: String, text: String, color: Color) -> some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.12))
+                    .frame(width: 34, height: 34)
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(color)
+            }
+            Text(text)
+                .font(.system(size: 14))
+                .foregroundStyle(.white.opacity(0.78))
+            Spacer()
+            Image(systemName: "lock.fill")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Color.kineticsAmber.opacity(0.6))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 11)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.kineticsDark)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(color.opacity(0.12), lineWidth: 0.75)
+                )
+        )
     }
 
     // MARK: - Overview Tab

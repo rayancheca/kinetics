@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import UIKit
+import FirebaseAuth
 
 // MARK: - ActiveGymSessionViewModel
 
@@ -1797,8 +1798,8 @@ private struct FinishWorkoutSheet: View {
         .sheet(isPresented: $showShareComposer) {
             PostComposerView(
                 currentUserId: userId,
-                currentDisplayName: viewModel.workoutName,
-                username: "",
+                currentDisplayName: Auth.auth().currentUser?.displayName ?? "Athlete",
+                username: Auth.auth().currentUser?.displayName?.lowercased().replacingOccurrences(of: " ", with: "_") ?? "athlete",
                 initialCaption: composerCaption,
                 initialActivity: buildActivity(),
                 onPost: { _ in }

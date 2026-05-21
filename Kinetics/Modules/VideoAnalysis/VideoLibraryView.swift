@@ -225,6 +225,7 @@ struct VideoLibraryView: View {
     @State private var viewModel: VideoLibraryViewModel
     @State private var showPicker = false
     @State private var selectedItem: PhotosPickerItem?
+    @Environment(\.modelContext) private var modelContext
 
     init(userId: String) {
         self.userId = userId
@@ -269,7 +270,10 @@ struct VideoLibraryView: View {
                     .disabled(viewModel.importPhase.isActive)
                 }
             }
-            .task { await viewModel.load() }
+            .task {
+                await viewModel.load()
+                await backpropagateAIReports()
+            }
             .photosPicker(
                 isPresented: $showPicker,
                 selection: $selectedItem,
@@ -302,6 +306,23 @@ struct VideoLibraryView: View {
                 Text(viewModel.errorMessage ?? "")
             }
         }
+    }
+
+    // MARK: - AI Report Backpropagation
+
+    /// Silently generates AI coaching reports for any analyzed sessions that don't have one yet.
+    /// Runs once on view appearance — skipped entirely if the API key is not configured.
+    private func backpropagateAIReports() async {
+        guard AICoachService.isAPIKeyConfigured else { return }
+        let pending = viewModel.sessions.filter {
+            !$0.isAnalyzedWithAI && $0.analysisStatus == .complete
+        }
+        guard !pending.isEmpty else { return }
+        for session in pending {
+            let rvm = VideoReportViewModel(session: session)
+            await rvm.generateCoachReport(userId: userId, modelContext: modelContext)
+        }
+        await viewModel.load()
     }
 
     // MARK: - Sport filter bar

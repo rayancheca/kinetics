@@ -7,7 +7,23 @@ options:
   xcodeVersion: "16.2"
   createIntermediateGroups: true
   generateEmptyDirectories: true
-  generateSchemes: true
+  schemePathPrefix: ""
+
+schemes:
+  Kinetics:
+    build:
+      targets:
+        Kinetics: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
 
 settings:
   base:

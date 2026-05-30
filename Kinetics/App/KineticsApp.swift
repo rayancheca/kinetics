@@ -68,21 +68,11 @@ struct KineticsApp: App {
     // before @State initialization, and before AppDelegate callbacks. The guard prevents
     // double-configuration if AppState.init() also calls configureFirebaseIfReady().
     init() {
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
-        // CRITICAL: Firestore settings must be applied BEFORE any other Firebase
-        // code touches Firestore. AuthManager, FCM token persistence in
-        // KineticsAppDelegate, and onAppear initializers can all race ahead of
-        // a view-layer settings call. Setting them inline here, immediately
-        // after FirebaseApp.configure(), is the only safe place.
-        if FirebaseApp.app() != nil {
-            let settings = FirestoreSettings()
-            settings.cacheSettings = PersistentCacheSettings(
-                sizeBytes: NSNumber(value: 100 * 1024 * 1024)
-            )
-            Firestore.firestore().settings = settings
-        }
+        // Single source of truth for Firebase + Firestore configuration.
+        // Idempotent — safe even though SessionRepository, AuthManager, FCM
+        // token writes, and view-layer callbacks may all call it later.
+        FirebaseBootstrap.configureIfNeeded()
+
         // Register App Shortcuts so Siri suggests them and Spotlight indexes them.
         if #available(iOS 17.0, *) {
             KineticsShortcutsProvider.updateAppShortcutParameters()

@@ -113,6 +113,7 @@
 		9598F6CA6662EC1F128A3F2A /* SocialRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 099853C55F62679C9537A8A4 /* SocialRepository.swift */; };
 		96776F4DBAF066DDE6528A5B /* KineticsWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51B7E7372C7420B99495F876 /* KineticsWatchApp.swift */; };
 		98C0AED100800BD8EA5FE78B /* SessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4444A68F70A599ECA48403BE /* SessionRepository.swift */; };
+		992997FF5CA8CAB19951B31A /* FirebaseBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 701B0D5CEE4D9694C1E1BE2D /* FirebaseBootstrap.swift */; };
 		9940017930A26F9D25DE5CD7 /* RouteDiscoveryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4D37D92C1FAD377145A7B0 /* RouteDiscoveryViewModel.swift */; };
 		9A384FDAF37E32FF5428E23B /* WidgetDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB185FD265C0A4E6E75368F /* WidgetDataStore.swift */; };
 		9B5DE83DC117C96FE3165CC9 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BE0B97061BBD0D0EDC81C0BB /* FirebaseFirestore */; };
@@ -302,6 +303,7 @@
 		6D5F568A6174FA6BAF2CE7EE /* KineticsAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KineticsAppDelegate.swift; sourceTree = "<group>"; };
 		6E248662A4970A12F5F6FAD9 /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
 		6E3A3F5A51D766021F43409E /* SessionHistoryRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryRow.swift; sourceTree = "<group>"; };
+		701B0D5CEE4D9694C1E1BE2D /* FirebaseBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseBootstrap.swift; sourceTree = "<group>"; };
 		73653353436B7812B507E56D /* VideoAnalysisReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoAnalysisReportView.swift; sourceTree = "<group>"; };
 		74E4AC8B027766E8790C6BE0 /* FaceSetupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceSetupViewModel.swift; sourceTree = "<group>"; };
 		76E6D4584A4566026C4F3591 /* GymModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymModels.swift; sourceTree = "<group>"; };
@@ -792,6 +794,7 @@
 			isa = PBXGroup;
 			children = (
 				8CDDDA7CCAF6D2485D5D25F7 /* AuthManager.swift */,
+				701B0D5CEE4D9694C1E1BE2D /* FirebaseBootstrap.swift */,
 				BBCEED0C5FF383D786264F59 /* RouteRepository.swift */,
 				4444A68F70A599ECA48403BE /* SessionRepository.swift */,
 			);
@@ -1045,6 +1048,7 @@
 				C5CEBE44ACC1F2EA4743BAA7 /* FeedCards.swift in Sources */,
 				254F18428E14485A0F934BE8 /* FeedSeeder.swift in Sources */,
 				F0625C27A79CC0D116990168 /* FeedView.swift in Sources */,
+				992997FF5CA8CAB19951B31A /* FirebaseBootstrap.swift in Sources */,
 				162DF5DD793770496994F63A /* FollowButton.swift in Sources */,
 				781024CD297700D073EC5CBD /* FollowListView.swift in Sources */,
 				6DB9F094B9B3D5F739C3FC27 /* GrapplingAnalytics.swift in Sources */,

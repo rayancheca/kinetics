@@ -28,7 +28,10 @@ final class SessionRepository: Sendable {
     private var isFirebaseReady: Bool { FirebaseApp.app() != nil }
 
     private init() {
-        configurePersistence()
+        // Firestore configuration is centralised in FirebaseBootstrap.
+        // Calling it here defends against repository initialisation racing
+        // ahead of KineticsApp.init() in tests or alternate entry points.
+        FirebaseBootstrap.configureIfNeeded()
     }
 
     // MARK: - Save
@@ -113,18 +116,6 @@ final class SessionRepository: Sendable {
             "sport": sport.rawValue as NSString,
             "module_name": sport.displayName as NSString
         ])
-    }
-
-    // MARK: - Private: Persistence
-
-    /// Enables Firestore's on-device persistent cache so sessions are readable
-    /// offline and writes are queued until connectivity is restored.
-    /// No-ops silently when Firebase is not configured.
-    private func configurePersistence() {
-        guard isFirebaseReady else { return }
-        let settings = FirestoreSettings()
-        settings.cacheSettings = PersistentCacheSettings(sizeBytes: NSNumber(value: 100 * 1024 * 1024))
-        Firestore.firestore().settings = settings
     }
 
     // MARK: - Private: Analytics

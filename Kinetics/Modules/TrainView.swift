@@ -220,6 +220,12 @@ final class TrainViewModel {
 
     // MARK: Computed
 
+    private static let weekdayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE"
+        return f
+    }()
+
     var headerSubtitle: String {
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: Date())
@@ -229,9 +235,7 @@ final class TrainViewModel {
         case 12..<17: greeting = "Good afternoon"
         default: greeting = "Good evening"
         }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE"
-        let day = formatter.string(from: Date())
+        let day = Self.weekdayFormatter.string(from: Date())
         return "\(greeting) — \(day)"
     }
 

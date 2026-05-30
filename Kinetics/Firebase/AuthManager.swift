@@ -4,6 +4,7 @@ import FirebaseAuth
 import FirebaseCore
 import Foundation
 import Observation
+import SwiftUI
 import UIKit
 
 // MARK: - AuthManager

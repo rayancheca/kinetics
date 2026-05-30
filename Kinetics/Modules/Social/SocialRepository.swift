@@ -1,4 +1,5 @@
 import FirebaseAnalytics
+import FirebaseAuth
 import FirebaseCore
 import FirebaseFirestore
 import FirebaseStorage
@@ -1135,6 +1136,30 @@ final class SocialRepository {
         decoder.dateDecodingStrategy = .millisecondsSince1970
 
         return try decoder.decode(UserProfile.self, from: jsonData)
+    }
+
+    // MARK: - Content Moderation
+
+    /// Reports a piece of user-generated content for review.
+    ///
+    /// Writes a document to `reports/{contentId}` so moderators can review flagged items.
+    /// A no-op when Firebase is not configured.
+    ///
+    /// - Parameters:
+    ///   - type: The content type being reported — e.g. `"comment"`, `"post"`.
+    ///   - contentId: The document ID of the content being flagged.
+    ///   - parentId: The parent activity ID (for comments, the feed item ID).
+    func reportContent(type: String, contentId: String, parentId: String, reportedBy userId: String = "") async throws {
+        guard isFirebaseReady else { return }
+        let payload: [String: Any] = [
+            "contentType": type,
+            "contentId": contentId,
+            "parentId": parentId,
+            "reportedAt": FieldValue.serverTimestamp(),
+            "reportedBy": userId.isEmpty ? (FirebaseAuth.Auth.auth().currentUser?.uid ?? "anonymous") : userId,
+        ]
+        try await db.collection("reports").document(contentId).setData(payload)
+        logActivity(event: "content_reported", parameters: ["type": type as NSString])
     }
 
     // MARK: - Private: Analytics

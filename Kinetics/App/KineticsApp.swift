@@ -1,7 +1,9 @@
+import AppIntents
 import FirebaseAnalytics
 import FirebaseCore
 import FirebaseCrashlytics
 import FirebaseFirestore
+import FirebaseMessaging
 import SwiftData
 import SwiftUI
 import UserNotifications
@@ -52,6 +54,8 @@ final class KineticsNotificationDelegate: NSObject, UNUserNotificationCenterDele
 @main
 struct KineticsApp: App {
 
+    @UIApplicationDelegateAdaptor(KineticsAppDelegate.self) private var appDelegate
+
     @State private var appState = AppState()
     @State private var showSplash = true
     @AppStorage("permissions_requested") private var permissionsRequested = false
@@ -66,6 +70,14 @@ struct KineticsApp: App {
     init() {
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()
+        }
+        // Register App Shortcuts so Siri suggests them and Spotlight indexes them.
+        if #available(iOS 17.0, *) {
+            KineticsShortcutsProvider.updateAppShortcutParameters()
+        }
+        // Clean up any stale Live Activities from a previous run.
+        if #available(iOS 16.2, *) {
+            LiveSessionController.endAllOrphaned()
         }
     }
 
@@ -131,6 +143,13 @@ struct KineticsApp: App {
                     ])
                     // Enable Crashlytics
                     Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+
+                    // Kick the FCM auto-init so tokens flow even before the user
+                    // explicitly opts into notifications. Token persistence runs
+                    // through KineticsAppDelegate.messaging(_:didReceiveRegistrationToken:).
+                    if FirebaseApp.app() != nil {
+                        Messaging.messaging().isAutoInitEnabled = true
+                    }
                     // Offline Firestore caching (100 MB on-device persistent cache)
                     if FirebaseApp.app() != nil {
                         let settings = FirestoreSettings()

@@ -1,4 +1,5 @@
 @preconcurrency import AVFoundation
+import ActivityKit
 import FirebaseAnalytics
 import Foundation
 import Observation
@@ -132,9 +133,27 @@ final class GrapplingViewModel {
         sessionStartDate = Date()
         previousPose = nil
         metrics = GrapplingMetrics()
+        errorMessage = nil
         cueCooldowns = [:]
         currentCoachCue = nil
         lastSpokenCue = ""
+
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.start(
+                sportRaw: SportType.grappling.rawValue,
+                displayName: SportType.grappling.displayName,
+                accentHex: SportType.grappling.accentColor,
+                iconName: SportType.grappling.systemImage,
+                initialState: .init(
+                    primaryMetric: "0",
+                    primaryLabel: "KUZUSHI",
+                    secondaryMetric: "0°",
+                    secondaryLabel: "SPINE",
+                    coachCue: nil,
+                    isPaused: false
+                )
+            )
+        }
 
         startTimer()
         startProcessingLoop(cameraManager: cameraManager)
@@ -193,6 +212,17 @@ final class GrapplingViewModel {
             errorMessage = "Session could not be saved: \(error.localizedDescription)"
         }
 
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.end(finalState: .init(
+                primaryMetric: "\(Int(metrics.kuzushiIndex))",
+                primaryLabel: "KUZUSHI",
+                secondaryMetric: "DONE",
+                secondaryLabel: "",
+                coachCue: nil,
+                isPaused: false
+            ), dismissalPolicy: .default)
+        }
+
         Task {
             await SessionFeedPublisher.publish(
                 userId: userId,
@@ -223,6 +253,17 @@ final class GrapplingViewModel {
         timerTask = nil
         isPaused = true
         CoachVoice.shared.stop()
+
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.update(.init(
+                primaryMetric: "\(Int(metrics.kuzushiIndex))",
+                primaryLabel: "KUZUSHI",
+                secondaryMetric: String(format: "%.0f°", metrics.spineAngleDegrees),
+                secondaryLabel: "SPINE",
+                coachCue: currentCoachCue?.text,
+                isPaused: true
+            ), force: true)
+        }
     }
 
     /// Resumes a previously paused session, restarting the timer and frame processing loop.
@@ -233,6 +274,18 @@ final class GrapplingViewModel {
         isPaused = false
         sessionStartDate = Date()
         startTimer()
+
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.update(.init(
+                primaryMetric: "\(Int(metrics.kuzushiIndex))",
+                primaryLabel: "KUZUSHI",
+                secondaryMetric: String(format: "%.0f°", metrics.spineAngleDegrees),
+                secondaryLabel: "SPINE",
+                coachCue: currentCoachCue?.text,
+                isPaused: false
+            ), force: true)
+        }
+
         processingTask = Task { [weak self] in
             guard let self else { return }
             for await buffer in cameraManager.frameStream {
@@ -279,6 +332,17 @@ final class GrapplingViewModel {
             currentPose = pose
             previousPose = pose
             metrics = updatedMetrics
+
+            if #available(iOS 16.2, *) {
+                LiveSessionController.shared.update(.init(
+                    primaryMetric: "\(Int(metrics.kuzushiIndex))",
+                    primaryLabel: "KUZUSHI",
+                    secondaryMetric: String(format: "%.0f°", metrics.spineAngleDegrees),
+                    secondaryLabel: "SPINE",
+                    coachCue: currentCoachCue?.text,
+                    isPaused: isPaused
+                ))
+            }
 
             // Build live metrics bag and evaluate for a coaching cue.
             let liveMetrics = LiveCoachingMetrics(

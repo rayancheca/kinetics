@@ -1,4 +1,5 @@
 @preconcurrency import AVFoundation
+import ActivityKit
 import FirebaseAnalytics
 import Foundation
 import Observation
@@ -132,6 +133,22 @@ final class IronTrackerViewModel {
 
         isSessionActive = true
         sessionStartTime = Date()
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.start(
+                sportRaw: SportType.ironTracker.rawValue,
+                displayName: SportType.ironTracker.displayName,
+                accentHex: SportType.ironTracker.accentColor,
+                iconName: SportType.ironTracker.systemImage,
+                initialState: .init(
+                    primaryMetric: "0.00",
+                    primaryLabel: "M/S",
+                    secondaryMetric: "0",
+                    secondaryLabel: "REPS",
+                    coachCue: nil,
+                    isPaused: false
+                )
+            )
+        }
         metrics = IronTrackerMetrics()
         barPath = []
         previousPose = nil
@@ -213,6 +230,17 @@ final class IronTrackerViewModel {
         ])
         try? await SessionRepository.shared.save(result)
         lastCompletedSession = result
+
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.end(finalState: .init(
+                primaryMetric: "\(autoRepCount)",
+                primaryLabel: "REPS",
+                secondaryMetric: "DONE",
+                secondaryLabel: "",
+                coachCue: nil,
+                isPaused: false
+            ), dismissalPolicy: .default)
+        }
 
         Task {
             await SessionFeedPublisher.publish(
@@ -316,6 +344,17 @@ final class IronTrackerViewModel {
             ) {
                 currentCoachCue = cue
                 CoachVoice.shared.speakIfChanged(cue: cue)
+            }
+
+            if #available(iOS 16.2, *) {
+                LiveSessionController.shared.update(.init(
+                    primaryMetric: String(format: "%.2f", metrics.barVelocityMS),
+                    primaryLabel: "M/S",
+                    secondaryMetric: "\(autoRepCount)",
+                    secondaryLabel: "REPS",
+                    coachCue: currentCoachCue?.text,
+                    isPaused: false
+                ))
             }
         } catch {
             errorMessage = error.localizedDescription

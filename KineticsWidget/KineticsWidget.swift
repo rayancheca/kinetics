@@ -109,6 +109,9 @@ struct KineticsWidgetBundle: WidgetBundle {
     var body: some Widget {
         TodayStatsWidget()
         NextWorkoutWidget()
+        if #available(iOS 16.2, *) {
+            LiveSessionWidget()
+        }
     }
 }
 

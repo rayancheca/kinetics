@@ -69,6 +69,10 @@ struct GrapplingView: View {
             if !hasSeenOnboarding { showOnboarding = true }
             isLivePulsing = true
         }
+        .onDisappear {
+            viewModel.stopProcessing()
+            appState.cameraManager.stopSession()
+        }
         .sheet(isPresented: $showOnboarding) {
             GrapplingOnboardingView(onDismiss: {
                 hasSeenOnboarding = true

@@ -1,8 +1,54 @@
 # Kinetics — Session State
 
-**Last updated:** Session 16 (2026-05-21) — Gym FAB fix, AI backpropagation, push to GitHub
-**Current phase:** Phase 1+ — App Store polish
-**Overall progress:** All Phase 1 deliverables + Sessions 7–16 enhancements. App is production-ready pending Firestore index creation.
+**Last updated:** Session 17 (2026-05-30) — Apple Developer Program capabilities pass
+**Current phase:** Phase 1+ — App Store ready
+**Overall progress:** All Phase 1 deliverables + Sessions 7–17 enhancements. App fully wired for Apple Developer Program features. All three targets (iOS, Watch, Widget) build clean.
+
+---
+
+## Status: SESSION 17 COMPLETE — Apple Developer Program Integration
+
+### Apple Developer Program Capabilities (entitlements wired)
+- ✅ Sign in with Apple (`com.apple.developer.applesignin: ["Default"]`)
+- ✅ HealthKit (`com.apple.developer.healthkit: true`) — main app + Watch
+- ✅ App Groups (`group.com.rayancheca.kinetics`) — main + Widget + Watch share live data
+- ✅ Push Notifications (`aps-environment: development`)
+- ✅ Time-Sensitive notifications (`com.apple.developer.usernotifications.time-sensitive`)
+- ✅ Communication notifications (`com.apple.developer.usernotifications.communication`)
+- ✅ Entitlements owned by xcodegen `properties:` block so regen never wipes them
+
+### Live Activities + Dynamic Island
+- ✅ `LiveSessionAttributes` (`Kinetics/Core/Models/LiveSessionAttributes.swift`) — shared between main app + widget targets via xcodegen multi-target `sources:` reference
+- ✅ `LiveSessionWidget` (`KineticsWidget/LiveSessionWidget.swift`) — lock screen + Dynamic Island regions (expanded leading/trailing/center/bottom, compact, minimal) with accent-tinted module branding
+- ✅ `LiveSessionController` (`Kinetics/Core/Services/LiveSessionController.swift`) — singleton, throttled to 1 update/sec, with `@preconcurrency import ActivityKit` for Swift 6 compatibility
+- ✅ All 4 sport ViewModels (Striking/Grappling/Iron/Wall) call `LiveSessionController.shared.start/update/end` at session boundaries
+- ✅ `NSSupportsLiveActivities` + `NSSupportsLiveActivitiesFrequentUpdates` set in both main app and widget Info.plist
+- ✅ `endAllOrphaned()` called on launch to clean stale activities
+
+### Siri Shortcuts + App Intents
+- ✅ `SportAppEnum.swift` — AppEnum mirror of SportType with display reps + deep link URLs
+- ✅ `StartSessionIntent.swift` — 4 App Intents: StartSession (parameterized by sport), LogGymWorkout, StartTrack, ViewStreak
+- ✅ `KineticsShortcutsProvider.swift` — registers all four shortcuts with system; appear in Spotlight, Siri suggestions, and Shortcuts gallery automatically
+- ✅ `KineticsShortcutsProvider.updateAppShortcutParameters()` called from `KineticsApp.init()`
+- ✅ All static properties use `static let` for Swift 6 Sendable conformance
+
+### Push Notifications via APNs + Firebase Messaging
+- ✅ `KineticsAppDelegate.swift` — `UIApplicationDelegate` adapter wired via `@UIApplicationDelegateAdaptor` in KineticsApp
+- ✅ Registers for APNs at launch (`registerForRemoteNotifications()`)
+- ✅ Hands APNs token to `Messaging.messaging().apnsToken = deviceToken`
+- ✅ Persists FCM token at `users/{uid}/devices/{fcmToken}` in Firestore with platform/version/timestamp
+- ✅ FirebaseMessaging dependency added to project.yml
+- ✅ Background modes: `remote-notification`, `processing`, `audio` (in addition to existing `location`)
+- ✅ BGTaskScheduler permitted identifier registered: `com.rayancheca.kinetics.refresh`
+
+### Build System
+- ✅ Three targets all build clean against iOS 26.5 / watchOS 26.5 SDK + Xcode 16.2
+- ✅ project.yml properly references LiveSessionAttributes.swift in both main + widget targets
+- ✅ Shared scheme created (`Kinetics.xcodeproj/xcshareddata/xcschemes/Kinetics.xcscheme`)
+- ✅ Workaround for nanopb `BUILD` vs `build/` on case-insensitive macOS still required after DerivedData wipe (documented in earlier sessions)
+
+### Known non-blocking items
+- Codesign on simulator builds needs `xattr -rc` on source dirs first (xattrs from filesystem sync tools break local `codesign --sign -`). Build itself succeeds with `CODE_SIGNING_ALLOWED=NO`. Real device + provisioning profile signing is unaffected.
 
 ---
 

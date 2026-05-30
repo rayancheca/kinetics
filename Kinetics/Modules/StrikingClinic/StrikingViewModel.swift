@@ -1,4 +1,5 @@
 @preconcurrency import AVFoundation
+import ActivityKit
 import FirebaseAnalytics
 import Foundation
 import Observation
@@ -101,6 +102,23 @@ final class StrikingViewModel {
         cueCooldowns = [:]
         currentCoachCue = nil
 
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.start(
+                sportRaw: SportType.striking.rawValue,
+                displayName: SportType.striking.displayName,
+                accentHex: SportType.striking.accentColor,
+                iconName: SportType.striking.systemImage,
+                initialState: .init(
+                    primaryMetric: "0.0",
+                    primaryLabel: "MPH",
+                    secondaryMetric: "0",
+                    secondaryLabel: "STRIKES",
+                    coachCue: nil,
+                    isPaused: false
+                )
+            )
+        }
+
         startDurationTimer()
 
         processingTask = Task { [weak self] in
@@ -156,6 +174,17 @@ final class StrikingViewModel {
         try? await SessionRepository.shared.save(result)
         lastCompletedSession = result
 
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.end(finalState: .init(
+                primaryMetric: String(format: "%.1f", metrics.strikeVelocityMPH),
+                primaryLabel: "MPH",
+                secondaryMetric: "DONE",
+                secondaryLabel: "",
+                coachCue: nil,
+                isPaused: false
+            ), dismissalPolicy: .default)
+        }
+
         Task {
             await SessionFeedPublisher.publish(
                 userId: userId,
@@ -198,6 +227,15 @@ final class StrikingViewModel {
         durationTask = nil
         isPaused = true
         CoachVoice.shared.stop()
+
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.update(.init(
+                primaryMetric: "—",
+                primaryLabel: "PAUSED",
+                coachCue: nil,
+                isPaused: true
+            ), force: true)
+        }
     }
 
     /// Resumes a paused session: restarts the timer and frame-processing pipeline.
@@ -212,6 +250,17 @@ final class StrikingViewModel {
                 guard !Task.isCancelled else { break }
                 await self.processFrame(buffer)
             }
+        }
+
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.update(.init(
+                primaryMetric: String(format: "%.1f", metrics.strikeVelocityMPH),
+                primaryLabel: "MPH",
+                secondaryMetric: "\(Int(metrics.hipShoulderSeparation))°",
+                secondaryLabel: "HIP-SHLD",
+                coachCue: currentCoachCue?.text,
+                isPaused: false
+            ), force: true)
         }
     }
 
@@ -243,6 +292,17 @@ final class StrikingViewModel {
             )
             previousPose = pose
             currentPose = pose
+
+            if #available(iOS 16.2, *) {
+                LiveSessionController.shared.update(.init(
+                    primaryMetric: String(format: "%.1f", metrics.strikeVelocityMPH),
+                    primaryLabel: "MPH",
+                    secondaryMetric: "\(Int(metrics.hipShoulderSeparation))°",
+                    secondaryLabel: "HIP-SHLD",
+                    coachCue: currentCoachCue?.text,
+                    isPaused: isPaused
+                ))
+            }
 
             // Build live metrics bag and ask CoachingEngine for the best cue this frame.
             let liveMetrics = LiveCoachingMetrics(

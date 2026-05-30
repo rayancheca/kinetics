@@ -456,16 +456,24 @@ struct GymHomeView: View {
         }
     }
 
+    private static let dayNameFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE"
+        return f
+    }()
+
+    private static let monthDayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMMM d"
+        return f
+    }()
+
     private var headerDayString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE"
-        return formatter.string(from: Date()).uppercased()
+        Self.dayNameFormatter.string(from: Date()).uppercased()
     }
 
     private var headerDateString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM d"
-        return formatter.string(from: Date())
+        Self.monthDayFormatter.string(from: Date())
     }
 
     private var streakBadge: some View {
@@ -1045,19 +1053,27 @@ private struct RecentWorkoutCard: View {
         return m > 0 ? "\(h)h \(m)m" : "\(h)h"
     }
 
+    private static let weekdayMonthDayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE, MMM d"
+        return f
+    }()
+
+    private static let shortTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        return f
+    }()
+
     private var dateLabel: String {
         let cal = Calendar.current
         if cal.isDateInToday(session.startedAt) { return "Today" }
         if cal.isDateInYesterday(session.startedAt) { return "Yesterday" }
-        let f = DateFormatter()
-        f.dateFormat = "EEEE, MMM d"
-        return f.string(from: session.startedAt)
+        return Self.weekdayMonthDayFormatter.string(from: session.startedAt)
     }
 
     private var timeLabel: String {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return f.string(from: session.startedAt)
+        Self.shortTimeFormatter.string(from: session.startedAt)
     }
 
     private var volumeKg: Double {
@@ -1406,13 +1422,17 @@ struct StartWorkoutPickerSheet: View {
         return routines.first { $0.id == routineId }
     }
 
+    private static let weekdayNameFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE"
+        return f
+    }()
+
     private var lastSessionLabel: String {
         guard let session = lastSession else { return "No recent workout" }
         let cal = Calendar.current
         if cal.isDateInYesterday(session.startedAt) { return "yesterday" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE"
-        return formatter.string(from: session.startedAt).lowercased()
+        return Self.weekdayNameFormatter.string(from: session.startedAt).lowercased()
     }
 
     private var lastSessionRoutineName: String {
@@ -1805,7 +1825,8 @@ private struct StreakDetailSheet: View {
         .presentationBackground(Color(white: 0.05))
         .onAppear {
             // Animate the streak number in after a brief delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            Task {
+                try? await Task.sleep(for: .seconds(0.2))
                 withAnimation(.spring(duration: 0.6)) {
                     animatedStreak = currentStreak
                 }

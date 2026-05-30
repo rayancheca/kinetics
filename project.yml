@@ -67,6 +67,13 @@ targets:
           UIImageName: "LaunchLogo"
         UIBackgroundModes:
           - location
+          - remote-notification
+          - processing
+          - audio
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.rayancheca.kinetics.refresh
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
@@ -74,6 +81,16 @@ targets:
         UIRequiresFullScreen: YES
     entitlements:
       path: Kinetics/Kinetics.entitlements
+      properties:
+        com.apple.developer.applesignin:
+          - Default
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.security.application-groups:
+          - group.com.rayancheca.kinetics
+        aps-environment: development
+        com.apple.developer.usernotifications.communication: true
+        com.apple.developer.usernotifications.time-sensitive: true
     dependencies:
       - sdk: WatchConnectivity.framework
       - package: Firebase
@@ -86,6 +103,8 @@ targets:
         product: FirebaseFirestore
       - package: Firebase
         product: FirebaseStorage
+      - package: Firebase
+        product: FirebaseMessaging
       - package: Lottie
         product: Lottie
       - target: KineticsWidget
@@ -113,6 +132,7 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: KineticsWidget
+      - path: Kinetics/Core/Models/LiveSessionAttributes.swift
     info:
       path: KineticsWidget/Info.plist
       properties:
@@ -121,8 +141,13 @@ targets:
         CFBundleVersion: "1"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: true
     entitlements:
       path: KineticsWidget/KineticsWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.rayancheca.kinetics
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rayancheca.kinetics.widget
@@ -149,6 +174,11 @@ targets:
         NSHealthShareUsageDescription: "Kinetics reads your heart rate during workouts to display live metrics on your watch."
     entitlements:
       path: KineticsWatch/KineticsWatch.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.security.application-groups:
+          - group.com.rayancheca.kinetics
     dependencies:
       - sdk: WatchKit.framework
       - sdk: HealthKit.framework

@@ -21,14 +21,29 @@ struct WallBetaMetrics: Sendable {
 
     // MARK: Hip Proximity
 
-    /// How close the climber's hips are to the wall (left side of the frame).
-    /// Range 0..100: 100 = hips touching the wall; 0 = hips at the right edge.
+    /// How close the climber's hips are to the wall, relative to the estimated wall plane.
+    /// Range 0..100: 100 = hips touching the wall; 0 = hips at maximum distance.
     var hipProximityScore: Double = 50
 
     // MARK: Center of Mass
 
     /// Centroid of the reliable hip joints in Vision normalized coordinates.
     var centerOfMass: CGPoint = .zero
+
+    // MARK: Wall Plane Estimation
+
+    /// The estimated X coordinate (Vision normalized) of the wall surface, derived from
+    /// wrist positions over the session. Updated each frame via exponential smoothing.
+    /// Defaults to 0.0 (left frame edge) until the first wrist observation.
+    var estimatedWallPlaneX: Double = 0.0
+
+    /// `true` once the wall plane estimate has been seeded from real wrist observations.
+    /// Until this is true, the proximity score falls back to the legacy left-edge formula.
+    var wallPlaneEstimated: Bool = false
+
+    /// `true` when the wall is on the left side of the frame; `false` when it is on the right.
+    /// Inferred once from the first reliable wrist X observation and held fixed for the session.
+    var wallIsOnLeft: Bool = true
 
     // MARK: Technique Flags
 
@@ -66,19 +81,26 @@ struct WallBetaMetrics: Sendable {
 
 /// Pure, stateless analytics for the Wall Beta climbing module.
 ///
-/// **Wall convention:**
-/// In portrait orientation the wall is on the LEFT side of the camera frame.
-/// Vision's normalized X axis runs 0 (left) → 1 (right), so a low hip X value
-/// means the hips are close to the wall — good technique.
+/// **Wall plane estimation (no ARKit required):**
+/// Climbers' wrists are on the wall surface by definition — they must touch holds.
+/// The minimum reliable wrist X observed over the session's early frames gives a
+/// running estimate of where the wall plane sits in Vision's normalized coordinate
+/// space. This estimate is stored in `WallBetaMetrics.estimatedWallPlaneX` and
+/// updated each frame via exponential smoothing. The hip proximity score is then
+/// computed relative to this estimate rather than hard-coded to X = 0 (left edge).
 ///
-/// **Hip proximity score:**
+/// **Hip proximity score (wall-plane-relative):**
 /// ```
-/// proximityScore = clamp((0.5 - avgHipX) * 200 + 50, 0, 100)
+/// hipDistanceFromWall = avgHipX - wallPlaneX          // 0 = touching wall
+/// proximityScore = clamp(100 - (hipDistanceFromWall / maxExpectedDistance) * 100, 0, 100)
 /// ```
-/// At avgHipX = 0.0 (wall):  score ≈ 150 → clamped to 100
-/// At avgHipX = 0.25 (mid-left): score ≈ 100
-/// At avgHipX = 0.5 (center): score ≈  50
-/// At avgHipX = 1.0 (far right): score ≈ -50 → clamped to 0
+/// `maxExpectedDistance` is set to 0.45 normalized units — approximately half the
+/// frame width, representing hips fully extended away from the wall.
+///
+/// **Wall side inference:**
+/// The side of the frame the wall is on is inferred once from early wrist observations:
+/// if avg wrist X < 0.5 the wall is on the left; otherwise on the right. This is
+/// stored in `WallBetaMetrics.wallIsOnLeft` and remains fixed for the session.
 enum WallBetaAnalytics {
 
     // MARK: - Tracked Joint Set
@@ -105,6 +127,15 @@ enum WallBetaAnalytics {
     /// Vision Y is 0 (bottom) → 1 (top), so a positive drop means the hips moved down.
     static let sagThreshold = 0.08
 
+    /// Maximum expected normalized-unit distance from hips to wall plane.
+    /// Used to map raw distance to a 0–100 score. 0.45 ≈ half the frame width.
+    static let maxHipWallDistance = 0.45
+
+    /// Exponential smoothing factor for wall plane X estimate updates.
+    /// Lower = slower adaptation (more stable); higher = faster adaptation (more reactive).
+    /// 0.05 at 30 fps gives roughly a 0.7-second time constant.
+    static let wallPlaneAlpha = 0.05
+
     // MARK: - Primary Analysis Entry Point
 
     /// Analyzes one frame of pose data and returns an updated `WallBetaMetrics` snapshot.
@@ -129,6 +160,39 @@ enum WallBetaAnalytics {
     ) -> WallBetaMetrics {
         var metrics = currentMetrics
 
+        // ── 0. Wall Plane Estimation ──────────────────────────────────────────────────
+        // Wrists are on the wall by definition. Use their X positions to estimate where
+        // the wall plane sits in the frame, then update via exponential smoothing.
+        let wristJoints: [VNHumanBodyPoseObservation.JointName] = [.leftWrist, .rightWrist]
+        let reliableWristXs = wristJoints.compactMap { name -> Double? in
+            guard let joint = pose[name], joint.isReliable else { return nil }
+            return Double(joint.position.x)
+        }
+
+        if !reliableWristXs.isEmpty {
+            let avgWristX = reliableWristXs.reduce(0.0, +) / Double(reliableWristXs.count)
+
+            if !metrics.wallPlaneEstimated {
+                // First observation: seed the estimate and lock in which side the wall is on.
+                metrics.estimatedWallPlaneX = avgWristX
+                metrics.wallIsOnLeft = avgWristX < 0.5
+                metrics.wallPlaneEstimated = true
+            } else {
+                // Subsequent frames: exponential moving average.
+                // Only update toward the wall side to prevent hip positions pulling
+                // the estimate away from the wall (hips are never at the wall plane).
+                let candidate = avgWristX
+                let currentEstimate = metrics.estimatedWallPlaneX
+                let wallSideX = metrics.wallIsOnLeft
+                    ? min(candidate, currentEstimate)   // wall is left: keep smallest X
+                    : max(candidate, currentEstimate)   // wall is right: keep largest X
+
+                // Blend: slow-adapt toward the extremal wrist position.
+                metrics.estimatedWallPlaneX = currentEstimate
+                    + wallPlaneAlpha * (wallSideX - currentEstimate)
+            }
+        }
+
         // ── 1. Hip Proximity and Center of Mass ───────────────────────────────────────
         let hipJointNames: [VNHumanBodyPoseObservation.JointName] = [.leftHip, .rightHip, .root]
         let reliableHipPoints = hipJointNames.compactMap { name -> CGPoint? in
@@ -139,12 +203,25 @@ enum WallBetaAnalytics {
         if !reliableHipPoints.isEmpty {
             metrics.centerOfMass = BiomechanicsCalculator.calculateCenterOfMass(joints: reliableHipPoints)
 
-            // Proximity score: lower X → closer to left wall → higher score.
-            // Formula maps 0.0 (wall) → ~150 clamped to 100, 0.5 (center) → 50.
             let avgHipX = reliableHipPoints.reduce(0.0) { $0 + Double($1.x) }
                 / Double(reliableHipPoints.count)
-            let rawScore = (0.5 - avgHipX) * 200.0 + 50.0
-            metrics.hipProximityScore = max(0.0, min(100.0, rawScore))
+
+            // Compute distance of hips from the estimated wall plane.
+            // When wallPlaneEstimated is false (no wrist data yet), fall back to
+            // the legacy formula anchored to the frame edge, so the score is never stuck.
+            let hipDistanceFromWall: Double
+            if metrics.wallPlaneEstimated {
+                hipDistanceFromWall = metrics.wallIsOnLeft
+                    ? avgHipX - metrics.estimatedWallPlaneX     // wall on left: hip should be close to small X
+                    : metrics.estimatedWallPlaneX - avgHipX     // wall on right: hip should be close to large X
+            } else {
+                // Fallback: assume wall is on the left (legacy behaviour).
+                hipDistanceFromWall = avgHipX
+            }
+
+            // Map distance to 0–100 score. At 0 distance → 100; at maxHipWallDistance → 0.
+            let distanceFraction = max(0.0, hipDistanceFromWall) / maxHipWallDistance
+            metrics.hipProximityScore = max(0.0, min(100.0, (1.0 - distanceFraction) * 100.0))
         }
 
         // ── 2. Hip Sag Detection ──────────────────────────────────────────────────────

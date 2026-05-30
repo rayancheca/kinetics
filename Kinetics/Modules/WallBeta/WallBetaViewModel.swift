@@ -1,4 +1,5 @@
 @preconcurrency import AVFoundation
+import ActivityKit
 import FirebaseAnalytics
 import Foundation
 import Observation
@@ -77,9 +78,13 @@ final class WallBetaViewModel {
 
     // MARK: - Private — Frame-Level State
 
-    /// Dedicated Vision engine for this module. Re-created on each session start so
-    /// temporal smoothing state never leaks across sessions.
-    private var poseEngine = PoseDetectionEngine()
+    /// Dedicated Vision engine for this module.
+    ///
+    /// Declared `let` (matching `StrikingViewModel`) so Swift 6 strict concurrency can
+    /// guarantee the actor reference never changes while `processFrame` holds a hop into it.
+    /// Session-to-session temporal state is cleared by calling `await poseEngine.reset()`
+    /// at the end of each session instead of replacing the instance.
+    private let poseEngine = PoseDetectionEngine()
 
     /// Weak reference to the active camera manager — used to read `cameraPosition`
     /// per-frame so pose mirroring stays in sync with the live camera selection.
@@ -131,14 +136,14 @@ final class WallBetaViewModel {
         self.activeCameraManager = cameraManager
 
         // Reset all session-scoped state before starting.
-        metrics        = WallBetaMetrics()
-        dynoPath       = []
-        previousPose   = nil
-        hipYBaseline   = nil
-        holdStartTime  = Date()   // Assume static until first movement detected.
-        errorMessage   = nil
-        lastSpokenCue  = ""
-        cueCooldowns   = [:]
+        metrics         = WallBetaMetrics()
+        dynoPath        = []
+        previousPose    = nil
+        hipYBaseline    = nil
+        holdStartTime   = nil   // Set after the first frame confirms the session is live.
+        errorMessage    = nil
+        lastSpokenCue   = ""
+        cueCooldowns    = [:]
         currentCoachCue = nil
 
         // Log the analytics event before the camera rolls so funnel attribution is clean.
@@ -158,6 +163,24 @@ final class WallBetaViewModel {
 
         isSessionActive  = true
         sessionStartDate = Date()
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.start(
+                sportRaw: SportType.wallBeta.rawValue,
+                displayName: SportType.wallBeta.displayName,
+                accentHex: SportType.wallBeta.accentColor,
+                iconName: SportType.wallBeta.systemImage,
+                initialState: .init(
+                    primaryMetric: "—",
+                    primaryLabel: "HIP PROX",
+                    secondaryMetric: "0.0s",
+                    secondaryLabel: "HOLD",
+                    coachCue: nil,
+                    isPaused: false
+                )
+            )
+        }
+        // Now the camera is running — any initial static position starts the hold timer.
+        holdStartTime = Date()
 
         startTimer()
         startProcessingLoop(cameraManager: cameraManager)
@@ -188,7 +211,11 @@ final class WallBetaViewModel {
     }
 
     func endSession(userId: String) async {
-        guard isSessionActive else { return }
+        // Capture the start date atomically before cancelling tasks.
+        // `stopProcessing()` (called from onDisappear) can set isSessionActive = false
+        // before this method runs, so guard on sessionStartDate — the authoritative
+        // "a session is in progress" signal.
+        guard let capturedStartDate = sessionStartDate else { return }
 
         processingTask?.cancel()
         timerTask?.cancel()
@@ -198,18 +225,24 @@ final class WallBetaViewModel {
         isSessionActive = false
         CoachVoice.shared.stop()
 
-        // Capture the final duration before clearing the start date.
-        let finalDuration = sessionStartDate.map { Date().timeIntervalSince($0) } ?? sessionDuration
+        // Compute final duration from the captured start date so it is accurate
+        // regardless of whether the 1-second timer fired on the last tick.
+        let finalDuration = accumulatedDuration + Date().timeIntervalSince(capturedStartDate)
+
+        // Clear the start date immediately so a concurrent onDisappear-driven
+        // stopProcessing cannot trigger a second endSession-like path.
+        sessionStartDate = nil
+        accumulatedDuration = 0
+        isPaused = false
 
         // Discard sessions too short to contain meaningful data.
         guard finalDuration > 2 else {
-            sessionStartDate = nil
             return
         }
 
         let result = SessionResult(
             sport: .wallBeta,
-            startedAt: sessionStartDate ?? Date(),
+            startedAt: capturedStartDate,
             duration: finalDuration,
             metrics: snapshotMetricsDict(),
             userId: userId
@@ -217,9 +250,6 @@ final class WallBetaViewModel {
 
         // Reset the Vision engine's temporal state before the next session.
         await poseEngine.reset()
-        accumulatedDuration = 0
-        isPaused = false
-        sessionStartDate = nil
 
         Analytics.logEvent("module_session_completed", parameters: [
             "module": "wall",
@@ -232,6 +262,17 @@ final class WallBetaViewModel {
         } catch {
             // Non-fatal — the session result may not persist but the app stays stable.
             errorMessage = "Session could not be saved: \(error.localizedDescription)"
+        }
+
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.end(finalState: .init(
+                primaryMetric: "\(Int(metrics.hipProximityScore))%",
+                primaryLabel: "HIP PROX",
+                secondaryMetric: "DONE",
+                secondaryLabel: "",
+                coachCue: nil,
+                isPaused: false
+            ), dismissalPolicy: .default)
         }
 
         Task {
@@ -265,6 +306,14 @@ final class WallBetaViewModel {
         timerTask = nil
         isPaused = true
         CoachVoice.shared.stop()
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.update(.init(
+                primaryMetric: "—",
+                primaryLabel: "PAUSED",
+                coachCue: nil,
+                isPaused: true
+            ), force: true)
+        }
     }
 
     /// Resumes a paused session: resets the start timestamp and restarts frame processing.
@@ -273,6 +322,16 @@ final class WallBetaViewModel {
         isPaused = false
         sessionStartDate = Date()
         startTimer()
+        if #available(iOS 16.2, *) {
+            LiveSessionController.shared.update(.init(
+                primaryMetric: "\(Int(metrics.hipProximityScore))%",
+                primaryLabel: "HIP PROX",
+                secondaryMetric: String(format: "%.0fs", metrics.holdTimeSeconds),
+                secondaryLabel: "HOLD",
+                coachCue: currentCoachCue?.text,
+                isPaused: false
+            ), force: true)
+        }
         processingTask = Task { [weak self] in
             guard let self else { return }
             for await buffer in cameraManager.frameStream {
@@ -350,6 +409,17 @@ final class WallBetaViewModel {
             metrics      = updatedMetrics
             previousPose = pose
             currentPose  = pose
+
+            if #available(iOS 16.2, *) {
+                LiveSessionController.shared.update(.init(
+                    primaryMetric: "\(Int(metrics.hipProximityScore))%",
+                    primaryLabel: "HIP PROX",
+                    secondaryMetric: String(format: "%.0fs", metrics.holdTimeSeconds),
+                    secondaryLabel: "HOLD",
+                    coachCue: currentCoachCue?.text,
+                    isPaused: isPaused
+                ))
+            }
 
             // Build live metrics bag and evaluate for a coaching cue.
             let liveMetrics = LiveCoachingMetrics(

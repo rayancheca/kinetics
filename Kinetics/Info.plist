@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.rayancheca.kinetics.refresh</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -45,19 +49,20 @@
 	<string>Kinetics uses the microphone for real-time coaching audio during live training sessions.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Kinetics uses your photo library to import workout videos for AI analysis.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>Kinetics sends workout reminders and achievement alerts to keep you on track.</string>
-	<key>CLAUDE_API_KEY</key>
-	<string>$(CLAUDE_API_KEY)</string>
-	<key>STRAVA_CLIENT_ID</key>
-	<string>$(STRAVA_CLIENT_ID)</string>
-	<key>STRAVA_CLIENT_SECRET</key>
-	<string>$(STRAVA_CLIENT_SECRET)</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
+		<string>remote-notification</string>
+		<string>processing</string>
+		<string>audio</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict>

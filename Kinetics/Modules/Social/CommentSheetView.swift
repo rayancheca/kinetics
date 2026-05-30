@@ -272,7 +272,13 @@ private struct SheetCommentRow: View {
                 Label("Copy", systemImage: "doc.on.doc")
             }
             Button(role: .destructive) {
-                // Report — no-op in Phase 1
+                Task {
+                    try? await SocialRepository.shared.reportContent(
+                        type: "comment",
+                        contentId: comment.id,
+                        parentId: activityId
+                    )
+                }
             } label: {
                 Label("Report", systemImage: "flag")
             }

@@ -71,6 +71,18 @@ struct KineticsApp: App {
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()
         }
+        // CRITICAL: Firestore settings must be applied BEFORE any other Firebase
+        // code touches Firestore. AuthManager, FCM token persistence in
+        // KineticsAppDelegate, and onAppear initializers can all race ahead of
+        // a view-layer settings call. Setting them inline here, immediately
+        // after FirebaseApp.configure(), is the only safe place.
+        if FirebaseApp.app() != nil {
+            let settings = FirestoreSettings()
+            settings.cacheSettings = PersistentCacheSettings(
+                sizeBytes: NSNumber(value: 100 * 1024 * 1024)
+            )
+            Firestore.firestore().settings = settings
+        }
         // Register App Shortcuts so Siri suggests them and Spotlight indexes them.
         if #available(iOS 17.0, *) {
             KineticsShortcutsProvider.updateAppShortcutParameters()
@@ -149,14 +161,6 @@ struct KineticsApp: App {
                     // through KineticsAppDelegate.messaging(_:didReceiveRegistrationToken:).
                     if FirebaseApp.app() != nil {
                         Messaging.messaging().isAutoInitEnabled = true
-                    }
-                    // Offline Firestore caching (100 MB on-device persistent cache)
-                    if FirebaseApp.app() != nil {
-                        let settings = FirestoreSettings()
-                        settings.cacheSettings = PersistentCacheSettings(
-                            sizeBytes: NSNumber(value: 100 * 1024 * 1024)
-                        )
-                        Firestore.firestore().settings = settings
                     }
                 }
                 .fullScreenCover(isPresented: Binding(
